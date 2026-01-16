@@ -1,0 +1,5 @@
+{
+  "extends": "@studybuddy/typescript-config/tsup-compiled-package.json",
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
