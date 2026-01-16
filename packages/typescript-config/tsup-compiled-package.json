@@ -1,5 +1,5 @@
 {
-  "extends": ["./base.js"],
+  "extends": "./base.json",
   "compilerOptions": {
     "noEmit": true,
     "emitDeclarationOnly": true,
