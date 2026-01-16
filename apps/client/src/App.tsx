@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
 import { Button, useColorScheme } from "@mui/material";
+import type { Example } from "@studybuddy/schemas";
+import baseApi from "./api/baseApi";
 
 function App() {
   const [count, setCount] = useState(0);
   const { colorScheme, setColorScheme } = useColorScheme();
+
+  const [data, setData] = useState<Example | null>(null);
+  useEffect(() => {
+    baseApi
+      .post<Example>("/example", { title: "Example Title" } satisfies Example)
+      .then((response) => {
+        setData(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching example data:", error);
+      });
+  }, []);
 
   return (
     <>
@@ -18,6 +32,7 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
+      {data && JSON.stringify(data)}
       <h1>Vite + React</h1>
       <Button
         onClick={() => {
