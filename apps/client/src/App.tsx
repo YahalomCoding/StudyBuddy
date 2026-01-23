@@ -1,26 +1,29 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
 import { Button, useColorScheme } from "@mui/material";
 import type { Example } from "@studybuddy/schemas";
 import baseApi from "./api/baseApi";
+import { useMutation } from "@tanstack/react-query";
+import { useLoading } from "./contexts/LoadingContext";
 
 function App() {
   const [count, setCount] = useState(0);
   const { colorScheme, setColorScheme } = useColorScheme();
+  const { setLoading } = useLoading();
 
-  const [data, setData] = useState<Example | null>(null);
-  useEffect(() => {
-    baseApi
-      .post<Example>("/example", { title: "Example Title" } satisfies Example)
-      .then((response) => {
-        setData(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching example data:", error);
-      });
-  }, []);
+  const testMutation = useMutation({
+    mutationKey: ["example"],
+    mutationFn: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return (
+        await baseApi.post<Example>("/example", {
+          title: "Example Title",
+        } satisfies Example)
+      ).data;
+    },
+  });
 
   return (
     <>
@@ -32,7 +35,7 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      {data && JSON.stringify(data)}
+      {testMutation.data && JSON.stringify(testMutation.data)}
       <h1>Vite + React</h1>
       <Button
         onClick={() => {
@@ -40,6 +43,21 @@ function App() {
         }}
       >
         Toggle Theme ({colorScheme})
+      </Button>
+      <Button
+        onClick={() => {
+          setLoading(true);
+          setTimeout(() => setLoading(false), 1000);
+        }}
+      >
+        check loading
+      </Button>
+      <Button
+        onClick={() => {
+          testMutation.mutate();
+        }}
+      >
+        check tanstack mutation
       </Button>
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
