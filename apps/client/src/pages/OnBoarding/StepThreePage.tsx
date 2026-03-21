@@ -46,7 +46,6 @@ export const StepThreePage = ({
               required: "יש להזין נושאים חזקים",
             })}
           />
-
           <RtlTextField
             fullWidth
             id="challengingTopics"
@@ -88,7 +87,6 @@ export const StepThreePage = ({
           />
         </Stack>
       </Box>
-
       <Box className={classes.actionsRow}>
         <Button
           type="button"
@@ -99,7 +97,6 @@ export const StepThreePage = ({
         >
           חזרה
         </Button>
-
         <Button
           type="submit"
           variant="contained"

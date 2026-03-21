@@ -10,6 +10,10 @@ export const useStyles = () => {
       padding: "32px 16px",
       background:
         "radial-gradient(circle at 20% 10%, #e9f3ff 0%, #f6f9fc 40%, #f8f7f2 100%)",
+      '[data-mui-color-scheme="dark"] &': {
+        background:
+          "radial-gradient(circle at 20% 10%, #0d1f35 0%, #111827 40%, #1a1a1a 100%)",
+      },
     }),
     card: css({
       width: "100%",
@@ -32,7 +36,7 @@ export const useStyles = () => {
     }),
     overline: css({
       letterSpacing: "0.12em",
-      color: "rgba(0, 0, 0, 0.6)",
+      color: "var(--mui-palette-text-secondary)",
     }),
     heading: css({
       fontWeight: 700,
@@ -44,7 +48,7 @@ export const useStyles = () => {
     }),
     subtitle: css({
       marginTop: "2px",
-      color: "rgba(0, 0, 0, 0.6)",
+      color: "var(--mui-palette-text-secondary)",
     }),
     formStack: css({
       display: "grid",
@@ -59,7 +63,7 @@ export const useStyles = () => {
     fieldError: css({
       marginTop: "6px",
       marginLeft: "1.5rem",
-      color: "#d32f2f",
+      color: "var(--mui-palette-error-main)",
       lineHeight: 1.4,
     }),
   };
