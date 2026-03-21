@@ -40,6 +40,7 @@ export const useStyles = () => {
     secondaryHeadline: css({
       fontSize: "1.25rem",
       fontWeight: 700,
+      paddingBottom: "0.5rem",
     }),
     subtitle: css({
       marginTop: "2px",
@@ -48,6 +49,12 @@ export const useStyles = () => {
     formStack: css({
       display: "grid",
       gap: "16px",
+    }),
+    actionsRow: css({
+      display: "flex",
+      justifyContent: "space-between",
+      gap: "12px",
+      flexWrap: "wrap",
     }),
     fieldError: css({
       marginTop: "6px",

@@ -1,6 +1,6 @@
-import { forwardRef, type ReactNode } from "react";
 import {
   FormControl,
+  FormHelperText,
   InputLabel,
   MenuItem,
   Select,
@@ -8,6 +8,7 @@ import {
   type SelectProps,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import { forwardRef, type ReactNode } from "react";
 
 interface RtlSelectOption {
   label: ReactNode;
@@ -15,7 +16,7 @@ interface RtlSelectOption {
 }
 
 export interface RtlSelectProps extends Omit<
-  SelectProps<string>,
+  SelectProps,
   "children" | "label"
 > {
   id: string;
@@ -23,6 +24,7 @@ export interface RtlSelectProps extends Omit<
   options: RtlSelectOption[];
   placeholder?: ReactNode;
   formControlProps?: FormControlProps;
+  helperText?: ReactNode;
 }
 
 const StyledFormControl = styled(FormControl)(({ theme }) => ({
@@ -58,7 +60,9 @@ export const RtlSelect = forwardRef<HTMLInputElement, RtlSelectProps>(
       options,
       placeholder,
       formControlProps,
+      helperText,
       displayEmpty = Boolean(placeholder),
+      multiple,
       renderValue,
       value,
       ...selectProps
@@ -77,14 +81,30 @@ export const RtlSelect = forwardRef<HTMLInputElement, RtlSelectProps>(
           id={id}
           labelId={labelId}
           label={label}
+          multiple={multiple}
           inputRef={ref}
           value={value ?? ""}
           displayEmpty={displayEmpty}
           renderValue={
             renderValue ??
             ((selected) => {
-              if ((selected === "" || selected == null) && placeholder) {
+              if (
+                (selected === "" ||
+                  selected == null ||
+                  (Array.isArray(selected) && selected.length === 0)) &&
+                placeholder
+              ) {
                 return <span style={{ opacity: 0.7 }}>{placeholder}</span>;
+              }
+
+              if (multiple && Array.isArray(selected)) {
+                return selected
+                  .map(
+                    (selectedValue) =>
+                      options.find((option) => option.value === selectedValue)
+                        ?.label ?? selectedValue
+                  )
+                  .join(", ");
               }
 
               return (
@@ -99,6 +119,7 @@ export const RtlSelect = forwardRef<HTMLInputElement, RtlSelectProps>(
             </MenuItem>
           ))}
         </Select>
+        {helperText ? <FormHelperText>{helperText}</FormHelperText> : null}
       </StyledFormControl>
     );
   }

@@ -1,21 +1,11 @@
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Stack,
-  Typography,
-} from "@mui/material";
-import { type FC } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { RtlSelect, RtlTextField } from "../../components/RTL";
+import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
+import { type FC, useState } from "react";
+import { useForm } from "react-hook-form";
+import { StepOnePage } from "./GeneralDetails";
+import { StepThreePage } from "./StepThreePage";
+import { StepTwoPage } from "./StepTwoPage";
 import { useStyles } from "./style";
-import {
-  faculties,
-  type QuestionnaireForm,
-  studyTypes,
-  workStatuses,
-} from "./types";
+import { type QuestionnaireForm } from "./types";
 
 const mockUser = {
   username: "talit",
@@ -24,11 +14,13 @@ const mockUser = {
 
 export const OnBoarding: FC = () => {
   const classes = useStyles();
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const {
     register,
     control,
     handleSubmit,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<QuestionnaireForm>({
     defaultValues: {
@@ -37,6 +29,13 @@ export const OnBoarding: FC = () => {
       faculty: undefined,
       coursesPerSemester: undefined,
       workStatus: undefined,
+      studyAvailabilityDays: [],
+      realisticStudyHoursPerDay: undefined,
+      focusTime: undefined,
+      preferredStudyDuration: undefined,
+      strongTopics: "",
+      challengingTopics: "",
+      semesterFocusGoal: undefined,
     },
   });
 
@@ -45,6 +44,39 @@ export const OnBoarding: FC = () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
   };
 
+  const goToStepTwo = async () => {
+    const isStepOneValid = await trigger([
+      "nickname",
+      "studyType",
+      "faculty",
+      "coursesPerSemester",
+      "workStatus",
+    ]);
+
+    if (isStepOneValid) {
+      setStep(2);
+    }
+  };
+
+  const goToStepThree = async () => {
+    const isStepTwoValid = await trigger([
+      "studyAvailabilityDays",
+      "realisticStudyHoursPerDay",
+      "focusTime",
+      "preferredStudyDuration",
+    ]);
+
+    if (isStepTwoValid) {
+      setStep(3);
+    }
+  };
+
+  const stepLabel = {
+    1: "שלב ראשון",
+    2: "שלב שני",
+    3: "שלב שלישי",
+  }[step];
+
   return (
     <Stack className={classes.page}>
       <Card className={classes.card} elevation={6}>
@@ -52,7 +84,7 @@ export const OnBoarding: FC = () => {
           <Stack className={classes.sectionStack}>
             <Box className={classes.headingBlock}>
               <Typography variant="overline" className={classes.overline}>
-                שלב ראשון
+                {stepLabel}
               </Typography>
               <Typography
                 variant="h4"
@@ -68,128 +100,32 @@ export const OnBoarding: FC = () => {
 
             <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
               <Stack className={classes.formStack}>
-                <RtlTextField
-                  fullWidth
-                  id="שם"
-                  label="שם חיבה"
-                  slotProps={{
-                    inputLabel: {
-                      shrink: true,
-                    },
-                  }}
-                  placeholder="הקלד שם שאתה רוצה שנשתמש בו באתר"
-                  error={Boolean(errors.nickname)}
-                  helperText={errors.nickname?.message}
-                  {...register("nickname", {
-                    required: "בבקשה להזין שם",
-                    minLength: {
-                      value: 2,
-                      message: "השם חייב להיות לפחות 2 תווים",
-                    },
-                  })}
-                />
-
-                <Box>
-                  <Typography className={classes.secondaryHeadline}>
-                    פרטים כלליים
-                  </Typography>
-
-                  <Stack sx={{ gap: 2 }}>
-                    <Controller
-                      name="studyType"
-                      control={control}
-                      render={({ field }) => (
-                        <RtlSelect
-                          id="studyType"
-                          label="סוג לימודים"
-                          placeholder="בחר סוג לימודים"
-                          options={studyTypes.map((type) => ({
-                            label: type,
-                            value: type,
-                          }))}
-                          name={field.name}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          ref={field.ref}
-                        />
-                      )}
-                    />
-
-                    <Controller
-                      name="faculty"
-                      control={control}
-                      render={({ field }) => (
-                        <RtlSelect
-                          id="faculty"
-                          label="תחום / פקולטה"
-                          placeholder="בחר תחום / פקולטה"
-                          options={faculties.map((faculty) => ({
-                            label: faculty,
-                            value: faculty,
-                          }))}
-                          name={field.name}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          ref={field.ref}
-                        />
-                      )}
-                    />
-
-                    <RtlTextField
-                      fullWidth
-                      type="number"
-                      id="coursesPerSemester"
-                      label="מספר קורסים בסמסטר"
-                      slotProps={{
-                        inputLabel: {
-                          shrink: true,
-                        },
-                      }}
-                      placeholder="הקלד מספר"
-                      error={Boolean(errors.coursesPerSemester)}
-                      helperText={errors.coursesPerSemester?.message}
-                      {...register("coursesPerSemester", {
-                        valueAsNumber: true,
-                        min: {
-                          value: 1,
-                          message: "מספר הקורסים חייב להיות לפחות 1",
-                        },
-                      })}
-                    />
-
-                    <Controller
-                      name="workStatus"
-                      control={control}
-                      render={({ field }) => (
-                        <RtlSelect
-                          id="workStatus"
-                          label="האם את/ת עובד/ת?"
-                          placeholder="בחר סטטוס עבודה"
-                          options={workStatuses.map((status) => ({
-                            label: status,
-                            value: status,
-                          }))}
-                          name={field.name}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          ref={field.ref}
-                        />
-                      )}
-                    />
-                  </Stack>
-                </Box>
-
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "שומר..." : "המשך"}
-                </Button>
+                {step === 1 ? (
+                  <StepOnePage
+                    control={control}
+                    errors={errors}
+                    isSubmitting={isSubmitting}
+                    onNext={goToStepTwo}
+                    register={register}
+                  />
+                ) : step === 2 ? (
+                  <StepTwoPage
+                    control={control}
+                    errors={errors}
+                    isSubmitting={isSubmitting}
+                    onBack={() => setStep(1)}
+                    onNext={goToStepThree}
+                    register={register}
+                  />
+                ) : (
+                  <StepThreePage
+                    control={control}
+                    errors={errors}
+                    isSubmitting={isSubmitting}
+                    onBack={() => setStep(2)}
+                    register={register}
+                  />
+                )}
               </Stack>
             </Box>
           </Stack>
