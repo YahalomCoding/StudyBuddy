@@ -1,7 +1,9 @@
 import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
 import { type FC, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { StepOnePage } from "./GeneralDetails";
+import { useCreateQuestionnaireMutation } from "./queries/createQuestionnaireMutation";
 import { StepThreePage } from "./StepThreePage";
 import { StepTwoPage } from "./StepTwoPage";
 import { useStyles } from "./style";
@@ -14,7 +16,11 @@ const mockUser = {
 
 export const OnBoarding: FC = () => {
   const classes = useStyles();
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  const { mutateAsync: submitQuestionnaire, isPending } =
+    useCreateQuestionnaireMutation();
 
   const {
     register,
@@ -40,9 +46,11 @@ export const OnBoarding: FC = () => {
   });
 
   const onSubmit = async (data: QuestionnaireForm) => {
-    void data;
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await submitQuestionnaire(data);
+    navigate("/home", { replace: true });
   };
+
+  const isBusy = isSubmitting || isPending;
 
   const goToStepTwo = async () => {
     const isStepOneValid = await trigger([
@@ -104,7 +112,7 @@ export const OnBoarding: FC = () => {
                   <StepOnePage
                     control={control}
                     errors={errors}
-                    isSubmitting={isSubmitting}
+                    isSubmitting={isBusy}
                     onNext={goToStepTwo}
                     register={register}
                   />
@@ -112,7 +120,7 @@ export const OnBoarding: FC = () => {
                   <StepTwoPage
                     control={control}
                     errors={errors}
-                    isSubmitting={isSubmitting}
+                    isSubmitting={isBusy}
                     onBack={() => setStep(1)}
                     onNext={goToStepThree}
                     register={register}
@@ -121,7 +129,7 @@ export const OnBoarding: FC = () => {
                   <StepThreePage
                     control={control}
                     errors={errors}
-                    isSubmitting={isSubmitting}
+                    isSubmitting={isBusy}
                     onBack={() => setStep(2)}
                     register={register}
                   />
