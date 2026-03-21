@@ -4,13 +4,18 @@ import {
   Card,
   CardContent,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
 import { type FC } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
+import { RtlSelect, RtlTextField } from "../../components/RTL";
 import { useStyles } from "./style";
-import { type QuestionnaireForm } from "./types";
+import {
+  faculties,
+  type QuestionnaireForm,
+  studyTypes,
+  workStatuses,
+} from "./types";
 
 const mockUser = {
   username: "talit",
@@ -22,11 +27,16 @@ export const OnBoarding: FC = () => {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<QuestionnaireForm>({
     defaultValues: {
       nickname: "",
+      studyType: undefined,
+      faculty: undefined,
+      coursesPerSemester: undefined,
+      workStatus: undefined,
     },
   });
 
@@ -58,8 +68,7 @@ export const OnBoarding: FC = () => {
 
             <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
               <Stack className={classes.formStack}>
-                <TextField
-                  className={classes.input}
+                <RtlTextField
                   fullWidth
                   id="שם"
                   label="שם חיבה"
@@ -79,6 +88,100 @@ export const OnBoarding: FC = () => {
                     },
                   })}
                 />
+
+                <Box>
+                  <Typography className={classes.secondaryHeadline}>
+                    פרטים כלליים
+                  </Typography>
+
+                  <Stack sx={{ gap: 2 }}>
+                    <Controller
+                      name="studyType"
+                      control={control}
+                      render={({ field }) => (
+                        <RtlSelect
+                          id="studyType"
+                          label="סוג לימודים"
+                          placeholder="בחר סוג לימודים"
+                          options={studyTypes.map((type) => ({
+                            label: type,
+                            value: type,
+                          }))}
+                          name={field.name}
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="faculty"
+                      control={control}
+                      render={({ field }) => (
+                        <RtlSelect
+                          id="faculty"
+                          label="תחום / פקולטה"
+                          placeholder="בחר תחום / פקולטה"
+                          options={faculties.map((faculty) => ({
+                            label: faculty,
+                            value: faculty,
+                          }))}
+                          name={field.name}
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
+                        />
+                      )}
+                    />
+
+                    <RtlTextField
+                      fullWidth
+                      type="number"
+                      id="coursesPerSemester"
+                      label="מספר קורסים בסמסטר"
+                      slotProps={{
+                        inputLabel: {
+                          shrink: true,
+                        },
+                      }}
+                      placeholder="הקלד מספר"
+                      error={Boolean(errors.coursesPerSemester)}
+                      helperText={errors.coursesPerSemester?.message}
+                      {...register("coursesPerSemester", {
+                        valueAsNumber: true,
+                        min: {
+                          value: 1,
+                          message: "מספר הקורסים חייב להיות לפחות 1",
+                        },
+                      })}
+                    />
+
+                    <Controller
+                      name="workStatus"
+                      control={control}
+                      render={({ field }) => (
+                        <RtlSelect
+                          id="workStatus"
+                          label="האם את/ת עובד/ת?"
+                          placeholder="בחר סטטוס עבודה"
+                          options={workStatuses.map((status) => ({
+                            label: status,
+                            value: status,
+                          }))}
+                          name={field.name}
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
+                        />
+                      )}
+                    />
+                  </Stack>
+                </Box>
+
                 <Button
                   type="submit"
                   variant="contained"

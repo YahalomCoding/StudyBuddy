@@ -1,9 +1,6 @@
 import { css } from "@emotion/css";
-import { useTheme } from "@mui/material";
 
 export const useStyles = () => {
-  const theme = useTheme();
-
   return {
     page: css({
       width: "100%",
@@ -40,6 +37,10 @@ export const useStyles = () => {
     heading: css({
       fontWeight: 700,
     }),
+    secondaryHeadline: css({
+      fontSize: "1.25rem",
+      fontWeight: 700,
+    }),
     subtitle: css({
       marginTop: "2px",
       color: "rgba(0, 0, 0, 0.6)",
@@ -53,21 +54,6 @@ export const useStyles = () => {
       marginLeft: "1.5rem",
       color: "#d32f2f",
       lineHeight: 1.4,
-    }),
-    input: css({
-      direction: "rtl",
-      "& .MuiInputLabel-root": {
-        right: theme.spacing(3),
-        left: "auto",
-        transformOrigin: "top right",
-      },
-      "& .MuiInputBase-input": {
-        direction: "rtl",
-        textAlign: "right",
-      },
-      "& .MuiOutlinedInput-notchedOutline legend": {
-        textAlign: "right",
-      },
     }),
   };
 };
