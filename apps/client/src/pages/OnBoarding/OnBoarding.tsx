@@ -79,7 +79,6 @@ export const OnBoarding: FC = () => {
                     },
                   })}
                 />
-
                 <Button
                   type="submit"
                   variant="contained"
