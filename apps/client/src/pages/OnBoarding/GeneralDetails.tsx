@@ -1,5 +1,11 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import {
+  faculties,
+  studyTypes,
+  workStatuses,
+  type QuestionnaireFormInput,
+} from "@studybuddy/schemas";
+import {
   Controller,
   type Control,
   type FieldErrors,
@@ -7,19 +13,13 @@ import {
 } from "react-hook-form";
 import { RtlSelect, RtlTextField } from "../../components/RTL";
 import { useStyles } from "./style";
-import {
-  faculties,
-  studyTypes,
-  workStatuses,
-  type QuestionnaireForm,
-} from "./types";
 
 interface StepOnePageProps {
-  control: Control<QuestionnaireForm>;
-  errors: FieldErrors<QuestionnaireForm>;
+  control: Control<QuestionnaireFormInput>;
+  errors: FieldErrors<QuestionnaireFormInput>;
   isSubmitting: boolean;
   onNext: () => void;
-  register: UseFormRegister<QuestionnaireForm>;
+  register: UseFormRegister<QuestionnaireFormInput>;
 }
 
 export const StepOnePage = ({

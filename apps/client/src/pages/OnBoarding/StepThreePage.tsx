@@ -1,5 +1,9 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import {
+  semesterFocusGoals,
+  type QuestionnaireFormInput,
+} from "@studybuddy/schemas";
+import {
   Controller,
   type Control,
   type FieldErrors,
@@ -7,14 +11,13 @@ import {
 } from "react-hook-form";
 import { RtlSelect, RtlTextField } from "../../components/RTL";
 import { useStyles } from "./style";
-import { semesterFocusGoals, type QuestionnaireForm } from "./types";
 
 interface StepThreePageProps {
-  control: Control<QuestionnaireForm>;
-  errors: FieldErrors<QuestionnaireForm>;
+  control: Control<QuestionnaireFormInput>;
+  errors: FieldErrors<QuestionnaireFormInput>;
   isSubmitting: boolean;
   onBack: () => void;
-  register: UseFormRegister<QuestionnaireForm>;
+  register: UseFormRegister<QuestionnaireFormInput>;
 }
 
 export const StepThreePage = ({

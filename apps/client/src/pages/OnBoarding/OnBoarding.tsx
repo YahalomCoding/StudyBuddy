@@ -1,4 +1,8 @@
 import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
+import type {
+  QuestionnaireForm,
+  QuestionnaireFormInput,
+} from "@studybuddy/schemas";
 import { type FC, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +12,6 @@ import { questionnaireResolver } from "./resolver";
 import { StepThreePage } from "./StepThreePage";
 import { StepTwoPage } from "./StepTwoPage";
 import { useStyles } from "./style";
-import { type QuestionnaireForm } from "./types";
 
 const mockUser = {
   username: "talit",
@@ -29,7 +32,7 @@ export const OnBoarding: FC = () => {
     handleSubmit,
     trigger,
     formState: { errors, isSubmitting },
-  } = useForm<QuestionnaireForm>({
+  } = useForm<QuestionnaireFormInput, unknown, QuestionnaireForm>({
     resolver: questionnaireResolver,
     defaultValues: {
       nickname: "",

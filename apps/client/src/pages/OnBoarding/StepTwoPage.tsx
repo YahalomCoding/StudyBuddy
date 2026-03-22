@@ -1,6 +1,12 @@
 import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { type SelectChangeEvent } from "@mui/material/Select";
 import {
+  focusTimes,
+  preferredStudyDurations,
+  studyAvailabilityDays,
+  type QuestionnaireFormInput,
+} from "@studybuddy/schemas";
+import {
   Controller,
   type Control,
   type FieldErrors,
@@ -8,12 +14,6 @@ import {
 } from "react-hook-form";
 import { RtlSelect, RtlTextField } from "../../components/RTL";
 import { useStyles } from "./style";
-import {
-  focusTimes,
-  preferredStudyDurations,
-  studyAvailabilityDays,
-  type QuestionnaireForm,
-} from "./types";
 
 const ALL_DAYS_OPTION_VALUE = "__all_days__";
 
@@ -34,12 +34,12 @@ const normalizeSelectedValues = (value: string | string[]) => {
 };
 
 interface StepTwoPageProps {
-  control: Control<QuestionnaireForm>;
-  errors: FieldErrors<QuestionnaireForm>;
+  control: Control<QuestionnaireFormInput>;
+  errors: FieldErrors<QuestionnaireFormInput>;
   isSubmitting: boolean;
   onBack: () => void;
   onNext: () => void;
-  register: UseFormRegister<QuestionnaireForm>;
+  register: UseFormRegister<QuestionnaireFormInput>;
 }
 
 export const StepTwoPage = ({
