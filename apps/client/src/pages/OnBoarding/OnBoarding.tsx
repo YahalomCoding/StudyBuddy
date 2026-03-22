@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { StepOnePage } from "./GeneralDetails";
 import { useCreateQuestionnaireMutation } from "./queries/createQuestionnaireMutation";
+import { questionnaireResolver } from "./resolver";
 import { StepThreePage } from "./StepThreePage";
 import { StepTwoPage } from "./StepTwoPage";
 import { useStyles } from "./style";
@@ -29,6 +30,7 @@ export const OnBoarding: FC = () => {
     trigger,
     formState: { errors, isSubmitting },
   } = useForm<QuestionnaireForm>({
+    resolver: questionnaireResolver,
     defaultValues: {
       nickname: "",
       studyType: undefined,

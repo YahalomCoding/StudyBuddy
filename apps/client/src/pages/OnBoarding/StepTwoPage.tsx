@@ -63,11 +63,6 @@ export const StepTwoPage = ({
           <Controller
             name="studyAvailabilityDays"
             control={control}
-            rules={{
-              validate: (value) =>
-                (Array.isArray(value) && value.length > 0) ||
-                "יש לבחור לפחות יום אחד",
-            }}
             render={({ field }) => (
               <RtlSelect
                 id="studyAvailabilityDays"
@@ -178,24 +173,12 @@ export const StepTwoPage = ({
             placeholder="מספר שעות"
             error={Boolean(errors.realisticStudyHoursPerDay)}
             helperText={errors.realisticStudyHoursPerDay?.message}
-            {...register("realisticStudyHoursPerDay", {
-              required: "יש להזין שעות לימוד ביום",
-              valueAsNumber: true,
-              min: {
-                value: 1,
-                message: "לפחות שעה אחת",
-              },
-              max: {
-                value: 16,
-                message: "עד 16 שעות ביום",
-              },
-            })}
+            {...register("realisticStudyHoursPerDay", { valueAsNumber: true })}
           />
 
           <Controller
             name="focusTime"
             control={control}
-            rules={{ required: "יש לבחור זמן ריכוז" }}
             render={({ field }) => (
               <RtlSelect
                 id="focusTime"
@@ -219,7 +202,6 @@ export const StepTwoPage = ({
           <Controller
             name="preferredStudyDuration"
             control={control}
-            rules={{ required: "יש לבחור משך למידה מועדף" }}
             render={({ field }) => (
               <RtlSelect
                 id="preferredStudyDuration"

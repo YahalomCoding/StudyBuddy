@@ -1,19 +1,16 @@
 import { css } from "@emotion/css";
+import type { AssignmentType, ItemStatus } from "@studybuddy/types";
 
 export const useStyles = () => {
   return {
     page: css({
       minHeight: "100vh",
       background:
-        "radial-gradient(circle at 80% 0%, #fff3dc 0%, #f6f9fc 45%, #edf6ff 100%)",
+        "radial-gradient(circle at 80% 0%, var(--sb-home-bg-start) 0%, var(--sb-home-bg-mid) 45%, var(--sb-home-bg-end) 100%)",
       paddingTop: "48px",
       paddingBottom: "48px",
       paddingLeft: "40px",
       paddingRight: "40px",
-      '[data-mui-color-scheme="dark"] &': {
-        background:
-          "radial-gradient(circle at 80% 0%, #1a1030 0%, #111827 45%, #0d1f35 100%)",
-      },
     }),
     content: css({
       maxWidth: "1180px",
@@ -49,14 +46,11 @@ export const useStyles = () => {
       fontWeight: 500,
     }),
     overdueRow: css({
-      backgroundColor: "#fff8f6",
-      borderLeft: "3px solid #fca5a5",
-      '[data-mui-color-scheme="dark"] &': {
-        backgroundColor: "#2d1212",
-      },
+      backgroundColor: "var(--sb-home-overdue-row-bg)",
+      borderLeft: "3px solid var(--sb-home-overdue-row-border)",
     }),
     overdueDaysCell: css({
-      color: "#b42318",
+      color: "var(--sb-home-overdue-text)",
       fontWeight: 600,
     }),
     regularDaysCell: css({
@@ -84,38 +78,96 @@ const makeChipClass = ({ light, dark }: ChipColors) =>
     },
   });
 
-const statusChipColors: Record<string, ChipColors> = {
-  הושלם: {
-    light: { backgroundColor: "#e8f5e9", color: "#2e7d32" },
-    dark: { backgroundColor: "#1b3a2d", color: "#81c995" },
+const statusChipColors: Record<ItemStatus, ChipColors> = {
+  done: {
+    light: {
+      backgroundColor: "var(--sb-chip-status-done-bg)",
+      color: "var(--sb-chip-status-done-text)",
+    },
+    dark: {
+      backgroundColor: "var(--sb-chip-status-done-bg)",
+      color: "var(--sb-chip-status-done-text)",
+    },
   },
-  פעיל: {
-    light: { backgroundColor: "#e3f2fd", color: "#1565c0" },
-    dark: { backgroundColor: "#0d2137", color: "#64b5f6" },
+  active: {
+    light: {
+      backgroundColor: "var(--sb-chip-status-active-bg)",
+      color: "var(--sb-chip-status-active-text)",
+    },
+    dark: {
+      backgroundColor: "var(--sb-chip-status-active-bg)",
+      color: "var(--sb-chip-status-active-text)",
+    },
   },
-};
-const statusChipDefault: ChipColors = {
-  light: { backgroundColor: "#fff3e0", color: "#b54708" },
-  dark: { backgroundColor: "#2d1a00", color: "#ffb74d" },
+  "not started": {
+    light: {
+      backgroundColor: "var(--sb-chip-status-default-bg)",
+      color: "var(--sb-chip-status-default-text)",
+    },
+    dark: {
+      backgroundColor: "var(--sb-chip-status-default-bg)",
+      color: "var(--sb-chip-status-default-text)",
+    },
+  },
 };
 
-export const statusChipClass = (status: string) =>
-  makeChipClass(statusChipColors[status] ?? statusChipDefault);
+export const statusChipClass = (status: ItemStatus) =>
+  makeChipClass(statusChipColors[status]);
 
-const typeChipColors: Record<string, ChipColors> = {
-  פרויקט: {
-    light: { backgroundColor: "#e3f2fd", color: "#1d4ed8" },
-    dark: { backgroundColor: "#0d2137", color: "#60a5fa" },
-  },
-  תרגול: {
-    light: { backgroundColor: "#e8f5e9", color: "#2e7d32" },
-    dark: { backgroundColor: "#1b3a2d", color: "#81c995" },
-  },
-};
 const typeChipDefault: ChipColors = {
-  light: { backgroundColor: "#f3f4f6", color: "#4b5563" },
-  dark: { backgroundColor: "#1f2937", color: "#9ca3af" },
+  light: {
+    backgroundColor: "var(--sb-chip-type-default-bg)",
+    color: "var(--sb-chip-type-default-text)",
+  },
+  dark: {
+    backgroundColor: "var(--sb-chip-type-default-bg)",
+    color: "var(--sb-chip-type-default-text)",
+  },
 };
 
-export const typeChipClass = (type: string) =>
+const typeChipColors: Record<AssignmentType, ChipColors> = {
+  project: {
+    light: {
+      backgroundColor: "var(--sb-chip-type-project-bg)",
+      color: "var(--sb-chip-type-project-text)",
+    },
+    dark: {
+      backgroundColor: "var(--sb-chip-type-project-bg)",
+      color: "var(--sb-chip-type-project-text)",
+    },
+  },
+  practice: {
+    light: {
+      backgroundColor: "var(--sb-chip-type-practice-bg)",
+      color: "var(--sb-chip-type-practice-text)",
+    },
+    dark: {
+      backgroundColor: "var(--sb-chip-type-practice-bg)",
+      color: "var(--sb-chip-type-practice-text)",
+    },
+  },
+  homework: {
+    light: {
+      backgroundColor: "var(--sb-chip-type-default-bg)",
+      color: "var(--sb-chip-type-default-text)",
+    },
+    dark: {
+      backgroundColor: "var(--sb-chip-type-default-bg)",
+      color: "var(--sb-chip-type-default-text)",
+    },
+  },
+  report: {
+    light: {
+      backgroundColor: "var(--sb-chip-type-default-bg)",
+      color: "var(--sb-chip-type-default-text)",
+    },
+    dark: {
+      backgroundColor: "var(--sb-chip-type-default-bg)",
+      color: "var(--sb-chip-type-default-text)",
+    },
+  },
+  lab: typeChipDefault,
+};
+
+export const typeChipClass = (type: AssignmentType) =>
   makeChipClass(typeChipColors[type] ?? typeChipDefault);

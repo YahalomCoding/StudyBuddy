@@ -42,9 +42,7 @@ export const StepThreePage = ({
             minRows={2}
             error={Boolean(errors.strongTopics)}
             helperText={errors.strongTopics?.message}
-            {...register("strongTopics", {
-              required: "יש להזין נושאים חזקים",
-            })}
+            {...register("strongTopics")}
           />
           <RtlTextField
             fullWidth
@@ -55,15 +53,12 @@ export const StepThreePage = ({
             minRows={2}
             error={Boolean(errors.challengingTopics)}
             helperText={errors.challengingTopics?.message}
-            {...register("challengingTopics", {
-              required: "יש להזין נושאים מאתגרים",
-            })}
+            {...register("challengingTopics")}
           />
 
           <Controller
             name="semesterFocusGoal"
             control={control}
-            rules={{ required: "יש לבחור דגש לסמסטר" }}
             render={({ field }) => (
               <RtlSelect
                 id="semesterFocusGoal"

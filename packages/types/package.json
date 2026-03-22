@@ -1,0 +1,27 @@
+{
+  "name": "@studybuddy/types",
+  "version": "1.0.0",
+  "description": "Shared domain types for StudyBuddy apps",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@studybuddy/eslint-config": "*",
+    "@studybuddy/tsup-config": "*",
+    "@studybuddy/typescript-config": "*",
+    "eslint": "^9.39.1",
+    "tsup": "^8.3.5"
+  }
+}

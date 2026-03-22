@@ -40,13 +40,7 @@ export const StepOnePage = ({
         placeholder="הקלד שם שאתה רוצה שנשתמש בו באתר"
         error={Boolean(errors.nickname)}
         helperText={errors.nickname?.message}
-        {...register("nickname", {
-          required: "בבקשה להזין שם",
-          minLength: {
-            value: 2,
-            message: "השם חייב להיות לפחות 2 תווים",
-          },
-        })}
+        {...register("nickname")}
       />
 
       <Box>
@@ -58,7 +52,6 @@ export const StepOnePage = ({
           <Controller
             name="studyType"
             control={control}
-            rules={{ required: "יש לבחור סוג לימודים" }}
             render={({ field }) => (
               <RtlSelect
                 id="studyType"
@@ -82,7 +75,6 @@ export const StepOnePage = ({
           <Controller
             name="faculty"
             control={control}
-            rules={{ required: "יש לבחור תחום / פקולטה" }}
             render={({ field }) => (
               <RtlSelect
                 id="faculty"
@@ -111,20 +103,12 @@ export const StepOnePage = ({
             placeholder="הקלד מספר"
             error={Boolean(errors.coursesPerSemester)}
             helperText={errors.coursesPerSemester?.message}
-            {...register("coursesPerSemester", {
-              required: "יש להזין מספר קורסים",
-              valueAsNumber: true,
-              min: {
-                value: 1,
-                message: "מספר הקורסים חייב להיות לפחות 1",
-              },
-            })}
+            {...register("coursesPerSemester", { valueAsNumber: true })}
           />
 
           <Controller
             name="workStatus"
             control={control}
-            rules={{ required: "יש לבחור סטטוס עבודה" }}
             render={({ field }) => (
               <RtlSelect
                 id="workStatus"

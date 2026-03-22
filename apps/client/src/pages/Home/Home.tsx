@@ -12,99 +12,106 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { type AssignmentItem, type TodoItem } from "@studybuddy/types";
 import { statusChipClass, typeChipClass, useStyles } from "./style";
+import {
+  assignmentTypeToDisplayName,
+  formatDueDate,
+  formatDuration,
+  getRelativeDueDate,
+  isOverdue,
+  relativeDueDateToDisplayName,
+  statusToDisplayName,
+} from "./utils";
 
 //TODO Tali - replace with real data from backend
-const todoRows = [
+const todoRows: TodoItem[] = [
   {
-    task: "חזרה על סיכומי אלגברה לינארית",
-    dueDate: "23 במרץ",
+    id: "todo-1",
+    title: "חזרה על סיכומי אלגברה לינארית",
+    dueDate: new Date(2026, 2, 23),
     done: false,
-    estimatedTime: "45 דק'",
+    estimatedTime: { value: 45, unit: "minutes" },
   },
   {
-    task: "סיכום הרצאה במערכות הפעלה",
-    dueDate: "24 במרץ",
+    id: "todo-2",
+    title: "סיכום הרצאה במערכות הפעלה",
+    dueDate: new Date(2026, 2, 24),
     done: true,
-    estimatedTime: "30 דק'",
+    estimatedTime: { value: 30, unit: "minutes" },
   },
   {
-    task: "תרגול SQL joins",
-    dueDate: "25 במרץ",
+    id: "todo-3",
+    title: "תרגול SQL joins",
+    dueDate: new Date(2026, 2, 25),
     done: false,
-    estimatedTime: "60 דק'",
+    estimatedTime: { value: 60, unit: "minutes" },
   },
   {
-    task: "כתיבת נקודות מפתח מקריאה בכלכלה",
-    dueDate: "26 במרץ",
+    id: "todo-4",
+    title: "כתיבת נקודות מפתח מקריאה בכלכלה",
+    dueDate: new Date(2026, 2, 26),
     done: false,
-    estimatedTime: "40 דק'",
+    estimatedTime: { value: 40, unit: "minutes" },
   },
 ];
 
-const assignmentRows = [
+const assignmentRows: AssignmentItem[] = [
   {
-    status: "פעיל",
+    id: "assignment-1",
+    status: "not started",
     course: "מבני נתונים",
-    assignment: "דף תרגול סיבוכיות",
-    dueDate: "24 במרץ",
-    type: "שיעורי בית",
-    daysLeft: "3 ימים",
-    isOverdue: false,
+    title: "דף תרגול סיבוכיות",
+    dueDate: new Date(2026, 2, 24),
+    type: "homework",
   },
   {
-    status: "הושלם",
+    id: "assignment-2",
+    status: "done",
     course: "אלגברה לינארית",
-    assignment: "הכנה לבוחן מטריצות",
-    dueDate: "20 במרץ",
-    type: "תרגול",
-    daysLeft: "בוצע",
-    isOverdue: false,
+    title: "הכנה לבוחן מטריצות",
+    dueDate: new Date(2026, 2, 20),
+    type: "practice",
   },
   {
-    status: "פעיל",
+    id: "assignment-3",
+    status: "active",
     course: "מסדי נתונים",
-    assignment: "טיוטת תכנון סכימה",
-    dueDate: "22 במרץ",
-    type: "פרויקט",
-    daysLeft: "יום אחד",
-    isOverdue: false,
+    title: "טיוטת תכנון סכימה",
+    dueDate: new Date(2026, 2, 22),
+    type: "project",
   },
   {
-    status: "דחוף",
+    id: "assignment-4",
+    status: "active",
     course: "סטטיסטיקה",
-    assignment: "סט תרגילים במבחני השערות",
-    dueDate: "21 במרץ",
-    type: "שיעורי בית",
-    daysLeft: "היום",
-    isOverdue: false,
+    title: "סט תרגילים במבחני השערות",
+    dueDate: new Date(2026, 2, 21),
+    type: "homework",
   },
   {
-    status: "באיחור",
+    id: "assignment-5",
+    status: "active",
     course: "כלכלה",
-    assignment: "דוח ניתוח שוק",
-    dueDate: "18 במרץ",
-    type: "דוח",
-    daysLeft: "איחור של 3 ימים",
-    isOverdue: true,
+    title: "דוח ניתוח שוק",
+    dueDate: new Date(2026, 2, 18),
+    type: "report",
   },
   {
-    status: "פעיל",
+    id: "assignment-6",
+    status: "active",
     course: "תכן תוכנה",
-    assignment: "תרשים מחלקות UML",
-    dueDate: "27 במרץ",
-    type: "פרויקט",
-    daysLeft: "6 ימים",
-    isOverdue: false,
+    title: "תרשים מחלקות UML",
+    dueDate: new Date(2026, 2, 27),
+    type: "project",
   },
   {
-    status: "באיחור",
+    id: "assignment-7",
+    status: "active",
     course: "פיזיקה",
-    assignment: "רפלקציה על מעבדה",
-    dueDate: "19 במרץ",
-    type: "מעבדה",
-    daysLeft: "איחור של יומיים",
-    isOverdue: true,
+    title: "רפלקציה על מעבדה",
+    dueDate: new Date(2026, 2, 19),
+    type: "lab",
   },
 ];
 
@@ -137,15 +144,19 @@ export const Home = () => {
                 </TableHead>
                 <TableBody>
                   {todoRows.map((row) => (
-                    <TableRow key={row.task} hover>
+                    <TableRow key={row.id} hover>
                       <TableCell align="right" className={classes.taskNameCell}>
-                        {row.task}
+                        {row.title}
                       </TableCell>
-                      <TableCell align="right">{row.dueDate}</TableCell>
+                      <TableCell align="right">
+                        {formatDueDate(row.dueDate)}
+                      </TableCell>
                       <TableCell align="right">
                         <Checkbox checked={row.done} size="small" disabled />
                       </TableCell>
-                      <TableCell align="right">{row.estimatedTime}</TableCell>
+                      <TableCell align="right">
+                        {formatDuration(row.estimatedTime)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -172,46 +183,59 @@ export const Home = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {assignmentRows.map((row) => (
-                    <TableRow
-                      key={`${row.course}-${row.assignment}`}
-                      hover
-                      className={row.isOverdue ? classes.overdueRow : undefined}
-                    >
-                      <TableCell align="right">
-                        <Chip
-                          label={row.status}
-                          size="small"
-                          className={statusChipClass(row.status)}
-                        />
-                      </TableCell>
-                      <TableCell align="right">{row.course}</TableCell>
-                      <TableCell
-                        align="right"
-                        className={classes.assignmentNameCell}
-                      >
-                        {row.assignment}
-                      </TableCell>
-                      <TableCell align="right">{row.dueDate}</TableCell>
-                      <TableCell align="right">
-                        <Chip
-                          label={row.type}
-                          size="small"
-                          className={typeChipClass(row.type)}
-                        />
-                      </TableCell>
-                      <TableCell
-                        align="right"
+                  {assignmentRows.map((row) => {
+                    const relativeDueDate = getRelativeDueDate(
+                      row.dueDate,
+                      row.status
+                    );
+
+                    return (
+                      <TableRow
+                        key={row.id}
+                        hover
                         className={
-                          row.isOverdue
-                            ? classes.overdueDaysCell
-                            : classes.regularDaysCell
+                          isOverdue(relativeDueDate)
+                            ? classes.overdueRow
+                            : undefined
                         }
                       >
-                        {row.daysLeft}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableCell align="right">
+                          <Chip
+                            label={statusToDisplayName(row.status)}
+                            size="small"
+                            className={statusChipClass(row.status)}
+                          />
+                        </TableCell>
+                        <TableCell align="right">{row.course}</TableCell>
+                        <TableCell
+                          align="right"
+                          className={classes.assignmentNameCell}
+                        >
+                          {row.title}
+                        </TableCell>
+                        <TableCell align="right">
+                          {formatDueDate(row.dueDate)}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Chip
+                            label={assignmentTypeToDisplayName(row.type)}
+                            size="small"
+                            className={typeChipClass(row.type)}
+                          />
+                        </TableCell>
+                        <TableCell
+                          align="right"
+                          className={
+                            isOverdue(relativeDueDate)
+                              ? classes.overdueDaysCell
+                              : classes.regularDaysCell
+                          }
+                        >
+                          {relativeDueDateToDisplayName(relativeDueDate)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

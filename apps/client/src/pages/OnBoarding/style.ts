@@ -9,11 +9,7 @@ export const useStyles = () => {
       placeItems: "center",
       padding: "32px 16px",
       background:
-        "radial-gradient(circle at 20% 10%, #e9f3ff 0%, #f6f9fc 40%, #f8f7f2 100%)",
-      '[data-mui-color-scheme="dark"] &': {
-        background:
-          "radial-gradient(circle at 20% 10%, #0d1f35 0%, #111827 40%, #1a1a1a 100%)",
-      },
+        "radial-gradient(circle at 20% 10%, var(--sb-onboarding-bg-start) 0%, var(--sb-onboarding-bg-mid) 40%, var(--sb-onboarding-bg-end) 100%)",
     }),
     card: css({
       width: "100%",

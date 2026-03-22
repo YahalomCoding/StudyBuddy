@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "predev": "rm -rf dist tsconfig.build.tsbuildinfo",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "nest start --watch",
@@ -25,6 +26,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.2.5",
     "@studybuddy/schemas": "*",
+    "@studybuddy/types": "*",
     "@studybuddy/utils": "*",
     "nestjs-zod": "^5.1.1",
     "reflect-metadata": "^0.2.2",
