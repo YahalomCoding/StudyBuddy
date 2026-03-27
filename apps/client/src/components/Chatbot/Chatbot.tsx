@@ -245,6 +245,7 @@ export const ChatBot = <T extends AnyClientTool[]>({
         flexDirection: "column",
         p: 1.5,
         gap: 1,
+        textAlign: "left",
       }}
     >
       {/* Messages */}

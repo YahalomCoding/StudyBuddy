@@ -23,6 +23,8 @@ import {
   type AnyClientTool,
 } from "@tanstack/ai-client";
 import { useChat } from "@tanstack/ai-react";
+import { useSimpleResizeTopLeft } from "../../utils/hooks";
+import { ResizeIcon } from "./ResizeIcon";
 
 export const ChatBotBubble = <T extends AnyClientTool[]>({
   tools,
@@ -32,6 +34,12 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
   exampleQuestions?: string[];
 }) => {
   const [open, setOpen] = useState(false);
+
+  const { panelDimensions, handleResizeMouseDown } = useSimpleResizeTopLeft({
+    defaultWidth: 380,
+    defaultHeight: 500,
+  });
+
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
@@ -116,8 +124,9 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
           elevation={8}
           sx={{
             mb: 2,
-            width: 360,
-            height: 520,
+            width: panelDimensions.width,
+            height: panelDimensions.height,
+            position: "relative",
             display: "flex",
             flexDirection: "column",
             borderRadius: 3,
@@ -126,6 +135,9 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
             borderColor: "divider",
           }}
         >
+          {/* Resize handle – top-left corner */}
+          <ResizeIcon handleResizeMouseDown={handleResizeMouseDown} />
+
           {/* Header */}
           <Box
             sx={{
