@@ -7,6 +7,7 @@ import type { Example } from "@studybuddy/schemas";
 import baseApi from "./api/baseApi";
 import { useMutation } from "@tanstack/react-query";
 import { useLoading } from "./contexts/LoadingContext";
+import { ChatBotBubble } from "./components/Chatbot";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -27,6 +28,7 @@ function App() {
 
   return (
     <>
+      <ChatBotBubble exampleQuestions={["What exams do I have this week?"]} />
       <div>
         <a href="https://vite.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
