@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">StudyBuddy hippo favicon</title>
+  <desc id="desc">A hippo face with glasses and a sparkle on a white rounded background, optimized for browser tab visibility.</desc>
+
+  <rect x="20" y="20" width="472" height="472" rx="108" fill="#FFFFFF" />
+
+  <ellipse cx="256" cy="262" rx="178" ry="156" fill="#97A8C8" stroke="#0F172A" stroke-width="24" />
+
+  <ellipse cx="150" cy="152" rx="40" ry="44" fill="#97A8C8" stroke="#0F172A" stroke-width="22" />
+  <ellipse cx="362" cy="152" rx="40" ry="44" fill="#97A8C8" stroke="#0F172A" stroke-width="22" />
+
+  <ellipse cx="256" cy="304" rx="126" ry="86" fill="#D7E1F2" stroke="#0F172A" stroke-width="22" />
+
+  <circle cx="204" cy="234" r="47" fill="#FFFFFF" stroke="#0F172A" stroke-width="18" />
+  <circle cx="308" cy="234" r="47" fill="#FFFFFF" stroke="#0F172A" stroke-width="18" />
+  <rect x="243" y="225" width="26" height="18" rx="9" fill="#0F172A" />
+
+  <circle cx="204" cy="236" r="15" fill="#0F172A" />
+  <circle cx="308" cy="236" r="15" fill="#0F172A" />
+
+  <ellipse cx="226" cy="308" rx="15" ry="18" fill="#0F172A" />
+  <ellipse cx="286" cy="308" rx="15" ry="18" fill="#0F172A" />
+
+  <path d="M228 344q28 22 56 0" fill="none" stroke="#0F172A" stroke-width="16" stroke-linecap="round" />
+
+  <path
+    d="M390 84l14 30 30 14-30 14-14 30-14-30-30-14 30-14z"
+    fill="#FACC15"
+    stroke="#0F172A"
+    stroke-width="14"
+    stroke-linejoin="round"
+  />
+</svg>
