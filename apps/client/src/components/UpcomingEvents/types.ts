@@ -1,0 +1,38 @@
+export type Semester = {
+  id: string;
+  yearNumber: number;
+  semesterNumber: number;
+};
+
+export type Course = {
+  id: string;
+  title: string;
+  degreeId: string;
+};
+
+export type SemesterCourse = {
+  id: string;
+  semesterId: string;
+  courseId: string;
+};
+
+export type StudentSemesterCourse = {
+  id: string;
+  studentId: string;
+  semesterCourseId: string;
+};
+
+export type Assignment = {
+  id: string;
+  studentSemesterCourseId: string;
+  description: string;
+  deadline: string;
+};
+
+export type Exam = {
+  id: string;
+  studentSemesterCourseId: string;
+  date: string;
+  type: number;
+  grade: number;
+};

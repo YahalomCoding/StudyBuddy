@@ -3,7 +3,6 @@ import {
   Checkbox,
   Chip,
   Paper,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -24,6 +23,8 @@ import {
   statusToDisplayName,
 } from "./utils";
 import { ChatBotBubble } from "../../components/Chatbot";
+import { UpcomingEvents } from "../../components/UpcomingEvents";
+import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
 
 //TODO Tali - replace with real data from backend
 const todoRows: TodoItem[] = [
@@ -122,128 +123,159 @@ export const Home = () => {
   return (
     <Box className={classes.page}>
       <ChatBotBubble exampleQuestions={["What exams do I have this week?"]} />
-      <Stack className={classes.content}>
-        <Box>
+
+      <Box className={classes.content}>
+        <Box className={classes.header}>
           <Typography variant="h4" component="h1" className={classes.title}>
             לוח לימודים
           </Typography>
         </Box>
 
-        <Stack className={classes.section}>
-          <Typography variant="h6" className={classes.sectionTitle}>
-            To Do
-          </Typography>
-          <Paper elevation={0} className={classes.tablePaper}>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow className={classes.tableHeadRow}>
-                    <TableCell align="right">שם משימה</TableCell>
-                    <TableCell align="right">תאריך יעד</TableCell>
-                    <TableCell align="right">בוצע</TableCell>
-                    <TableCell align="right">זמן משוער</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {todoRows.map((row) => (
-                    <TableRow key={row.id} hover>
-                      <TableCell align="right" className={classes.taskNameCell}>
-                        {row.title}
-                      </TableCell>
-                      <TableCell align="right">
-                        {formatDueDate(row.dueDate)}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Checkbox checked={row.done} size="small" disabled />
-                      </TableCell>
-                      <TableCell align="right">
-                        {formatDuration(row.estimatedTime)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Stack>
+        <Box className={classes.dashboardGrid}>
+          <Box className={classes.todoArea}>
+            <Box className={classes.section}>
+              <Typography variant="h6" className={classes.sectionTitle}>
+                To Do
+              </Typography>
 
-        <Stack className={classes.section}>
-          <Typography variant="h6" className={classes.sectionTitle}>
-            Assignments
-          </Typography>
-          <Paper elevation={0} className={classes.tablePaper}>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow className={classes.tableHeadRow}>
-                    <TableCell align="right">סטטוס</TableCell>
-                    <TableCell align="right">קורס</TableCell>
-                    <TableCell align="right">שם מטלה</TableCell>
-                    <TableCell align="right">תאריך יעד</TableCell>
-                    <TableCell align="right">סוג</TableCell>
-                    <TableCell align="right">ימים שנותרו</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {assignmentRows.map((row) => {
-                    const relativeDueDate = getRelativeDueDate(
-                      row.dueDate,
-                      row.status
-                    );
-
-                    return (
-                      <TableRow
-                        key={row.id}
-                        hover
-                        className={
-                          isOverdue(relativeDueDate)
-                            ? classes.overdueRow
-                            : undefined
-                        }
-                      >
-                        <TableCell align="right">
-                          <Chip
-                            label={statusToDisplayName(row.status)}
-                            size="small"
-                            className={statusChipClass(row.status)}
-                          />
-                        </TableCell>
-                        <TableCell align="right">{row.course}</TableCell>
-                        <TableCell
-                          align="right"
-                          className={classes.assignmentNameCell}
-                        >
-                          {row.title}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatDueDate(row.dueDate)}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            label={assignmentTypeToDisplayName(row.type)}
-                            size="small"
-                            className={typeChipClass(row.type)}
-                          />
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          className={
-                            isOverdue(relativeDueDate)
-                              ? classes.overdueDaysCell
-                              : classes.regularDaysCell
-                          }
-                        >
-                          {relativeDueDateToDisplayName(relativeDueDate)}
-                        </TableCell>
+              <Paper elevation={0} className={classes.tablePaper}>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow className={classes.tableHeadRow}>
+                        <TableCell align="right">שם משימה</TableCell>
+                        <TableCell align="right">תאריך יעד</TableCell>
+                        <TableCell align="right">בוצע</TableCell>
+                        <TableCell align="right">זמן משוער</TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Stack>
-      </Stack>
+                    </TableHead>
+
+                    <TableBody>
+                      {todoRows.map((row) => (
+                        <TableRow key={row.id} hover>
+                          <TableCell
+                            align="right"
+                            className={classes.taskNameCell}
+                          >
+                            {row.title}
+                          </TableCell>
+                          <TableCell align="right">
+                            {formatDueDate(row.dueDate)}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Checkbox checked={row.done} size="small" disabled />
+                          </TableCell>
+                          <TableCell align="right">
+                            {formatDuration(row.estimatedTime)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            </Box>
+          </Box>
+
+          <Box className={classes.upcomingArea}>
+            <Box className={classes.section}>
+              <UpcomingEvents />
+            </Box>
+          </Box>
+
+          <Box className={classes.assignmentsArea}>
+            <Box className={classes.section}>
+              <Typography variant="h6" className={classes.sectionTitle}>
+                Assignments
+              </Typography>
+
+              <Paper elevation={0} className={classes.tablePaper}>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow className={classes.tableHeadRow}>
+                        <TableCell align="right">סטטוס</TableCell>
+                        <TableCell align="right">קורס</TableCell>
+                        <TableCell align="right">שם מטלה</TableCell>
+                        <TableCell align="right">תאריך יעד</TableCell>
+                        <TableCell align="right">סוג</TableCell>
+                        <TableCell align="right">ימים שנותרו</TableCell>
+                      </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                      {assignmentRows.map((row) => {
+                        const relativeDueDate = getRelativeDueDate(
+                          row.dueDate,
+                          row.status
+                        );
+
+                        return (
+                          <TableRow
+                            key={row.id}
+                            hover
+                            className={
+                              isOverdue(relativeDueDate)
+                                ? classes.overdueRow
+                                : undefined
+                            }
+                          >
+                            <TableCell align="right">
+                              <Chip
+                                label={statusToDisplayName(row.status)}
+                                size="small"
+                                className={statusChipClass(row.status)}
+                              />
+                            </TableCell>
+
+                            <TableCell align="right">{row.course}</TableCell>
+
+                            <TableCell
+                              align="right"
+                              className={classes.assignmentNameCell}
+                            >
+                              {row.title}
+                            </TableCell>
+
+                            <TableCell align="right">
+                              {formatDueDate(row.dueDate)}
+                            </TableCell>
+
+                            <TableCell align="right">
+                              <Chip
+                                label={assignmentTypeToDisplayName(row.type)}
+                                size="small"
+                                className={typeChipClass(row.type)}
+                              />
+                            </TableCell>
+
+                            <TableCell
+                              align="right"
+                              className={
+                                isOverdue(relativeDueDate)
+                                  ? classes.overdueDaysCell
+                                  : classes.regularDaysCell
+                              }
+                            >
+                              {relativeDueDateToDisplayName(relativeDueDate)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            </Box>
+          </Box>
+
+          <Box className={classes.coursesArea}>
+            <Box className={classes.section}>
+              <CoursesSummary />
+            </Box>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 };
