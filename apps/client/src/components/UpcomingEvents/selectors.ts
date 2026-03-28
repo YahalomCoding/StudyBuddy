@@ -6,15 +6,7 @@ import {
   semesters,
   studentSemesterCourses,
 } from "./mockData";
-
-export type UpcomingEventViewItem = {
-  id: string;
-  kind: "assignment" | "exam";
-  courseTitle: string;
-  description: string;
-  eventDate: string;
-  semesterLabel: string;
-};
+import type { UpcomingEventViewItem } from "./types";
 
 const getCourseContextByStudentSemesterCourseId = (
   studentSemesterCourseId: string

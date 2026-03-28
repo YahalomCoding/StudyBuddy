@@ -36,3 +36,12 @@ export type Exam = {
   type: number;
   grade: number;
 };
+
+export type UpcomingEventViewItem = {
+  id: string;
+  kind: "assignment" | "exam";
+  courseTitle: string;
+  description: string;
+  eventDate: string;
+  semesterLabel: string;
+};

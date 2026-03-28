@@ -69,7 +69,9 @@ export const useStyles = () => {
       gap: "12px",
       padding: "12px 18px",
       borderBottom: "1px solid var(--mui-palette-divider)",
-
+       "&:hover": {
+        backgroundColor: "var(--mui-palette-action-hover)",
+      },
       "&:last-child": {
         borderBottom: "none",
       },
