@@ -1,18 +1,14 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import { AppService } from "./app.service";
-import { ExampleDto } from "./app.dto";
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
+  @ApiOkResponse({ type: String })
   getHello(): string {
     return this.appService.getHello();
-  }
-
-  @Post("example")
-  getExample(@Body() body: ExampleDto): ExampleDto {
-    return body;
   }
 }
