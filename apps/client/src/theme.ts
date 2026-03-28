@@ -83,7 +83,7 @@ const theme = createTheme({
           main: "#1976d2",
         },
         secondary: {
-          main: "#9c27b0",
+          main: "#ba60ca",
         },
       },
     },
@@ -94,7 +94,7 @@ const theme = createTheme({
           main: "#90caf9",
         },
         secondary: {
-          main: "#ce93d8",
+          main: "#bd79c9",
         },
       },
     },

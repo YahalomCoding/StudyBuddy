@@ -1,8 +1,8 @@
 import { useState } from "react";
 
-export const useSimpleResizeTopLeft = ({
-  defaultWidth = 360,
-  defaultHeight = 520,
+export const useSimpleResizeToRight = ({
+  defaultWidth = 380,
+  defaultHeight = 500,
 }) => {
   const [panelDimensions, setPanelDimensions] = useState({
     width: defaultWidth,
@@ -18,8 +18,8 @@ export const useSimpleResizeTopLeft = ({
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       setPanelDimensions({
-        width: Math.max(280, startWidth - (moveEvent.clientX - startX)),
-        height: Math.max(300, startHeight - (moveEvent.clientY - startY)),
+        width: Math.max(defaultWidth, startWidth + (moveEvent.clientX - startX)),
+        height: Math.max(defaultHeight, startHeight - (moveEvent.clientY - startY)),
       });
     };
 

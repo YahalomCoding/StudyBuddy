@@ -10,10 +10,10 @@ export const ResizeIcon = ({
     sx={{
       position: "absolute",
       top: 0,
-      left: 0,
+      right: 0,
       width: 22,
       height: 22,
-      cursor: "nw-resize",
+      cursor: "ne-resize",
       zIndex: 10,
       opacity: 0.3,
       transition: "opacity 0.15s",
@@ -25,21 +25,21 @@ export const ResizeIcon = ({
       width="12"
       height="12"
       viewBox="0 0 12 12"
-      style={{ position: "absolute", top: 5, left: 5 }}
+      style={{ position: "absolute", top: 5, right: 5 }}
     >
       <line
-        x1="0"
+        x1="12"
         y1="10"
-        x2="10"
+        x2="2"
         y2="0"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
       />
       <line
-        x1="0"
+        x1="12"
         y1="5"
-        x2="5"
+        x2="7"
         y2="0"
         stroke="currentColor"
         strokeWidth="1.5"

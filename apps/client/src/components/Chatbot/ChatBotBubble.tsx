@@ -23,7 +23,7 @@ import {
   type AnyClientTool,
 } from "@tanstack/ai-client";
 import { useChat } from "@tanstack/ai-react";
-import { useSimpleResizeTopLeft } from "../../utils/hooks";
+import { useSimpleResizeToRight } from "../../utils/hooks";
 import { ResizeIcon } from "./ResizeIcon";
 
 export const ChatBotBubble = <T extends AnyClientTool[]>({
@@ -35,7 +35,7 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
 }) => {
   const [open, setOpen] = useState(false);
 
-  const { panelDimensions, handleResizeMouseDown } = useSimpleResizeTopLeft({
+  const { panelDimensions, handleResizeMouseDown } = useSimpleResizeToRight({
     defaultWidth: 380,
     defaultHeight: 500,
   });
@@ -89,14 +89,15 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
 
   return (
     <Box
+      dir="ltr"
       sx={{
         position: "fixed",
         bottom: 65,
-        right: 65,
+        left: 65,
         zIndex: 1300,
         display: "flex",
         flexDirection: "column",
-        alignItems: "flex-end",
+        alignItems: "flex-start",
       }}
     >
       <Snackbar
@@ -135,7 +136,7 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
             borderColor: "divider",
           }}
         >
-          {/* Resize handle – top-left corner */}
+          {/* Resize handle – top-right corner */}
           <ResizeIcon handleResizeMouseDown={handleResizeMouseDown} />
 
           {/* Header */}
@@ -182,7 +183,7 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
             <span style={{ fontSize: 15 }}>Chat with Your Study Buddy</span>
           )
         }
-        placement="left"
+        placement="right"
       >
         <IconButton
           onClick={() => setOpen((v) => !v)}
@@ -194,7 +195,7 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
             boxShadow: 4,
             transition: "transform 0.2s, box-shadow 0.2s",
             "&:hover": {
-              bgcolor: "primary.dark",
+              bgcolor: "secondary.dark",
               boxShadow: 6,
               transform: "scale(1.08)",
             },
