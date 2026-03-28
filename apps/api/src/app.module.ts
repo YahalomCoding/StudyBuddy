@@ -19,6 +19,7 @@ import {
 } from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { ChatModule } from "./chat/chat.module";
 
 @Catch(HttpException)
 class HttpExceptionFilter extends BaseExceptionFilter {
@@ -38,7 +39,7 @@ class HttpExceptionFilter extends BaseExceptionFilter {
 }
 
 @Module({
-  imports: [],
+  imports: [ChatModule],
   controllers: [AppController],
   providers: [
     AppService,

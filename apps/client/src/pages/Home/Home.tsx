@@ -23,6 +23,7 @@ import {
   relativeDueDateToDisplayName,
   statusToDisplayName,
 } from "./utils";
+import { ChatBotBubble } from "../../components/Chatbot";
 
 //TODO Tali - replace with real data from backend
 const todoRows: TodoItem[] = [
@@ -120,6 +121,7 @@ export const Home = () => {
 
   return (
     <Box className={classes.page}>
+      <ChatBotBubble exampleQuestions={["What exams do I have this week?"]} />
       <Stack className={classes.content}>
         <Box>
           <Typography variant="h4" component="h1" className={classes.title}>
