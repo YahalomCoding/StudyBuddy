@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "predev": "rm -rf dist tsconfig.build.tsbuildinfo",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "nest start --env-file .env --watch",
@@ -26,6 +27,7 @@
     "@nestjs/swagger": "^11.2.5",
     "@studybuddy/schemas": "*",
     "@studybuddy/tool-definitions": "*",
+    "@studybuddy/types": "*",
     "@studybuddy/utils": "*",
     "@tanstack/ai": "^0.8.1",
     "@tanstack/ai-openrouter": "^0.6.6",

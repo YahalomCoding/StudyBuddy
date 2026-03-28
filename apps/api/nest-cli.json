@@ -8,6 +8,9 @@
       {
         "name": "@nestjs/swagger",
         "options": {
+          "controllerFileNameSuffix": [
+            ".swagger-controller.ts"
+          ],
           "dtoFileNameSuffix": [
             ".dto.ts",
             ".classes.ts"
