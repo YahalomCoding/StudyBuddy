@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Body, Controller, Post, Res } from "@nestjs/common";
 import { env } from "../env";
 import { Readable } from "stream";
@@ -31,6 +33,7 @@ export class ChatController {
       tools: [await getCurrentTimeTool, showNotificationClientDef],
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const sseStream = toServerSentEventsStream(stream);
     const nodeStream = Readable.fromWeb(
       sseStream as Parameters<typeof Readable.fromWeb>[0]

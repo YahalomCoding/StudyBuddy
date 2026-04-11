@@ -9,6 +9,7 @@
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "prettier": "^3.7.4",
     "turbo": "^2.7.4",
     "typescript": "5.9.2"
@@ -20,5 +21,9 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "@nestjs/sequelize": "^11.0.1",
+    "pg": "^8.20.0"
+  }
 }
