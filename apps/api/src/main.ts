@@ -1,6 +1,6 @@
 import { cleanupOpenApiDoc } from "nestjs-zod";
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
+import { AppModule } from "./app/app.module";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 async function bootstrap() {
@@ -19,6 +19,9 @@ async function bootstrap() {
 
   app.setGlobalPrefix("api");
 
+  // eslint-disable-next-line turbo/no-undeclared-env-vars
   await app.listen(process.env.PORT ?? 3000);
 }
+
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 bootstrap();
