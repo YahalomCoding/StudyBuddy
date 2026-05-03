@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Body, Controller, Post, Res } from "@nestjs/common";
-import { env } from "../env";
-import { Readable } from "stream";
 import { type Response } from "express";
+import { Readable } from "stream";
+import { env } from "../env";
 import { getCurrentTimeTool } from "./tools";
 
 @Controller("chat")
@@ -21,7 +21,7 @@ export class ChatController {
       await import("@studybuddy/tool-definitions");
 
     const adapter = createOpenRouterText(
-      env.OPENROUTER_MODEL,
+      env.OPENROUTER_MODEL as Parameters<typeof createOpenRouterText>[0],
       env.OPENROUTER_API_KEY
     );
 

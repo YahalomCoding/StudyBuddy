@@ -1,36 +1,37 @@
 /* eslint-disable turbo/no-undeclared-env-vars */
 import {
-  ZodValidationPipe,
-  ZodSerializerInterceptor,
-  ZodSerializationException,
-} from "nestjs-zod";
-import { SequelizeModule } from "@nestjs/sequelize";
+  ArgumentsHost,
+  Catch,
+  HttpException,
+  Logger,
+  Module,
+} from "@nestjs/common";
 import {
-  APP_PIPE,
-  APP_INTERCEPTOR,
   APP_FILTER,
+  APP_INTERCEPTOR,
+  APP_PIPE,
   BaseExceptionFilter,
 } from "@nestjs/core";
-import { ZodError } from "zod";
+import { SequelizeModule } from "@nestjs/sequelize";
 import {
-  Module,
-  HttpException,
-  ArgumentsHost,
-  Logger,
-  Catch,
-} from "@nestjs/common";
-import { ChatModule } from "../chat/chat.module";
-import { DegreesModule } from "../degrees/degrees.module";
-import { UsersModule } from "../users/users.module";
-import { CoursesModule } from "../courses/courses.module";
-import { StudentsModule } from "../students/students.module";
-import { StudentDegreesModule } from "../student-degrees/student-degrees.module";
-import { SemestersModule } from "../semesters/semesters.module";
-import { SemesterCoursesModule } from "../semester-courses/semester-courses.module";
-import { StudentSemesterCoursesModule } from "../student-semester-courses/student-semester-courses.module";
+  ZodSerializationException,
+  ZodSerializerInterceptor,
+  ZodValidationPipe,
+} from "nestjs-zod";
+import { ZodError } from "zod";
 import { AssignmentsModule } from "../assignments/assignments.module";
+import { ChatModule } from "../chat/chat.module";
+import { CoursesModule } from "../courses/courses.module";
+import { DegreesModule } from "../degrees/degrees.module";
 import { ExamsModule } from "../exams/exams.module";
 import { GeneralTasksModule } from "../general-tasks/general-tasks.module";
+import { QuestionnaireModule } from "../questionnaire/questionnaire.module";
+import { SemesterCoursesModule } from "../semester-courses/semester-courses.module";
+import { SemestersModule } from "../semesters/semesters.module";
+import { StudentDegreesModule } from "../student-degrees/student-degrees.module";
+import { StudentSemesterCoursesModule } from "../student-semester-courses/student-semester-courses.module";
+import { StudentsModule } from "../students/students.module";
+import { UsersModule } from "../users/users.module";
 
 @Catch(HttpException)
 class HttpExceptionFilter extends BaseExceptionFilter {
@@ -38,7 +39,8 @@ class HttpExceptionFilter extends BaseExceptionFilter {
 
   catch(exception: HttpException, host: ArgumentsHost) {
     if (exception instanceof ZodSerializationException) {
-      const zodError = exception.getZodError();
+      const serializationException = exception as ZodSerializationException;
+      const zodError = serializationException.getZodError();
 
       if (zodError instanceof ZodError) {
         this.logger.error(`ZodSerializationException: ${zodError.message}`);
@@ -73,6 +75,7 @@ class HttpExceptionFilter extends BaseExceptionFilter {
     AssignmentsModule,
     ExamsModule,
     GeneralTasksModule,
+    QuestionnaireModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

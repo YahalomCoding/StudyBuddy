@@ -34,6 +34,12 @@ export class Student extends Model<Partial<Student>> {
   declare coursesPerSemester: number;
 
   @Column({ type: DataType.STRING, allowNull: false })
+  declare studyType: string;
+
+  @Column({ type: DataType.STRING, allowNull: false })
+  declare faculty: string;
+
+  @Column({ type: DataType.STRING, allowNull: false })
   declare workStatus: string;
 
   @Column({ type: DataType.ARRAY(DataType.STRING), allowNull: false })
