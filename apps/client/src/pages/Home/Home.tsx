@@ -11,114 +11,152 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { type AssignmentItem, type TodoItem } from "@studybuddy/types";
+import {
+  type AssignmentItem,
+  type AssignmentType,
+  type ItemStatus,
+  type TodoItem,
+} from "@studybuddy/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import {
+  getHomeDashboard,
+  homeDashboardQueryKey,
+  updateAssignment,
+  updateGeneralTask,
+} from "../../api/home";
+import { ChatBotBubble } from "../../components/Chatbot";
+import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
+import { UpcomingEvents } from "../../components/UpcomingEvents";
+import {
+  applyOptimisticAssignmentUpdate,
+  applyOptimisticTodoDoneUpdate,
+  applyOptimisticTodoEstimatedTimeUpdate,
+  rollbackOptimisticDashboardUpdate,
+  rollbackOptimisticTodoDoneUpdate,
+} from "./functions";
 import { statusChipClass, typeChipClass, useStyles } from "./style";
 import {
+  ASSIGNMENT_STATUSES,
+  ASSIGNMENT_TYPES,
   assignmentTypeToDisplayName,
   formatDueDate,
   formatDuration,
+  getNextValue,
   getRelativeDueDate,
   isOverdue,
   relativeDueDateToDisplayName,
   statusToDisplayName,
 } from "./utils";
-import { ChatBotBubble } from "../../components/Chatbot";
-import { UpcomingEvents } from "../../components/UpcomingEvents";
-import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
-
-//TODO Tali - replace with real data from backend
-const todoRows: TodoItem[] = [
-  {
-    id: "todo-1",
-    title: "חזרה על סיכומי אלגברה לינארית",
-    dueDate: new Date(2026, 2, 23),
-    done: false,
-    estimatedTime: { value: 45, unit: "minutes" },
-  },
-  {
-    id: "todo-2",
-    title: "סיכום הרצאה במערכות הפעלה",
-    dueDate: new Date(2026, 2, 24),
-    done: true,
-    estimatedTime: { value: 30, unit: "minutes" },
-  },
-  {
-    id: "todo-3",
-    title: "תרגול SQL joins",
-    dueDate: new Date(2026, 2, 25),
-    done: false,
-    estimatedTime: { value: 60, unit: "minutes" },
-  },
-  {
-    id: "todo-4",
-    title: "כתיבת נקודות מפתח מקריאה בכלכלה",
-    dueDate: new Date(2026, 2, 26),
-    done: false,
-    estimatedTime: { value: 40, unit: "minutes" },
-  },
-];
-
-const assignmentRows: AssignmentItem[] = [
-  {
-    id: "assignment-1",
-    status: "not started",
-    course: "מבני נתונים",
-    title: "דף תרגול סיבוכיות",
-    dueDate: new Date(2026, 2, 24),
-    type: "homework",
-  },
-  {
-    id: "assignment-2",
-    status: "done",
-    course: "אלגברה לינארית",
-    title: "הכנה לבוחן מטריצות",
-    dueDate: new Date(2026, 2, 20),
-    type: "practice",
-  },
-  {
-    id: "assignment-3",
-    status: "active",
-    course: "מסדי נתונים",
-    title: "טיוטת תכנון סכימה",
-    dueDate: new Date(2026, 2, 22),
-    type: "project",
-  },
-  {
-    id: "assignment-4",
-    status: "active",
-    course: "סטטיסטיקה",
-    title: "סט תרגילים במבחני השערות",
-    dueDate: new Date(2026, 2, 21),
-    type: "homework",
-  },
-  {
-    id: "assignment-5",
-    status: "active",
-    course: "כלכלה",
-    title: "דוח ניתוח שוק",
-    dueDate: new Date(2026, 2, 18),
-    type: "report",
-  },
-  {
-    id: "assignment-6",
-    status: "active",
-    course: "תכן תוכנה",
-    title: "תרשים מחלקות UML",
-    dueDate: new Date(2026, 2, 27),
-    type: "project",
-  },
-  {
-    id: "assignment-7",
-    status: "active",
-    course: "פיזיקה",
-    title: "רפלקציה על מעבדה",
-    dueDate: new Date(2026, 2, 19),
-    type: "lab",
-  },
-];
 
 export const Home = () => {
   const classes = useStyles();
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, isFetched } = useQuery({
+    queryKey: homeDashboardQueryKey,
+    queryFn: getHomeDashboard,
+  });
+  const isInitialLoading = isLoading && !isFetched;
+
+  const {mutate: updateTask} = useMutation({
+    meta: { disableLoadingDefault: true },
+    mutationFn: ({ id, done }: { id: string; done: boolean }) =>
+      updateGeneralTask(id, { done }),
+    onMutate: ({ id, done }) =>
+      applyOptimisticTodoDoneUpdate(queryClient, id, done),
+    onError: (_error, _variables, context) => {
+      rollbackOptimisticTodoDoneUpdate(queryClient, context?.previousDashboard);
+    },
+  });
+
+  const updateAssignmentMutation = useMutation({
+    meta: { disableLoadingDefault: true },
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        status?: ItemStatus;
+        type?: AssignmentType;
+      };
+    }) => updateAssignment(id, payload),
+    onMutate: ({ id, payload }) =>
+      applyOptimisticAssignmentUpdate(queryClient, id, payload),
+    onError: (_error, _variables, context) => {
+      rollbackOptimisticDashboardUpdate(queryClient, context?.previousDashboard);
+    },
+  });
+
+  const updateTodoEstimatedTimeMutation = useMutation({
+    meta: { disableLoadingDefault: true },
+    mutationFn: ({
+      id,
+      estimatedTimeValue,
+      estimatedTimeUnit,
+    }: {
+      id: string;
+      estimatedTimeValue: number;
+      estimatedTimeUnit: "minutes" | "hours" | "days";
+    }) => updateGeneralTask(id, { estimatedTimeValue, estimatedTimeUnit }),
+    onMutate: ({ id, estimatedTimeValue, estimatedTimeUnit }) =>
+      applyOptimisticTodoEstimatedTimeUpdate(
+        queryClient,
+        id,
+        estimatedTimeValue,
+        estimatedTimeUnit
+      ),
+    onError: (_error, _variables, context) => {
+      rollbackOptimisticDashboardUpdate(queryClient, context?.previousDashboard);
+    },
+  });
+
+  const todoRows: TodoItem[] = useMemo(
+    () =>
+      (data?.todos ?? []).map((item) => ({
+        ...item,
+        dueDate: new Date(item.dueDate),
+      })),
+    [data?.todos]
+  );
+
+  const assignmentRows: AssignmentItem[] = useMemo(
+    () =>
+      (data?.assignments ?? []).map((item) => ({
+        ...item,
+        dueDate: new Date(item.dueDate),
+      })),
+    [data?.assignments]
+  );
+
+  const handleTodoToggle = (id: string, currentDone: boolean) => {
+    updateTask({ id, done: !currentDone });
+  };
+
+  const handleTodoEstimatedTimeCycle = (row: TodoItem) => {
+    const nextEstimatedTimeValue =
+      row.estimatedTime.value >= 120 ? 15 : row.estimatedTime.value + 15;
+
+    updateTodoEstimatedTimeMutation.mutate({
+      id: row.id,
+      estimatedTimeValue: nextEstimatedTimeValue,
+      estimatedTimeUnit: row.estimatedTime.unit,
+    });
+  };
+
+  const handleAssignmentStatusCycle = (row: AssignmentItem) => {
+    updateAssignmentMutation.mutate({
+      id: row.id,
+      payload: { status: getNextValue(ASSIGNMENT_STATUSES, row.status) },
+    });
+  };
+
+  const handleAssignmentTypeCycle = (row: AssignmentItem) => {
+    updateAssignmentMutation.mutate({
+      id: row.id,
+      payload: { type: getNextValue(ASSIGNMENT_TYPES, row.type) },
+    });
+  };
 
   return (
     <Box className={classes.page}>
@@ -151,6 +189,20 @@ export const Home = () => {
                     </TableHead>
 
                     <TableBody>
+                      {isInitialLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center">
+                            טוען...
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                      {isError ? (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center">
+                            לא הצלחנו לטעון משימות כרגע
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
                       {todoRows.map((row) => (
                         <TableRow key={row.id} hover>
                           <TableCell
@@ -163,10 +215,21 @@ export const Home = () => {
                             {formatDueDate(row.dueDate)}
                           </TableCell>
                           <TableCell align="right">
-                            <Checkbox checked={row.done} size="small" disabled />
+                            <Checkbox
+                              checked={row.done}
+                              size="small"
+                              disableRipple
+                              onChange={() => handleTodoToggle(row.id, row.done)}
+                            />
                           </TableCell>
                           <TableCell align="right">
-                            {formatDuration(row.estimatedTime)}
+                            <Typography
+                              component="span"
+                              onClick={() => handleTodoEstimatedTimeCycle(row)}
+                              sx={{ cursor: "pointer" }}
+                            >
+                              {formatDuration(row.estimatedTime)}
+                            </Typography>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -204,6 +267,20 @@ export const Home = () => {
                     </TableHead>
 
                     <TableBody>
+                      {isInitialLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            טוען...
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                      {isError ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            לא הצלחנו לטעון מטלות כרגע
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
                       {assignmentRows.map((row) => {
                         const relativeDueDate = getRelativeDueDate(
                           row.dueDate,
@@ -225,6 +302,7 @@ export const Home = () => {
                                 label={statusToDisplayName(row.status)}
                                 size="small"
                                 className={statusChipClass(row.status)}
+                                onClick={() => handleAssignmentStatusCycle(row)}
                               />
                             </TableCell>
 
@@ -246,6 +324,7 @@ export const Home = () => {
                                 label={assignmentTypeToDisplayName(row.type)}
                                 size="small"
                                 className={typeChipClass(row.type)}
+                                onClick={() => handleAssignmentTypeCycle(row)}
                               />
                             </TableCell>
 

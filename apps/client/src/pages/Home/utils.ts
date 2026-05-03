@@ -5,6 +5,30 @@ import type {
   RelativeDueDate,
 } from "@studybuddy/types";
 
+export const ASSIGNMENT_STATUSES: ItemStatus[] = [
+  "not started",
+  "active",
+  "done",
+];
+
+export const ASSIGNMENT_TYPES: AssignmentType[] = [
+  "homework",
+  "practice",
+  "project",
+  "report",
+  "lab",
+];
+
+export const getNextValue = <T,>(values: T[], current: T): T => {
+  const currentIndex = values.indexOf(current);
+
+  if (currentIndex < 0 || currentIndex === values.length - 1) {
+    return values[0] as T;
+  }
+
+  return values[currentIndex + 1] as T;
+};
+
 const dueDateFormatter = new Intl.DateTimeFormat("he-IL", {
   day: "numeric",
   month: "long",

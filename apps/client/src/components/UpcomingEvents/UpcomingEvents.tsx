@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
-import { Box, IconButton, Paper, Typography } from "@mui/material";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import { Box, IconButton, Paper, Typography } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { getHomeDashboard, homeDashboardQueryKey } from "../../api/home";
 import { useStyles } from "./style";
-import { getUpcomingEventItems } from "./selectors";
 
 const PAGE_SIZE = 4;
 
@@ -21,9 +22,17 @@ const formatEventDate = (value: string) => {
 export const UpcomingEvents = () => {
   const classes = useStyles();
   const [page, setPage] = useState(1);
+  const { data } = useQuery({
+    queryKey: homeDashboardQueryKey,
+    queryFn: getHomeDashboard,
+  });
 
-  const allItems = useMemo(() => getUpcomingEventItems(), []);
+  const allItems = useMemo(() => data?.upcomingEvents ?? [], [data?.upcomingEvents]);
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
 
   const currentItems = useMemo(() => {
     const startIndex = (page - 1) * PAGE_SIZE;

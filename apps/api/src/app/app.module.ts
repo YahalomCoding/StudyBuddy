@@ -25,6 +25,7 @@ import { CoursesModule } from "../courses/courses.module";
 import { DegreesModule } from "../degrees/degrees.module";
 import { ExamsModule } from "../exams/exams.module";
 import { GeneralTasksModule } from "../general-tasks/general-tasks.module";
+import { HomeModule } from "../home/home.module";
 import { QuestionnaireModule } from "../questionnaire/questionnaire.module";
 import { SemesterCoursesModule } from "../semester-courses/semester-courses.module";
 import { SemestersModule } from "../semesters/semesters.module";
@@ -75,6 +76,7 @@ class HttpExceptionFilter extends BaseExceptionFilter {
     AssignmentsModule,
     ExamsModule,
     GeneralTasksModule,
+    HomeModule,
     QuestionnaireModule,
   ],
   providers: [
