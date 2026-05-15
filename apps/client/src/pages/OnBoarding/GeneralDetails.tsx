@@ -12,7 +12,6 @@ import {
   type UseFormRegister,
 } from "react-hook-form";
 import { RtlSelect, RtlTextField } from "../../components/RTL";
-import { useStyles } from "./style";
 
 interface StepOnePageProps {
   control: Control<QuestionnaireFormInput>;
@@ -29,10 +28,8 @@ export const StepOnePage = ({
   onNext,
   register,
 }: StepOnePageProps) => {
-  const classes = useStyles();
-
   return (
-    <>
+    <Stack gap={3}>
       <RtlTextField
         fullWidth
         id="שם"
@@ -44,11 +41,17 @@ export const StepOnePage = ({
       />
 
       <Box>
-        <Typography className={classes.secondaryHeadline}>
+        <Typography
+          fontSize={13}
+          fontWeight={600}
+          color="text.secondary"
+          mb={1.5}
+          sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+        >
           פרטים כלליים
         </Typography>
 
-        <Stack sx={{ gap: 2 }}>
+        <Stack gap={2}>
           <Controller
             name="studyType"
             control={control}
@@ -57,10 +60,7 @@ export const StepOnePage = ({
                 id="studyType"
                 label="סוג לימודים"
                 placeholder="בחר סוג לימודים"
-                options={studyTypes.map((type) => ({
-                  label: type,
-                  value: type,
-                }))}
+                options={studyTypes.map((type) => ({ label: type, value: type }))}
                 name={field.name}
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -80,10 +80,7 @@ export const StepOnePage = ({
                 id="faculty"
                 label="תחום / פקולטה"
                 placeholder="בחר תחום / פקולטה"
-                options={faculties.map((faculty) => ({
-                  label: faculty,
-                  value: faculty,
-                }))}
+                options={faculties.map((faculty) => ({ label: faculty, value: faculty }))}
                 name={field.name}
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -114,10 +111,7 @@ export const StepOnePage = ({
                 id="workStatus"
                 label="האם את/ת עובד/ת?"
                 placeholder="בחר סטטוס עבודה"
-                options={workStatuses.map((status) => ({
-                  label: status,
-                  value: status,
-                }))}
+                options={workStatuses.map((status) => ({ label: status, value: status }))}
                 name={field.name}
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -135,11 +129,21 @@ export const StepOnePage = ({
         type="button"
         variant="contained"
         size="large"
+        fullWidth
         disabled={isSubmitting}
         onClick={onNext}
+        sx={{
+          bgcolor: "#22c55e",
+          "&:hover": { bgcolor: "#16a34a" },
+          borderRadius: 2,
+          fontWeight: 600,
+          fontSize: 15,
+          py: 1.2,
+          boxShadow: "none",
+        }}
       >
         המשך
       </Button>
-    </>
+    </Stack>
   );
 };
