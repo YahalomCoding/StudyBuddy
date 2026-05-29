@@ -1,3 +1,5 @@
+// Must be imported first to register OTel before any other modules
+import "./instrumentation";
 import { cleanupOpenApiDoc } from "nestjs-zod";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app/app.module";

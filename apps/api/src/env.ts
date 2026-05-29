@@ -11,10 +11,19 @@ const envSchema = z.object({
       return modelName as keyof OpenRouterModelOptionsByName;
     }),
   DB_HOST: z.string(),
-  DB_PORT: z.string(),
+  DB_PORT: z
+    .string()
+    .default("5432")
+    .transform((port) => parseInt(port)),
   DB_USERNAME: z.string(),
   DB_PASSWORD: z.string(),
   DB_DATABASE: z.string(),
+  // Langfuse tracing & prompt management
+  LANGFUSE_PUBLIC_KEY: z.string().optional(),
+  LANGFUSE_SECRET_KEY: z.string().optional(),
+  LANGFUSE_BASE_URL: z.url()
+    .optional()
+    .default("https://cloud.langfuse.com"),
 });
 
 export const env = envSchema.parse(process.env);

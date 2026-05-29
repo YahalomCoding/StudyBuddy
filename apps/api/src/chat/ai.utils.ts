@@ -1,4 +1,7 @@
-import { env } from "src/env";
+import { env } from "../env";
+import { LangfuseClient } from "@langfuse/client";
+
+const langfuse = new LangfuseClient();
 
 const chatPromise = import("@tanstack/ai").then((module) => module.chat);
 const createOpenRouterTextPromise = import("@tanstack/ai-openrouter").then(
@@ -19,4 +22,27 @@ export const loadAiChat = async () => {
     chat,
     aiTextProviderAdapter,
   };
+};
+
+declare global {
+  var CACHED_SYSTEM_PROMPTS:
+    | Record<string, { promptName: string; prompt: string; version: number }>
+    | undefined;
+}
+global.CACHED_SYSTEM_PROMPTS = global.CACHED_SYSTEM_PROMPTS ?? {};
+const CACHED_SYSTEM_PROMPTS = global.CACHED_SYSTEM_PROMPTS!
+
+export const getSystemPrompt = async (
+  promptName: string
+): Promise<(typeof CACHED_SYSTEM_PROMPTS)[string]> => {
+  if (CACHED_SYSTEM_PROMPTS[promptName]) {
+    return CACHED_SYSTEM_PROMPTS[promptName];
+  }
+  const prompt = await langfuse.prompt.get(promptName);
+  CACHED_SYSTEM_PROMPTS[promptName] = {
+    promptName: prompt.name,
+    prompt: prompt.prompt,
+    version: prompt.version,
+  };
+  return CACHED_SYSTEM_PROMPTS[promptName];
 };
