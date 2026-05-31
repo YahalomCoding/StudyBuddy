@@ -80,7 +80,6 @@ const TASK_FIELDS: FormField[] = [
 ];
 
 const ASSIGNMENT_FIELDS: FormField[] = [
-  { type: "text", name: "course", label: "שם הקורס", placeholder: "מתמטיקה" },
   { type: "text", name: "title", label: "שם המשימה", placeholder: "חיבור" },
   { type: "date", name: "dueDate", label: "תאריך יעד" },
   {
@@ -270,6 +269,30 @@ export const Home = () => {
     [data?.assignments]
   );
 
+  const assignmentCourseOptions = useMemo(() => {
+    const uniqueCourseTitles = Array.from(
+      new Set((data?.coursesSummary ?? []).map((course) => course.courseTitle))
+    ).filter(Boolean);
+
+    return uniqueCourseTitles.map((courseTitle) => ({
+      label: courseTitle,
+      value: courseTitle,
+    }));
+  }, [data?.coursesSummary]);
+
+  const assignmentFormFields = useMemo<FormField[]>(
+    () => [
+      {
+        type: "select",
+        name: "course",
+        label: "שם הקורס",
+        options: assignmentCourseOptions,
+      },
+      ...ASSIGNMENT_FIELDS,
+    ],
+    [assignmentCourseOptions]
+  );
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleTodoToggle = (id: string, currentDone: boolean) => {
@@ -288,6 +311,14 @@ export const Home = () => {
       id: row.id,
       payload: { type: getNextValue(ASSIGNMENT_TYPES, row.type) },
     });
+  };
+
+  const openAssignmentModal = () => {
+    if (assignmentCourseOptions.length === 0) {
+      return;
+    }
+
+    setModal({ type: "assignment", values: {} });
   };
 
   // ── Modal save handler ────────────────────────────────────────────────────────
@@ -543,10 +574,7 @@ export const Home = () => {
             </SectionCard>
 
             {/* Assignments card */}
-            <SectionCard
-              title="Assignments"
-              onNext={() => setModal({ type: "assignment", values: {} })}
-            >
+            <SectionCard title="Assignments" onNext={openAssignmentModal}>
               {/* Header */}
               <Box
                 sx={{
@@ -682,7 +710,7 @@ export const Home = () => {
                 alignItems="center"
                 gap={0.5}
                 sx={{ cursor: "pointer", color: "text.secondary", mt: 1 }}
-                onClick={() => setModal({ type: "assignment", values: {} })}
+                onClick={openAssignmentModal}
               >
                 <AddIcon fontSize="small" />
                 <Typography fontSize={13}>הוסף מטלה</Typography>
@@ -712,7 +740,7 @@ export const Home = () => {
                 ? "הוסף משימה"
                 : "הוסף מטלה"
           }
-          fields={modal.type === "task" ? TASK_FIELDS : ASSIGNMENT_FIELDS}
+          fields={modal.type === "task" ? TASK_FIELDS : assignmentFormFields}
           values={modal.values}
           onChange={(name: string, value: string) =>
             setModal((prev) =>
