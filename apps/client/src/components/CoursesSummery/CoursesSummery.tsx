@@ -3,16 +3,18 @@ import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { getHomeDashboard, homeDashboardQueryKey } from "../../api/home";
+import {
+  createCourseSummary,
+  getHomeDashboard,
+  homeDashboardQueryKey,
+} from "../../api/home";
 import {
   GenericFormModal,
   type FormField,
   type FormValues,
 } from "../GenericFormModal/GenericFormModal";
-import type { CourseSummaryViewItem } from "./types";
-
 const PAGE_SIZE = 3;
 
 const COURSE_FIELDS: FormField[] = [
@@ -37,10 +39,10 @@ const COURSE_FIELDS: FormField[] = [
 ];
 
 export const CoursesSummary = () => {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalValues, setModalValues] = useState<FormValues>({});
-  const [localCourses, setLocalCourses] = useState<CourseSummaryViewItem[]>([]);
 
   const { data } = useQuery({
     queryKey: homeDashboardQueryKey,
@@ -52,10 +54,14 @@ export const CoursesSummary = () => {
     [data?.coursesSummary]
   );
 
-  const allItems = useMemo(
-    () => [...serverItems, ...localCourses],
-    [serverItems, localCourses]
-  );
+  const allItems = useMemo(() => serverItems, [serverItems]);
+
+  const createCourseMutation = useMutation({
+    mutationFn: createCourseSummary,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
 
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
 
@@ -97,15 +103,10 @@ export const CoursesSummary = () => {
   };
 
   const handleSaveCourse = (values: FormValues) => {
-    const newCourse: CourseSummaryViewItem = {
-      id: `local-course-${Date.now()}`,
-      studentSemesterCourseId: values.studentSemesterCourseId ?? "",
+    createCourseMutation.mutate({
       courseTitle: values.courseTitle ?? "",
-      courseId: values.courseId ?? "",
       semesterLabel: values.semesterLabel ?? "",
-    };
-
-    setLocalCourses((prev) => [...prev, newCourse]);
+    });
     handleCloseModal();
   };
 

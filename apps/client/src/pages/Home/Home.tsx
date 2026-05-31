@@ -20,6 +20,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
+  createGeneralTask,
+  createHomeAssignment,
   getHomeDashboard,
   homeDashboardQueryKey,
   updateAssignment,
@@ -69,10 +71,10 @@ const TASK_FIELDS: FormField[] = [
     name: "estimatedTime",
     label: "זמן משוער",
     options: [
-      { label: "15 min", value: "15" },
-      { label: "30 min", value: "30" },
-      { label: "1 hour", value: "60" },
-      { label: "2 hours", value: "120" },
+      { label: "15 דקות", value: "15" },
+      { label: "30 דקות", value: "30" },
+      { label: "שעה", value: "60" },
+      { label: "שעתיים", value: "120" },
     ],
   },
 ];
@@ -86,9 +88,9 @@ const ASSIGNMENT_FIELDS: FormField[] = [
     name: "status",
     label: "סטאטוס",
     options: [
-      { label: "Not Started", value: "not_started" },
-      { label: "In Progress", value: "in_progress" },
-      { label: "Completed", value: "completed" },
+      { label: "לא התחיל", value: "not started" },
+      { label: "פעיל", value: "active" },
+      { label: "הושלם", value: "done" },
     ],
   },
   {
@@ -96,10 +98,11 @@ const ASSIGNMENT_FIELDS: FormField[] = [
     name: "type",
     label: "סוג המשימה",
     options: [
-      { label: "Homework", value: "homework" },
-      { label: "Exam", value: "exam" },
-      { label: "Project", value: "project" },
-      { label: "Other", value: "other" },
+      { label: "שיעורי בית", value: "homework" },
+      { label: "תרגול", value: "practice" },
+      { label: "פרויקט", value: "project" },
+      { label: "דוח", value: "report" },
+      { label: "מעבדה", value: "lab" },
     ],
   },
 ];
@@ -175,12 +178,6 @@ export const Home = () => {
   // ── Modal state ──────────────────────────────────────────────────────────────
   const [modal, setModal] = useState<ModalState | null>(null);
 
-  // ── Temporary local items (not saved to DB) ──────────────────────────────────
-  const [localTodos, setLocalTodos] = useState<TodoItem[]>([]);
-  const [localAssignments, setLocalAssignments] = useState<AssignmentItem[]>(
-    []
-  );
-
   // ── Mutations ────────────────────────────────────────────────────────────────
 
   const { mutate: updateTask } = useMutation({
@@ -239,54 +236,47 @@ export const Home = () => {
     },
   });
 
-  // ── Rows: merge server data + local temp items ────────────────────────────────
+  const createTaskMutation = useMutation({
+    mutationFn: createGeneralTask,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const createAssignmentMutation = useMutation({
+    mutationFn: createHomeAssignment,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  // ── Rows ──────────────────────────────────────────────────────────────────────
 
   const todoRows: TodoItem[] = useMemo(
-    () => [
-      ...(data?.todos ?? []).map((item) => ({
+    () =>
+      (data?.todos ?? []).map((item) => ({
         ...item,
         dueDate: new Date(item.dueDate),
       })),
-      ...localTodos,
-    ],
-    [data?.todos, localTodos]
+    [data?.todos]
   );
 
   const assignmentRows: AssignmentItem[] = useMemo(
-    () => [
-      ...(data?.assignments ?? []).map((item) => ({
+    () =>
+      (data?.assignments ?? []).map((item) => ({
         ...item,
         dueDate: new Date(item.dueDate),
       })),
-      ...localAssignments,
-    ],
-    [data?.assignments, localAssignments]
+    [data?.assignments]
   );
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleTodoToggle = (id: string, currentDone: boolean) => {
-    // If it's a local item, toggle locally
-    if (localTodos.some((t) => t.id === id)) {
-      setLocalTodos((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, done: !currentDone } : t))
-      );
-      return;
-    }
     updateTask({ id, done: !currentDone });
   };
 
   const handleAssignmentStatusCycle = (row: AssignmentItem) => {
-    if (localAssignments.some((a) => a.id === row.id)) {
-      setLocalAssignments((prev) =>
-        prev.map((a) =>
-          a.id === row.id
-            ? { ...a, status: getNextValue(ASSIGNMENT_STATUSES, row.status) }
-            : a
-        )
-      );
-      return;
-    }
     updateAssignmentMutation.mutate({
       id: row.id,
       payload: { status: getNextValue(ASSIGNMENT_STATUSES, row.status) },
@@ -294,16 +284,6 @@ export const Home = () => {
   };
 
   const handleAssignmentTypeCycle = (row: AssignmentItem) => {
-    if (localAssignments.some((a) => a.id === row.id)) {
-      setLocalAssignments((prev) =>
-        prev.map((a) =>
-          a.id === row.id
-            ? { ...a, type: getNextValue(ASSIGNMENT_TYPES, row.type) }
-            : a
-        )
-      );
-      return;
-    }
     updateAssignmentMutation.mutate({
       id: row.id,
       payload: { type: getNextValue(ASSIGNMENT_TYPES, row.type) },
@@ -317,44 +297,22 @@ export const Home = () => {
 
     if (modal.type === "task") {
       const estimatedMinutes = parseInt(values.estimatedTime ?? "30", 10);
-      const newTask: TodoItem = {
-        id: `local-task-${Date.now()}`,
-        title: values.title ?? "Untitled Task",
-        dueDate: values.dueDate ? new Date(values.dueDate) : new Date(),
-        done: false,
-        estimatedTime: {
-          value:
-            estimatedMinutes < 60 ? estimatedMinutes : estimatedMinutes / 60,
-          unit: estimatedMinutes < 60 ? "minutes" : "hours",
-        },
-      };
-
-      if (modal.editId) {
-        setLocalTodos((prev) =>
-          prev.map((t) => (t.id === modal.editId ? newTask : t))
-        );
-      } else {
-        setLocalTodos((prev) => [...prev, newTask]);
-      }
+      createTaskMutation.mutate({
+        title: values.title ?? "משימה",
+        dueDate: values.dueDate ?? new Date().toISOString(),
+        estimatedTimeValue: Math.max(1, estimatedMinutes),
+        estimatedTimeUnit: "minutes",
+      });
     }
 
     if (modal.type === "assignment") {
-      const newAssignment: AssignmentItem = {
-        id: `local-assignment-${Date.now()}`,
-        title: values.title ?? "Untitled Assignment",
+      createAssignmentMutation.mutate({
         course: values.course ?? "",
-        dueDate: values.dueDate ? new Date(values.dueDate) : new Date(),
-        status: (values.status as ItemStatus) ?? "not_started",
+        title: values.title ?? "מטלה",
+        dueDate: values.dueDate ?? new Date().toISOString(),
+        status: (values.status as ItemStatus) ?? "not started",
         type: (values.type as AssignmentType) ?? "homework",
-      };
-
-      if (modal.editId) {
-        setLocalAssignments((prev) =>
-          prev.map((a) => (a.id === modal.editId ? newAssignment : a))
-        );
-      } else {
-        setLocalAssignments((prev) => [...prev, newAssignment]);
-      }
+      });
     }
 
     setModal(null);
@@ -555,8 +513,6 @@ export const Home = () => {
                     textAlign="right"
                     sx={{ cursor: "pointer" }}
                     onClick={() => {
-                      // Only cycle estimated time for server items
-                      if (localTodos.some((t) => t.id === row.id)) return;
                       const nextEstimatedTimeValue =
                         row.estimatedTime.value >= 120
                           ? 15
@@ -758,7 +714,7 @@ export const Home = () => {
           }
           fields={modal.type === "task" ? TASK_FIELDS : ASSIGNMENT_FIELDS}
           values={modal.values}
-          onChange={(name: any, value: any) =>
+          onChange={(name: string, value: string) =>
             setModal((prev) =>
               prev
                 ? { ...prev, values: { ...prev.values, [name]: value } }
@@ -766,6 +722,8 @@ export const Home = () => {
             )
           }
           onSave={handleModalSave}
+          saveLabel="שמור"
+          cancelLabel="ביטול"
         />
       )}
     </Box>

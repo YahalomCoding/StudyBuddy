@@ -5,16 +5,18 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { getHomeDashboard, homeDashboardQueryKey } from "../../api/home";
+import {
+  createUpcomingEvent,
+  getHomeDashboard,
+  homeDashboardQueryKey,
+} from "../../api/home";
 import {
   GenericFormModal,
   type FormField,
   type FormValues,
 } from "../GenericFormModal/GenericFormModal";
-import type { UpcomingEventViewItem } from "./types";
-
 const PAGE_SIZE = 4;
 
 const EVENT_FIELDS: FormField[] = [
@@ -62,10 +64,10 @@ const formatEventDate = (value: string) => {
 };
 
 export const UpcomingEvents = () => {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalValues, setModalValues] = useState<FormValues>({});
-  const [localEvents, setLocalEvents] = useState<UpcomingEventViewItem[]>([]);
 
   const { data } = useQuery({
     queryKey: homeDashboardQueryKey,
@@ -77,10 +79,14 @@ export const UpcomingEvents = () => {
     [data?.upcomingEvents]
   );
 
-  const allItems = useMemo(
-    () => [...serverItems, ...localEvents],
-    [serverItems, localEvents]
-  );
+  const allItems = useMemo(() => serverItems, [serverItems]);
+
+  const createEventMutation = useMutation({
+    mutationFn: createUpcomingEvent,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
 
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
 
@@ -122,16 +128,13 @@ export const UpcomingEvents = () => {
   };
 
   const handleSaveEvent = (values: FormValues) => {
-    const newEvent: UpcomingEventViewItem = {
-      id: `local-event-${Date.now()}`,
+    createEventMutation.mutate({
       courseTitle: values.courseTitle ?? "",
       description: values.description ?? "",
       eventDate: values.eventDate ?? "",
       kind: values.kind as "assignment" | "exam",
       semesterLabel: values.semesterLabel ?? "",
-    };
-
-    setLocalEvents((prev) => [...prev, newEvent]);
+    });
     handleCloseModal();
   };
 
