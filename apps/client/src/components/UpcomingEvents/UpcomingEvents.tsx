@@ -1,11 +1,10 @@
 import AddIcon from "@mui/icons-material/Add";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
-import type { UpcomingEventViewItem } from "./types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { getHomeDashboard, homeDashboardQueryKey } from "../../api/home";
@@ -14,6 +13,7 @@ import {
   type FormField,
   type FormValues,
 } from "../GenericFormModal/GenericFormModal";
+import type { UpcomingEventViewItem } from "./types";
 
 const PAGE_SIZE = 4;
 
@@ -22,13 +22,13 @@ const EVENT_FIELDS: FormField[] = [
     type: "text",
     name: "courseTitle",
     label: "שם הקורס",
-    placeholder: "Web Development",
+    placeholder: "פיתוח ווב",
   },
   {
     type: "text",
     name: "description",
     label: "תיאור האירוע",
-    placeholder: "Final exam / Assignment deadline",
+    placeholder: "מבחן סופי / דדליין להגשה",
   },
   {
     type: "date",
@@ -40,15 +40,15 @@ const EVENT_FIELDS: FormField[] = [
     name: "kind",
     label: "סוג אירוע",
     options: [
-      { label: "Exam", value: "exam" },
-      { label: "Assignment", value: "assignment" },
+      { label: "מבחן", value: "exam" },
+      { label: "מטלה", value: "assignment" },
     ],
   },
   {
     type: "text",
     name: "semesterLabel",
     label: "סמסטר",
-    placeholder: "Semester A",
+    placeholder: "סמסטר א'",
   },
 ];
 
@@ -158,7 +158,7 @@ export const UpcomingEvents = () => {
             <CheckCircleIcon sx={{ color: "#22c55e", fontSize: 20 }} />
 
             <Typography fontWeight={600} fontSize={15}>
-              Upcoming Events
+              אירועים קרובים
             </Typography>
           </Box>
 
@@ -294,7 +294,7 @@ export const UpcomingEvents = () => {
       <GenericFormModal
         open={modalOpen}
         onClose={handleCloseModal}
-        title="Add Event"
+        title="הוסף אירוע"
         fields={EVENT_FIELDS}
         values={modalValues}
         onChange={(name, value) =>
@@ -304,8 +304,8 @@ export const UpcomingEvents = () => {
           }))
         }
         onSave={handleSaveEvent}
-        saveLabel="Save"
-        cancelLabel="Cancel"
+        saveLabel="שמור"
+        cancelLabel="ביטול"
       />
     </>
   );

@@ -3,7 +3,6 @@ import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
-import type { CourseSummaryViewItem } from "./types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { getHomeDashboard, homeDashboardQueryKey } from "../../api/home";
@@ -12,6 +11,7 @@ import {
   type FormField,
   type FormValues,
 } from "../GenericFormModal/GenericFormModal";
+import type { CourseSummaryViewItem } from "./types";
 
 const PAGE_SIZE = 3;
 
@@ -20,7 +20,7 @@ const COURSE_FIELDS: FormField[] = [
     type: "text",
     name: "courseTitle",
     label: "שם הקורס",
-    placeholder: "Web Development",
+    placeholder: "פיתוח ווב",
   },
   {
     type: "text",
@@ -32,7 +32,7 @@ const COURSE_FIELDS: FormField[] = [
     type: "text",
     name: "semesterLabel",
     label: "סמסטר",
-    placeholder: "Semester A",
+    placeholder: "סמסטר א'",
   },
 ];
 
@@ -144,12 +144,11 @@ export const CoursesSummary = () => {
             </Box>
 
             <Typography fontWeight={600} fontSize={15}>
-              My Courses
+              הקורסים שלי
             </Typography>
           </Box>
 
           <Box display="flex" alignItems="center" gap={0.5}>
-
             <Typography fontSize={12} color="text.secondary">
               עמוד {page} מתוך {totalPages}
             </Typography>
@@ -270,7 +269,7 @@ export const CoursesSummary = () => {
       <GenericFormModal
         open={modalOpen}
         onClose={handleCloseModal}
-        title="Add Course"
+        title="הוסף קורס"
         fields={COURSE_FIELDS}
         values={modalValues}
         onChange={(name, value) =>
@@ -280,8 +279,8 @@ export const CoursesSummary = () => {
           }))
         }
         onSave={handleSaveCourse}
-        saveLabel="Save"
-        cancelLabel="Cancel"
+        saveLabel="שמור"
+        cancelLabel="ביטול"
       />
     </>
   );

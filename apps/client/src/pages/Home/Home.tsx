@@ -1,3 +1,8 @@
+import AddIcon from "@mui/icons-material/Add";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import {
   Box,
   Checkbox,
@@ -22,6 +27,11 @@ import {
 } from "../../api/home";
 import { ChatBotBubble } from "../../components/Chatbot";
 import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
+import {
+  GenericFormModal,
+  type FormField,
+  type FormValues,
+} from "../../components/GenericFormModal/GenericFormModal";
 import { UpcomingEvents } from "../../components/UpcomingEvents";
 import {
   applyOptimisticAssignmentUpdate,
@@ -43,17 +53,16 @@ import {
   relativeDueDateToDisplayName,
   statusToDisplayName,
 } from "./utils";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import AddIcon from "@mui/icons-material/Add";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import { GenericFormModal, type FormField, type FormValues } from "../../components/GenericFormModal/GenericFormModal";
 
 // ─── Field schemas ─────────────────────────────────────────────────────────────
 
 const TASK_FIELDS: FormField[] = [
-  { type: "text", name: "title", label: "שם המשימה", placeholder: "Read chapter 5" },
+  {
+    type: "text",
+    name: "title",
+    label: "שם המשימה",
+    placeholder: "קרא פרק 5",
+  },
   { type: "date", name: "dueDate", label: "תאריך יעד" },
   {
     type: "select",
@@ -69,8 +78,8 @@ const TASK_FIELDS: FormField[] = [
 ];
 
 const ASSIGNMENT_FIELDS: FormField[] = [
-  { type: "text", name: "course", label: "שם הקורס", placeholder: "Math" },
-  { type: "text", name: "title", label: "שם המשימה", placeholder: "Essay" },
+  { type: "text", name: "course", label: "שם הקורס", placeholder: "מתמטיקה" },
+  { type: "text", name: "title", label: "שם המשימה", placeholder: "חיבור" },
   { type: "date", name: "dueDate", label: "תאריך יעד" },
   {
     type: "select",
@@ -128,7 +137,12 @@ const SectionCard = ({
       bgcolor: "background.paper",
     }}
   >
-    <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="space-between"
+      mb={1.5}
+    >
       <Box display="flex" alignItems="center" gap={1}>
         {icon}
         <Typography fontWeight={600} fontSize={15}>
@@ -163,7 +177,9 @@ export const Home = () => {
 
   // ── Temporary local items (not saved to DB) ──────────────────────────────────
   const [localTodos, setLocalTodos] = useState<TodoItem[]>([]);
-  const [localAssignments, setLocalAssignments] = useState<AssignmentItem[]>([]);
+  const [localAssignments, setLocalAssignments] = useState<AssignmentItem[]>(
+    []
+  );
 
   // ── Mutations ────────────────────────────────────────────────────────────────
 
@@ -190,7 +206,10 @@ export const Home = () => {
     onMutate: ({ id, payload }) =>
       applyOptimisticAssignmentUpdate(queryClient, id, payload),
     onError: (_error, _variables, context) => {
-      rollbackOptimisticDashboardUpdate(queryClient, context?.previousDashboard);
+      rollbackOptimisticDashboardUpdate(
+        queryClient,
+        context?.previousDashboard
+      );
     },
   });
 
@@ -213,7 +232,10 @@ export const Home = () => {
         estimatedTimeUnit
       ),
     onError: (_error, _variables, context) => {
-      rollbackOptimisticDashboardUpdate(queryClient, context?.previousDashboard);
+      rollbackOptimisticDashboardUpdate(
+        queryClient,
+        context?.previousDashboard
+      );
     },
   });
 
@@ -221,7 +243,10 @@ export const Home = () => {
 
   const todoRows: TodoItem[] = useMemo(
     () => [
-      ...(data?.todos ?? []).map((item) => ({ ...item, dueDate: new Date(item.dueDate) })),
+      ...(data?.todos ?? []).map((item) => ({
+        ...item,
+        dueDate: new Date(item.dueDate),
+      })),
       ...localTodos,
     ],
     [data?.todos, localTodos]
@@ -229,7 +254,10 @@ export const Home = () => {
 
   const assignmentRows: AssignmentItem[] = useMemo(
     () => [
-      ...(data?.assignments ?? []).map((item) => ({ ...item, dueDate: new Date(item.dueDate) })),
+      ...(data?.assignments ?? []).map((item) => ({
+        ...item,
+        dueDate: new Date(item.dueDate),
+      })),
       ...localAssignments,
     ],
     [data?.assignments, localAssignments]
@@ -295,7 +323,8 @@ export const Home = () => {
         dueDate: values.dueDate ? new Date(values.dueDate) : new Date(),
         done: false,
         estimatedTime: {
-          value: estimatedMinutes < 60 ? estimatedMinutes : estimatedMinutes / 60,
+          value:
+            estimatedMinutes < 60 ? estimatedMinutes : estimatedMinutes / 60,
           unit: estimatedMinutes < 60 ? "minutes" : "hours",
         },
       };
@@ -420,20 +449,22 @@ export const Home = () => {
 
         {/* ── Two-column grid ────────────────────────────────────── */}
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-
           {/* LEFT column */}
           <Box display="flex" flexDirection="column" gap={2}>
-
             {/* To Do card */}
             <SectionCard
               title="To Do"
               icon={<CheckCircleIcon sx={{ color: "#22c55e", fontSize: 20 }} />}
             >
               {isInitialLoading && (
-                <Typography color="text.secondary" fontSize={13}>טוען...</Typography>
+                <Typography color="text.secondary" fontSize={13}>
+                  טוען...
+                </Typography>
               )}
               {isError && (
-                <Typography color="error" fontSize={13}>לא הצלחנו לטעון משימות כרגע</Typography>
+                <Typography color="error" fontSize={13}>
+                  לא הצלחנו לטעון משימות כרגע
+                </Typography>
               )}
               {/* Header row */}
               <Box
@@ -447,10 +478,34 @@ export const Home = () => {
                   borderColor: "divider",
                 }}
               >
-                <Typography fontSize={12} color="text.secondary" textAlign="right">שם משימה</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">תאריך יעד</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="center">בוצע</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">זמן משוער</Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  שם משימה
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  תאריך יעד
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="center"
+                >
+                  בוצע
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  זמן משוער
+                </Typography>
               </Box>
 
               {todoRows.map((row) => (
@@ -477,7 +532,11 @@ export const Home = () => {
                   >
                     {row.title}
                   </Typography>
-                  <Typography fontSize={13} color="text.secondary" textAlign="right">
+                  <Typography
+                    fontSize={13}
+                    color="text.secondary"
+                    textAlign="right"
+                  >
                     {formatDueDate(row.dueDate)}
                   </Typography>
                   <Box display="flex" justifyContent="center">
@@ -499,7 +558,9 @@ export const Home = () => {
                       // Only cycle estimated time for server items
                       if (localTodos.some((t) => t.id === row.id)) return;
                       const nextEstimatedTimeValue =
-                        row.estimatedTime.value >= 120 ? 15 : row.estimatedTime.value + 15;
+                        row.estimatedTime.value >= 120
+                          ? 15
+                          : row.estimatedTime.value + 15;
                       updateTodoEstimatedTimeMutation.mutate({
                         id: row.id,
                         estimatedTimeValue: nextEstimatedTimeValue,
@@ -542,23 +603,66 @@ export const Home = () => {
                   borderColor: "divider",
                 }}
               >
-                <Typography fontSize={12} color="text.secondary" textAlign="right">סטטוס</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">קורס</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">שם מטלה</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">תאריך יעד</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">סוג</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">ימים שנותרו</Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  סטטוס
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  קורס
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  שם מטלה
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  תאריך יעד
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  סוג
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  ימים שנותרו
+                </Typography>
               </Box>
 
               {isInitialLoading && (
-                <Typography color="text.secondary" fontSize={13}>טוען...</Typography>
+                <Typography color="text.secondary" fontSize={13}>
+                  טוען...
+                </Typography>
               )}
               {isError && (
-                <Typography color="error" fontSize={13}>לא הצלחנו לטעון מטלות כרגע</Typography>
+                <Typography color="error" fontSize={13}>
+                  לא הצלחנו לטעון מטלות כרגע
+                </Typography>
               )}
 
               {assignmentRows.map((row) => {
-                const relativeDueDate = getRelativeDueDate(row.dueDate, row.status);
+                const relativeDueDate = getRelativeDueDate(
+                  row.dueDate,
+                  row.status
+                );
                 return (
                   <Box
                     key={row.id}
@@ -646,17 +750,19 @@ export const Home = () => {
           title={
             modal.editId
               ? modal.type === "task"
-                ? "Edit Task"
-                : "Edit Assignment"
+                ? "ערוך משימה"
+                : "ערוך מטלה"
               : modal.type === "task"
-              ? "Add Task"
-              : "Add Assignment"
+                ? "הוסף משימה"
+                : "הוסף מטלה"
           }
           fields={modal.type === "task" ? TASK_FIELDS : ASSIGNMENT_FIELDS}
           values={modal.values}
           onChange={(name: any, value: any) =>
             setModal((prev) =>
-              prev ? { ...prev, values: { ...prev.values, [name]: value } } : null
+              prev
+                ? { ...prev, values: { ...prev.values, [name]: value } }
+                : null
             )
           }
           onSave={handleModalSave}
