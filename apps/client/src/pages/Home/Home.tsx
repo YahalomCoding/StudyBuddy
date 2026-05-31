@@ -1,4 +1,5 @@
 import AddIcon from "@mui/icons-material/Add";
+import AddTaskIcon from "@mui/icons-material/AddTask";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
@@ -257,6 +258,15 @@ export const Home = () => {
     updateAssignmentMutation.mutate({
       id: row.id,
       payload: { type: getNextValue(ASSIGNMENT_TYPES, row.type) },
+    });
+  };
+
+  const handleAddTodoFromAssignment = (row: AssignmentItem) => {
+    createTaskMutation.mutate({
+      title: `מטלה: ${row.title}`,
+      dueDate: row.dueDate.toISOString(),
+      estimatedTimeValue: 30,
+      estimatedTimeUnit: "minutes",
     });
   };
 
@@ -534,7 +544,7 @@ export const Home = () => {
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: "auto auto 1fr auto auto auto",
+                  gridTemplateColumns: "auto auto 1fr auto auto auto auto",
                   gap: 1,
                   pb: 0.5,
                   mb: 0.5,
@@ -584,6 +594,13 @@ export const Home = () => {
                 >
                   ימים שנותרו
                 </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="center"
+                >
+                  לטודו
+                </Typography>
               </Box>
 
               {isInitialLoading && (
@@ -607,7 +624,7 @@ export const Home = () => {
                     key={row.id}
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "auto auto 1fr auto auto auto",
+                      gridTemplateColumns: "auto auto 1fr auto auto auto auto",
                       gap: 1,
                       alignItems: "center",
                       py: 0.8,
@@ -655,6 +672,17 @@ export const Home = () => {
                     >
                       {relativeDueDateToDisplayName(relativeDueDate)}
                     </Typography>
+                    <Box display="flex" justifyContent="center">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleAddTodoFromAssignment(row)}
+                        disabled={createTaskMutation.isPending}
+                        aria-label="הוסף לטודו"
+                        sx={{ p: 0.4 }}
+                      >
+                        <AddTaskIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Box>
                   </Box>
                 );
               })}
