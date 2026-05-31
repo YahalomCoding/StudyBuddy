@@ -22,12 +22,6 @@ const PAGE_SIZE = 4;
 const EVENT_FIELDS: FormField[] = [
   {
     type: "text",
-    name: "courseTitle",
-    label: "שם הקורס",
-    placeholder: "פיתוח ווב",
-  },
-  {
-    type: "text",
     name: "description",
     label: "תיאור האירוע",
     placeholder: "מבחן סופי / דדליין להגשה",
@@ -81,6 +75,30 @@ export const UpcomingEvents = () => {
 
   const allItems = useMemo(() => serverItems, [serverItems]);
 
+  const courseOptions = useMemo(() => {
+    const uniqueCourseTitles = Array.from(
+      new Set((data?.coursesSummary ?? []).map((course) => course.courseTitle))
+    ).filter(Boolean);
+
+    return uniqueCourseTitles.map((courseTitle) => ({
+      label: courseTitle,
+      value: courseTitle,
+    }));
+  }, [data?.coursesSummary]);
+
+  const eventFields = useMemo<FormField[]>(
+    () => [
+      {
+        type: "select",
+        name: "courseTitle",
+        label: "שם הקורס",
+        options: courseOptions,
+      },
+      ...EVENT_FIELDS,
+    ],
+    [courseOptions]
+  );
+
   const createEventMutation = useMutation({
     mutationFn: createUpcomingEvent,
     onSuccess: async () => {
@@ -118,6 +136,10 @@ export const UpcomingEvents = () => {
   };
 
   const handleOpenModal = () => {
+    if (courseOptions.length === 0) {
+      return;
+    }
+
     setModalValues({});
     setModalOpen(true);
   };
@@ -298,7 +320,7 @@ export const UpcomingEvents = () => {
         open={modalOpen}
         onClose={handleCloseModal}
         title="הוסף אירוע"
-        fields={EVENT_FIELDS}
+        fields={eventFields}
         values={modalValues}
         onChange={(name, value) =>
           setModalValues((prev) => ({
