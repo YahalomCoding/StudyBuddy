@@ -54,6 +54,8 @@ export const getHomeDashboard = async (): Promise<HomeDashboardResponse> => {
 export const updateGeneralTask = async (
   id: string,
   payload: {
+    title?: string;
+    dueDate?: string;
     done?: boolean;
     estimatedTimeValue?: number;
     estimatedTimeUnit?: "minutes" | "hours" | "days";
@@ -66,6 +68,8 @@ export const updateGeneralTask = async (
 export const updateAssignment = async (
   id: string,
   payload: {
+    title?: string;
+    dueDate?: string;
     status?: "not started" | "active" | "done";
     type?:
       | "assignment"
@@ -77,6 +81,16 @@ export const updateAssignment = async (
   }
 ) => {
   const response = await baseApi.patch(`/assignments/${id}`, payload);
+  return response.data;
+};
+
+export const deleteGeneralTask = async (id: string) => {
+  const response = await baseApi.delete(`/general-tasks/${id}`);
+  return response.data;
+};
+
+export const deleteHomeAssignment = async (id: string) => {
+  const response = await baseApi.delete(`/assignments/${id}`);
   return response.data;
 };
 
