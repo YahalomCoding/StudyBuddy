@@ -1,4 +1,8 @@
+import { config as loadEnv } from "dotenv";
+import path from "node:path";
 import z from "zod";
+
+loadEnv({ path: path.resolve(__dirname, "../.env") });
 
 const envSchema = z.object({
   PORT: z.string().optional(),

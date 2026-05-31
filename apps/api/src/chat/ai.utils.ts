@@ -1,4 +1,4 @@
-import { env } from "src/env";
+import { env } from "../env";
 
 const chatPromise = import("@tanstack/ai").then((module) => module.chat);
 const createOpenRouterTextPromise = import("@tanstack/ai-openrouter").then(
@@ -7,7 +7,7 @@ const createOpenRouterTextPromise = import("@tanstack/ai-openrouter").then(
 
 const aiTextProviderAdapterPromise = createOpenRouterTextPromise.then(
   (createOpenRouterText) =>
-    createOpenRouterText(env.OPENROUTER_MODEL, env.OPENROUTER_API_KEY)
+    createOpenRouterText(env.OPENROUTER_MODEL as any, env.OPENROUTER_API_KEY)
 );
 
 export const loadAiChat = async () => {

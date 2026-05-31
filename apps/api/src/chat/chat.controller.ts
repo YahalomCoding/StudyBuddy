@@ -1,12 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Body, Controller, Post, Res } from "@nestjs/common";
-import { Readable } from "stream";
 import { type Response } from "express";
 import { Readable } from "stream";
-import { env } from "../env";
-import { getCurrentTimeTool } from "./tools";
 import { loadAiChat } from "./ai.utils";
+import { getCurrentTimeTool } from "./tools";
 
 @Controller("chat")
 export class ChatController {
