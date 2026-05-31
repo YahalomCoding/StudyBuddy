@@ -3,6 +3,8 @@
 import { Body, Controller, Post, Res } from "@nestjs/common";
 import { Readable } from "stream";
 import { type Response } from "express";
+import { Readable } from "stream";
+import { env } from "../env";
 import { getCurrentTimeTool } from "./tools";
 import { loadAiChat } from "./ai.utils";
 

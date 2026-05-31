@@ -6,7 +6,10 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors({ credentials: true, origin: true });
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
 
   const config = new DocumentBuilder()
     .setTitle("StudyBuddy API")
@@ -19,8 +22,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix("api");
 
-  // eslint-disable-next-line turbo/no-undeclared-env-vars
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.API_PORT ?? process.env.PORT ?? 3000);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

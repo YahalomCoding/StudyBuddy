@@ -1,0 +1,75 @@
+import baseApi from "./baseApi";
+
+export type HomeDashboardTodo = {
+  id: string;
+  title: string;
+  dueDate: string;
+  done: boolean;
+  estimatedTime: {
+    value: number;
+    unit: "minutes" | "hours" | "days";
+  };
+};
+
+export type HomeDashboardAssignment = {
+  id: string;
+  status: "not started" | "active" | "done";
+  course: string;
+  title: string;
+  dueDate: string;
+  type: "homework" | "practice" | "project" | "report" | "lab";
+};
+
+export type HomeDashboardUpcomingEvent = {
+  id: string;
+  kind: "assignment" | "exam";
+  courseTitle: string;
+  description: string;
+  eventDate: string;
+  semesterLabel: string;
+};
+
+export type HomeDashboardCourseSummary = {
+  id: string;
+  studentSemesterCourseId: string;
+  courseTitle: string;
+  semesterLabel: string;
+  courseId: string;
+};
+
+export type HomeDashboardResponse = {
+  todos: HomeDashboardTodo[];
+  assignments: HomeDashboardAssignment[];
+  upcomingEvents: HomeDashboardUpcomingEvent[];
+  coursesSummary: HomeDashboardCourseSummary[];
+};
+
+export const homeDashboardQueryKey = ["home-dashboard"] as const;
+
+export const getHomeDashboard = async (): Promise<HomeDashboardResponse> => {
+  const response = await baseApi.get<HomeDashboardResponse>("/home/dashboard");
+  return response.data;
+};
+
+export const updateGeneralTask = async (
+  id: string,
+  payload: {
+    done?: boolean;
+    estimatedTimeValue?: number;
+    estimatedTimeUnit?: "minutes" | "hours" | "days";
+  }
+) => {
+  const response = await baseApi.patch(`/general-tasks/${id}`, payload);
+  return response.data;
+};
+
+export const updateAssignment = async (
+  id: string,
+  payload: {
+    status?: "not started" | "active" | "done";
+    type?: "homework" | "practice" | "project" | "report" | "lab";
+  }
+) => {
+  const response = await baseApi.patch(`/assignments/${id}`, payload);
+  return response.data;
+};
