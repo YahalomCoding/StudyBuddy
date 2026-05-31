@@ -31,10 +31,15 @@ import { ChatBotBubble } from "../../components/Chatbot";
 import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
 import {
   GenericFormModal,
-  type FormField,
   type FormValues,
 } from "../../components/GenericFormModal/GenericFormModal";
 import { UpcomingEvents } from "../../components/UpcomingEvents";
+import {
+  buildAssignmentFields,
+  getHomeModalTitle,
+  TASK_FIELDS,
+  type HomeModalType,
+} from "./formConfig";
 import {
   applyOptimisticAssignmentUpdate,
   applyOptimisticTodoDoneUpdate,
@@ -56,60 +61,10 @@ import {
   statusToDisplayName,
 } from "./utils";
 
-// ─── Field schemas ─────────────────────────────────────────────────────────────
-
-const TASK_FIELDS: FormField[] = [
-  {
-    type: "text",
-    name: "title",
-    label: "שם המשימה",
-    placeholder: "קרא פרק 5",
-  },
-  { type: "date", name: "dueDate", label: "תאריך יעד" },
-  {
-    type: "select",
-    name: "estimatedTime",
-    label: "זמן משוער",
-    options: [
-      { label: "15 דקות", value: "15" },
-      { label: "30 דקות", value: "30" },
-      { label: "שעה", value: "60" },
-      { label: "שעתיים", value: "120" },
-    ],
-  },
-];
-
-const ASSIGNMENT_FIELDS: FormField[] = [
-  { type: "text", name: "title", label: "שם המשימה", placeholder: "חיבור" },
-  { type: "date", name: "dueDate", label: "תאריך יעד" },
-  {
-    type: "select",
-    name: "status",
-    label: "סטאטוס",
-    options: [
-      { label: "לא התחיל", value: "not started" },
-      { label: "פעיל", value: "active" },
-      { label: "הושלם", value: "done" },
-    ],
-  },
-  {
-    type: "select",
-    name: "type",
-    label: "סוג המשימה",
-    options: [
-      { label: "שיעורי בית", value: "homework" },
-      { label: "תרגול", value: "practice" },
-      { label: "פרויקט", value: "project" },
-      { label: "דוח", value: "report" },
-      { label: "מעבדה", value: "lab" },
-    ],
-  },
-];
-
 // ─── Modal state type ──────────────────────────────────────────────────────────
 
 type ModalState = {
-  type: "task" | "assignment";
+  type: HomeModalType;
   values: FormValues;
   editId?: string; // present → edit mode
 };
@@ -280,16 +235,8 @@ export const Home = () => {
     }));
   }, [data?.coursesSummary]);
 
-  const assignmentFormFields = useMemo<FormField[]>(
-    () => [
-      {
-        type: "select",
-        name: "course",
-        label: "שם הקורס",
-        options: assignmentCourseOptions,
-      },
-      ...ASSIGNMENT_FIELDS,
-    ],
+  const assignmentFormFields = useMemo(
+    () => buildAssignmentFields(assignmentCourseOptions),
     [assignmentCourseOptions]
   );
 
@@ -731,15 +678,7 @@ export const Home = () => {
         <GenericFormModal
           open
           onClose={() => setModal(null)}
-          title={
-            modal.editId
-              ? modal.type === "task"
-                ? "ערוך משימה"
-                : "ערוך מטלה"
-              : modal.type === "task"
-                ? "הוסף משימה"
-                : "הוסף מטלה"
-          }
+          title={getHomeModalTitle(modal)}
           fields={modal.type === "task" ? TASK_FIELDS : assignmentFormFields}
           values={modal.values}
           onChange={(name: string, value: string) =>
