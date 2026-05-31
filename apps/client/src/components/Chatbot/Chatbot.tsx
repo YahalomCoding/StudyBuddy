@@ -1,12 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
-import {
-  type UseChatReturn,
-} from "@tanstack/ai-react";
-import {
-  type AnyClientTool,
-  type MessagePart,
-} from "@tanstack/ai-client";
+import { type UseChatReturn } from "@tanstack/ai-react";
+import { type AnyClientTool, type MessagePart } from "@tanstack/ai-client";
 import {
   Box,
   CircularProgress,
@@ -150,6 +145,13 @@ const ToolCallPart = <T extends AnyClientTool[]>({
     part.state
   );
 
+  let partInput: unknown = part.input ?? part.arguments;
+  if (typeof partInput === "string") {
+    try {
+      partInput = JSON.parse(partInput);
+    } catch {}
+  }
+
   return (
     <Box
       sx={{
@@ -193,9 +195,7 @@ const ToolCallPart = <T extends AnyClientTool[]>({
           )}
         </Box>
       </Box>
-      {part.input && Object.keys(part.input).length > 0 && (
-        <JsonBlock label="Input" data={part.input} />
-      )}
+      {partInput && <JsonBlock label="Input" data={partInput} />}
       {part.output !== undefined && (
         <JsonBlock label="Output" data={part.output} />
       )}
@@ -268,11 +268,9 @@ export const ChatBot = <T extends AnyClientTool[]>({
             textAlign="center"
             sx={{ mt: 3 }}
           >
-            {exampleQuestions && exampleQuestions.length > 0 ? (
-              `Try: "${exampleQuestions.join('" or "')}"` 
-            ) : (
-              'Try: "What Exams do I have?"'
-            )}
+            {exampleQuestions && exampleQuestions.length > 0
+              ? `Try: "${exampleQuestions.join('" or "')}"`
+              : 'Try: "What Exams do I have?"'}
           </Typography>
         )}
 
