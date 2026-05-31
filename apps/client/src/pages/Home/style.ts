@@ -55,7 +55,7 @@ export const useStyles = () => {
 
     todoArea: css({
       gridArea: "todo",
-      height: "100%"
+      height: "100%",
     }),
 
     upcomingArea: css({
@@ -73,7 +73,7 @@ export const useStyles = () => {
     section: css({
       display: "grid",
       gap: "12px",
-      height: "100%"
+      height: "100%",
     }),
 
     sectionTitle: css({
@@ -192,6 +192,7 @@ const typeChipDefault: ChipColors = {
 };
 
 const typeChipColors: Record<AssignmentType, ChipColors> = {
+  assignment: typeChipDefault,
   project: {
     light: {
       backgroundColor: "var(--sb-chip-type-project-bg)",

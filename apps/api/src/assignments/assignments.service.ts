@@ -6,6 +6,7 @@ const ASSIGNMENT_STATUSES = ["not started", "active", "done"] as const;
 type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
 
 const ASSIGNMENT_TYPES = [
+  "assignment",
   "homework",
   "practice",
   "project",

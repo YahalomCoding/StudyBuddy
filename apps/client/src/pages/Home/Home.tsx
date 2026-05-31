@@ -289,7 +289,7 @@ export const Home = () => {
         title: values.title ?? "מטלה",
         dueDate: values.dueDate ?? new Date().toISOString(),
         status: (values.status as ItemStatus) ?? "not started",
-        type: (values.type as AssignmentType) ?? "homework",
+        type: (values.type as AssignmentType) ?? "assignment",
       });
     }
 
@@ -384,7 +384,16 @@ export const Home = () => {
         </Paper>
 
         {/* ── Two-column grid ────────────────────────────────────── */}
-        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "minmax(0, 1.45fr) minmax(0, 0.85fr)",
+            },
+            gap: 2,
+          }}
+        >
           {/* LEFT column */}
           <Box display="flex" flexDirection="column" gap={2}>
             {/* To Do card */}

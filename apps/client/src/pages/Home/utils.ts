@@ -12,6 +12,7 @@ export const ASSIGNMENT_STATUSES: ItemStatus[] = [
 ];
 
 export const ASSIGNMENT_TYPES: AssignmentType[] = [
+  "assignment",
   "homework",
   "practice",
   "project",
@@ -19,7 +20,7 @@ export const ASSIGNMENT_TYPES: AssignmentType[] = [
   "lab",
 ];
 
-export const getNextValue = <T,>(values: T[], current: T): T => {
+export const getNextValue = <T>(values: T[], current: T): T => {
   const currentIndex = values.indexOf(current);
 
   if (currentIndex < 0 || currentIndex === values.length - 1) {
@@ -60,6 +61,7 @@ export const statusToDisplayName = (status: ItemStatus): string => {
 
 export const assignmentTypeToDisplayName = (type: AssignmentType): string => {
   const labels: Record<AssignmentType, string> = {
+    assignment: "מטלה",
     homework: "שיעורי בית",
     practice: "תרגול",
     project: "פרויקט",

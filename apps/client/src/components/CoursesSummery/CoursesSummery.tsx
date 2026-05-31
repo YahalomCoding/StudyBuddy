@@ -173,9 +173,6 @@ export const CoursesSummary = () => {
             </IconButton>
           </Box>
         </Box>
-
-        {/* Rows */}
-
         <Box>
           {paddedItems.map((item, index) => {
             if (!item) {
@@ -209,7 +206,6 @@ export const CoursesSummary = () => {
                   },
                 }}
               >
-                {/* Left: icon + text */}
                 <Box display="flex" alignItems="center" gap={1.5}>
                   <Box
                     sx={{
@@ -241,11 +237,6 @@ export const CoursesSummary = () => {
                     </Typography>
                   </Box>
                 </Box>
-
-                {/* Right: course ID */}
-                <Typography fontSize={12} color="text.secondary" flexShrink={0}>
-                  {item.courseId}
-                </Typography>
               </Box>
             );
           })}

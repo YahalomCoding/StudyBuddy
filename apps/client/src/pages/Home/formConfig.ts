@@ -39,6 +39,7 @@ const ASSIGNMENT_BASE_FIELDS: FormField[] = [
     name: "type",
     label: "סוג המשימה",
     options: [
+      { label: "מטלה", value: "assignment" },
       { label: "שיעורי בית", value: "homework" },
       { label: "תרגול", value: "practice" },
       { label: "פרויקט", value: "project" },

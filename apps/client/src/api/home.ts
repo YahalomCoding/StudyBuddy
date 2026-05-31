@@ -17,7 +17,7 @@ export type HomeDashboardAssignment = {
   course: string;
   title: string;
   dueDate: string;
-  type: "homework" | "practice" | "project" | "report" | "lab";
+  type: "assignment" | "homework" | "practice" | "project" | "report" | "lab";
 };
 
 export type HomeDashboardUpcomingEvent = {
@@ -67,7 +67,13 @@ export const updateAssignment = async (
   id: string,
   payload: {
     status?: "not started" | "active" | "done";
-    type?: "homework" | "practice" | "project" | "report" | "lab";
+    type?:
+      | "assignment"
+      | "homework"
+      | "practice"
+      | "project"
+      | "report"
+      | "lab";
   }
 ) => {
   const response = await baseApi.patch(`/assignments/${id}`, payload);
@@ -89,7 +95,7 @@ export const createHomeAssignment = async (payload: {
   title: string;
   dueDate: string;
   status: "not started" | "active" | "done";
-  type: "homework" | "practice" | "project" | "report" | "lab";
+  type: "assignment" | "homework" | "practice" | "project" | "report" | "lab";
 }) => {
   const response = await baseApi.post("/home/assignments", payload);
   return response.data;

@@ -23,22 +23,13 @@ const EVENT_FIELDS: FormField[] = [
   {
     type: "text",
     name: "description",
-    label: "תיאור האירוע",
-    placeholder: "מבחן סופי / דדליין להגשה",
+    label: "תיאור המבחן",
+    placeholder: "מבחן סופי",
   },
   {
     type: "date",
     name: "eventDate",
-    label: "תאריך האירוע",
-  },
-  {
-    type: "select",
-    name: "kind",
-    label: "סוג אירוע",
-    options: [
-      { label: "מבחן", value: "exam" },
-      { label: "מטלה", value: "assignment" },
-    ],
+    label: "תאריך המבחן",
   },
   {
     type: "text",
@@ -69,7 +60,7 @@ export const UpcomingEvents = () => {
   });
 
   const serverItems = useMemo(
-    () => data?.upcomingEvents ?? [],
+    () => (data?.upcomingEvents ?? []).filter((item) => item.kind === "exam"),
     [data?.upcomingEvents]
   );
 
@@ -154,7 +145,7 @@ export const UpcomingEvents = () => {
       courseTitle: values.courseTitle ?? "",
       description: values.description ?? "",
       eventDate: values.eventDate ?? "",
-      kind: values.kind as "assignment" | "exam",
+      kind: "exam",
       semesterLabel: values.semesterLabel ?? "",
     });
     handleCloseModal();
