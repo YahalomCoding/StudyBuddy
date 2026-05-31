@@ -411,7 +411,6 @@ export const Home = () => {
                   לא הצלחנו לטעון משימות כרגע
                 </Typography>
               )}
-              {/* Header row */}
               <Box
                 sx={{
                   display: "grid",

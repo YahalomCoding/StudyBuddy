@@ -115,7 +115,7 @@ export const relativeDueDateToDisplayName = (
     case "due_in":
       return value.days === 1 ? "יום אחד" : `${value.days} ימים`;
     case "overdue":
-      return value.days === 1 ? "באיחור של יום" : `איחור של ${value.days} ימים`;
+      return "באיחור";
     default:
       return "";
   }
