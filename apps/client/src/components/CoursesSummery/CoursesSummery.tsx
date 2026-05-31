@@ -4,7 +4,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   createCourseSummary,
   getHomeDashboard,
@@ -38,7 +38,15 @@ const COURSE_FIELDS: FormField[] = [
   },
 ];
 
-export const CoursesSummary = () => {
+type CoursesSummaryProps = {
+  selectedCourseTitle?: string | null;
+  onCourseSelect?: (courseTitle: string | null) => void;
+};
+
+export const CoursesSummary = ({
+  selectedCourseTitle = null,
+  onCourseSelect,
+}: CoursesSummaryProps) => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
@@ -64,15 +72,12 @@ export const CoursesSummary = () => {
   });
 
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
-
-  useEffect(() => {
-    setPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+  const currentPage = Math.min(page, totalPages);
 
   const currentItems = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
     return allItems.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [allItems, page]);
+  }, [allItems, currentPage]);
 
   const paddedItems = useMemo(() => {
     const items: ((typeof currentItems)[number] | null)[] = [...currentItems];
@@ -85,11 +90,11 @@ export const CoursesSummary = () => {
   }, [currentItems]);
 
   const handlePrevPage = () => {
-    setPage((prev) => Math.max(1, prev - 1));
+    setPage((prev) => Math.max(1, Math.min(prev, totalPages) - 1));
   };
 
   const handleNextPage = () => {
-    setPage((prev) => Math.min(totalPages, prev + 1));
+    setPage((prev) => Math.min(totalPages, Math.min(prev, totalPages) + 1));
   };
 
   const handleOpenModal = () => {
@@ -151,13 +156,13 @@ export const CoursesSummary = () => {
 
           <Box display="flex" alignItems="center" gap={0.5}>
             <Typography fontSize={12} color="text.secondary">
-              עמוד {page} מתוך {totalPages}
+              עמוד {currentPage} מתוך {totalPages}
             </Typography>
 
             <IconButton
               size="small"
               onClick={handlePrevPage}
-              disabled={page === 1}
+              disabled={currentPage === 1}
               sx={{ p: 0.3 }}
             >
               <ChevronRightRoundedIcon fontSize="small" />
@@ -166,7 +171,7 @@ export const CoursesSummary = () => {
             <IconButton
               size="small"
               onClick={handleNextPage}
-              disabled={page === totalPages}
+              disabled={currentPage === totalPages}
               sx={{ p: 0.3 }}
             >
               <ChevronLeftRoundedIcon fontSize="small" />
@@ -201,9 +206,28 @@ export const CoursesSummary = () => {
                   py: 0.8,
                   borderBottom: "1px solid",
                   borderColor: "divider",
+                  cursor: "pointer",
+                  transition: "background-color 0.18s ease",
+                  ...(selectedCourseTitle === item.courseTitle && {
+                    bgcolor: "action.selected",
+                  }),
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
                   "&:last-of-type": {
                     borderBottom: "none",
                   },
+                }}
+                onClick={() => {
+                  if (!onCourseSelect) {
+                    return;
+                  }
+
+                  onCourseSelect(
+                    selectedCourseTitle === item.courseTitle
+                      ? null
+                      : item.courseTitle
+                  );
                 }}
               >
                 <Box display="flex" alignItems="center" gap={1.5}>

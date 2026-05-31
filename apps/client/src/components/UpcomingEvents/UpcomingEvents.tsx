@@ -6,7 +6,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   createUpcomingEvent,
   getHomeDashboard,
@@ -48,7 +48,13 @@ const formatEventDate = (value: string) => {
   }).format(date);
 };
 
-export const UpcomingEvents = () => {
+type UpcomingEventsProps = {
+  selectedCourseTitle?: string | null;
+};
+
+export const UpcomingEvents = ({
+  selectedCourseTitle = null,
+}: UpcomingEventsProps) => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
@@ -60,8 +66,13 @@ export const UpcomingEvents = () => {
   });
 
   const serverItems = useMemo(
-    () => (data?.upcomingEvents ?? []).filter((item) => item.kind === "exam"),
-    [data?.upcomingEvents]
+    () =>
+      (data?.upcomingEvents ?? []).filter(
+        (item) =>
+          item.kind === "exam" &&
+          (!selectedCourseTitle || item.courseTitle === selectedCourseTitle)
+      ),
+    [data?.upcomingEvents, selectedCourseTitle]
   );
 
   const allItems = useMemo(() => serverItems, [serverItems]);
@@ -98,15 +109,12 @@ export const UpcomingEvents = () => {
   });
 
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
-
-  useEffect(() => {
-    setPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+  const currentPage = Math.min(page, totalPages);
 
   const currentItems = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
     return allItems.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [allItems, page]);
+  }, [allItems, currentPage]);
 
   const paddedItems = useMemo(() => {
     const items: ((typeof currentItems)[number] | null)[] = [...currentItems];
@@ -119,11 +127,11 @@ export const UpcomingEvents = () => {
   }, [currentItems]);
 
   const handlePrevPage = () => {
-    setPage((prev) => Math.max(1, prev - 1));
+    setPage((prev) => Math.max(1, Math.min(prev, totalPages) - 1));
   };
 
   const handleNextPage = () => {
-    setPage((prev) => Math.min(totalPages, prev + 1));
+    setPage((prev) => Math.min(totalPages, Math.min(prev, totalPages) + 1));
   };
 
   const handleOpenModal = () => {
@@ -180,13 +188,13 @@ export const UpcomingEvents = () => {
 
           <Box display="flex" alignItems="center" gap={0.5}>
             <Typography fontSize={12} color="text.secondary">
-              עמוד {page} מתוך {totalPages}
+              עמוד {currentPage} מתוך {totalPages}
             </Typography>
 
             <IconButton
               size="small"
               onClick={handlePrevPage}
-              disabled={page === 1}
+              disabled={currentPage === 1}
               sx={{ p: 0.3 }}
             >
               <ChevronRightRoundedIcon fontSize="small" />
@@ -195,7 +203,7 @@ export const UpcomingEvents = () => {
             <IconButton
               size="small"
               onClick={handleNextPage}
-              disabled={page === totalPages}
+              disabled={currentPage === totalPages}
               sx={{ p: 0.3 }}
             >
               <ChevronLeftRoundedIcon fontSize="small" />

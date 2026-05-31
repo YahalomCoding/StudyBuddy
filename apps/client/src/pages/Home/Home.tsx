@@ -124,8 +124,6 @@ const SectionCard = ({
   </Paper>
 );
 
-// ─── Main Component ────────────────────────────────────────────────────────────
-
 export const Home = () => {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, isFetched } = useQuery({
@@ -134,7 +132,6 @@ export const Home = () => {
   });
   const isInitialLoading = isLoading && !isFetched;
 
-  // ── Modal state ──────────────────────────────────────────────────────────────
   const [modal, setModal] = useState<ModalState | null>(null);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<
@@ -144,8 +141,9 @@ export const Home = () => {
   const [hoveredAssignmentId, setHoveredAssignmentId] = useState<string | null>(
     null
   );
-
-  // ── Mutations ────────────────────────────────────────────────────────────────
+  const [selectedCourseTitle, setSelectedCourseTitle] = useState<string | null>(
+    null
+  );
 
   const { mutate: updateTask } = useMutation({
     meta: { disableLoadingDefault: true },
@@ -278,6 +276,14 @@ export const Home = () => {
     [data?.assignments]
   );
 
+  const filteredAssignmentRows = useMemo(() => {
+    if (!selectedCourseTitle) {
+      return assignmentRows;
+    }
+
+    return assignmentRows.filter((row) => row.course === selectedCourseTitle);
+  }, [assignmentRows, selectedCourseTitle]);
+
   const assignmentCourseOptions = useMemo(() => {
     const uniqueCourseTitles = Array.from(
       new Set((data?.coursesSummary ?? []).map((course) => course.courseTitle))
@@ -298,8 +304,6 @@ export const Home = () => {
     () => assignmentFormFields.filter((field) => field.name !== "course"),
     [assignmentFormFields]
   );
-
-  // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleTodoToggle = (id: string, currentDone: boolean) => {
     updateTask({ id, done: !currentDone });
@@ -361,8 +365,6 @@ export const Home = () => {
     });
   };
 
-  // ── Modal save handler ────────────────────────────────────────────────────────
-
   const handleModalSave = (values: FormValues) => {
     if (!modal) return;
 
@@ -418,13 +420,10 @@ export const Home = () => {
     setModal(null);
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────────
-
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", p: 0 }}>
       <ChatBotBubble exampleQuestions={["What exams do I have this week?"]} />
 
-      {/* Page header */}
       <Box
         sx={{
           px: 3,
@@ -440,7 +439,17 @@ export const Home = () => {
       </Box>
 
       <Box sx={{ p: 3, maxWidth: 1100, mx: "auto" }}>
-        {/* ── AI Study Plan Banner ───────────────────────────────── */}
+        {selectedCourseTitle && (
+          <Box display="flex" justifyContent="flex-end" mb={1.5}>
+            <Chip
+              label={`מסונן לפי: ${selectedCourseTitle}`}
+              onDelete={() => setSelectedCourseTitle(null)}
+              color="primary"
+              variant="outlined"
+            />
+          </Box>
+        )}
+
         <Paper
           elevation={0}
           sx={{
@@ -783,7 +792,7 @@ export const Home = () => {
                 </Typography>
               )}
 
-              {assignmentRows.map((row) => {
+              {filteredAssignmentRows.map((row) => {
                 const relativeDueDate = getRelativeDueDate(
                   row.dueDate,
                   row.status
@@ -918,8 +927,11 @@ export const Home = () => {
 
           {/* RIGHT column */}
           <Box display="flex" flexDirection="column" gap={2}>
-            <UpcomingEvents />
-            <CoursesSummary />
+            <UpcomingEvents selectedCourseTitle={selectedCourseTitle} />
+            <CoursesSummary
+              selectedCourseTitle={selectedCourseTitle}
+              onCourseSelect={setSelectedCourseTitle}
+            />
           </Box>
         </Box>
       </Box>
