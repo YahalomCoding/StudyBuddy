@@ -3,7 +3,9 @@ import { Box } from "@mui/material";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { Home } from "./pages/Home";
 import { OnBoarding } from "./pages/OnBoarding";
+import { AuthPage } from "./pages/Auth";
 import { Sidebar } from "./components/Sidebar/Sidebar";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const AppLayout = () => (
   <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -19,11 +21,14 @@ function App() {
     <BrowserRouter>
       <StyledEngineProvider injectFirst>
         <Routes>
-          <Route path="/" element={<Navigate to="/onboarding" replace />} />
-          <Route path="/onboarding" element={<OnBoarding />} />
-          <Route element={<AppLayout />}>
-            <Route path="/home" element={<Home />} />
-            {/* Add more pages here and they'll automatically get the sidebar */}
+          <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="/auth" element={<AuthPage />} />
+
+          <Route element={<ProtectedRoute />}>
+            <Route path="/onboarding" element={<OnBoarding />} />
+            <Route element={<AppLayout />}>
+              <Route path="/home" element={<Home />} />
+            </Route>
           </Route>
         </Routes>
       </StyledEngineProvider>
