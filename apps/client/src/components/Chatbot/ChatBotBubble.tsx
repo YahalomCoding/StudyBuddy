@@ -68,7 +68,10 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
   const allTools = useMemo(
     () =>
       tools
-        ? clientTools(...tools, showNotificationTool)
+        ? clientTools(
+            ...tools.filter((tool) => tool.name !== showNotificationTool.name),
+            showNotificationTool
+          )
         : clientTools(showNotificationTool),
     [showNotificationTool, tools]
   );

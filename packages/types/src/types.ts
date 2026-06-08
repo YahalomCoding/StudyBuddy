@@ -8,6 +8,7 @@ export interface DurationValue {
 export type ItemStatus = "not started" | "active" | "done";
 
 export type AssignmentType =
+  | "assignment"
   | "homework"
   | "practice"
   | "project"

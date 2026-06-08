@@ -1,54 +1,41 @@
 import AddIcon from "@mui/icons-material/Add";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
-import type { UpcomingEventViewItem } from "./types";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { getHomeDashboard, homeDashboardQueryKey } from "../../api/home";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import {
+  createUpcomingEvent,
+  getHomeDashboard,
+  homeDashboardQueryKey,
+} from "../../api/home";
 import {
   GenericFormModal,
   type FormField,
   type FormValues,
 } from "../GenericFormModal/GenericFormModal";
-
 const PAGE_SIZE = 4;
 
 const EVENT_FIELDS: FormField[] = [
   {
     type: "text",
-    name: "courseTitle",
-    label: "שם הקורס",
-    placeholder: "Web Development",
-  },
-  {
-    type: "text",
     name: "description",
-    label: "תיאור האירוע",
-    placeholder: "Final exam / Assignment deadline",
+    label: "תיאור המבחן",
+    placeholder: "מבחן סופי",
   },
   {
     type: "date",
     name: "eventDate",
-    label: "תאריך האירוע",
-  },
-  {
-    type: "select",
-    name: "kind",
-    label: "סוג אירוע",
-    options: [
-      { label: "Exam", value: "exam" },
-      { label: "Assignment", value: "assignment" },
-    ],
+    label: "תאריך המבחן",
   },
   {
     type: "text",
     name: "semesterLabel",
     label: "סמסטר",
-    placeholder: "Semester A",
+    placeholder: "סמסטר א'",
   },
 ];
 
@@ -61,11 +48,17 @@ const formatEventDate = (value: string) => {
   }).format(date);
 };
 
-export const UpcomingEvents = () => {
+type UpcomingEventsProps = {
+  selectedCourseTitle?: string | null;
+};
+
+export const UpcomingEvents = ({
+  selectedCourseTitle = null,
+}: UpcomingEventsProps) => {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalValues, setModalValues] = useState<FormValues>({});
-  const [localEvents, setLocalEvents] = useState<UpcomingEventViewItem[]>([]);
 
   const { data } = useQuery({
     queryKey: homeDashboardQueryKey,
@@ -73,25 +66,55 @@ export const UpcomingEvents = () => {
   });
 
   const serverItems = useMemo(
-    () => data?.upcomingEvents ?? [],
-    [data?.upcomingEvents]
+    () =>
+      (data?.upcomingEvents ?? []).filter(
+        (item) =>
+          item.kind === "exam" &&
+          (!selectedCourseTitle || item.courseTitle === selectedCourseTitle)
+      ),
+    [data?.upcomingEvents, selectedCourseTitle]
   );
 
-  const allItems = useMemo(
-    () => [...serverItems, ...localEvents],
-    [serverItems, localEvents]
+  const allItems = useMemo(() => serverItems, [serverItems]);
+
+  const courseOptions = useMemo(() => {
+    const uniqueCourseTitles = Array.from(
+      new Set((data?.coursesSummary ?? []).map((course) => course.courseTitle))
+    ).filter(Boolean);
+
+    return uniqueCourseTitles.map((courseTitle) => ({
+      label: courseTitle,
+      value: courseTitle,
+    }));
+  }, [data?.coursesSummary]);
+
+  const eventFields = useMemo<FormField[]>(
+    () => [
+      {
+        type: "select",
+        name: "courseTitle",
+        label: "שם הקורס",
+        options: courseOptions,
+      },
+      ...EVENT_FIELDS,
+    ],
+    [courseOptions]
   );
+
+  const createEventMutation = useMutation({
+    mutationFn: createUpcomingEvent,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
 
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
-
-  useEffect(() => {
-    setPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+  const currentPage = Math.min(page, totalPages);
 
   const currentItems = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
     return allItems.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [allItems, page]);
+  }, [allItems, currentPage]);
 
   const paddedItems = useMemo(() => {
     const items: ((typeof currentItems)[number] | null)[] = [...currentItems];
@@ -104,14 +127,18 @@ export const UpcomingEvents = () => {
   }, [currentItems]);
 
   const handlePrevPage = () => {
-    setPage((prev) => Math.max(1, prev - 1));
+    setPage((prev) => Math.max(1, Math.min(prev, totalPages) - 1));
   };
 
   const handleNextPage = () => {
-    setPage((prev) => Math.min(totalPages, prev + 1));
+    setPage((prev) => Math.min(totalPages, Math.min(prev, totalPages) + 1));
   };
 
   const handleOpenModal = () => {
+    if (courseOptions.length === 0) {
+      return;
+    }
+
     setModalValues({});
     setModalOpen(true);
   };
@@ -122,16 +149,13 @@ export const UpcomingEvents = () => {
   };
 
   const handleSaveEvent = (values: FormValues) => {
-    const newEvent: UpcomingEventViewItem = {
-      id: `local-event-${Date.now()}`,
+    createEventMutation.mutate({
       courseTitle: values.courseTitle ?? "",
       description: values.description ?? "",
       eventDate: values.eventDate ?? "",
-      kind: values.kind as "assignment" | "exam",
+      kind: "exam",
       semesterLabel: values.semesterLabel ?? "",
-    };
-
-    setLocalEvents((prev) => [...prev, newEvent]);
+    });
     handleCloseModal();
   };
 
@@ -158,19 +182,19 @@ export const UpcomingEvents = () => {
             <CheckCircleIcon sx={{ color: "#22c55e", fontSize: 20 }} />
 
             <Typography fontWeight={600} fontSize={15}>
-              Upcoming Events
+              אירועים קרובים
             </Typography>
           </Box>
 
           <Box display="flex" alignItems="center" gap={0.5}>
             <Typography fontSize={12} color="text.secondary">
-              עמוד {page} מתוך {totalPages}
+              עמוד {currentPage} מתוך {totalPages}
             </Typography>
 
             <IconButton
               size="small"
               onClick={handlePrevPage}
-              disabled={page === 1}
+              disabled={currentPage === 1}
               sx={{ p: 0.3 }}
             >
               <ChevronRightRoundedIcon fontSize="small" />
@@ -179,7 +203,7 @@ export const UpcomingEvents = () => {
             <IconButton
               size="small"
               onClick={handleNextPage}
-              disabled={page === totalPages}
+              disabled={currentPage === totalPages}
               sx={{ p: 0.3 }}
             >
               <ChevronLeftRoundedIcon fontSize="small" />
@@ -294,8 +318,8 @@ export const UpcomingEvents = () => {
       <GenericFormModal
         open={modalOpen}
         onClose={handleCloseModal}
-        title="Add Event"
-        fields={EVENT_FIELDS}
+        title="הוסף אירוע"
+        fields={eventFields}
         values={modalValues}
         onChange={(name, value) =>
           setModalValues((prev) => ({
@@ -304,8 +328,8 @@ export const UpcomingEvents = () => {
           }))
         }
         onSave={handleSaveEvent}
-        saveLabel="Save"
-        cancelLabel="Cancel"
+        saveLabel="שמור"
+        cancelLabel="ביטול"
       />
     </>
   );
