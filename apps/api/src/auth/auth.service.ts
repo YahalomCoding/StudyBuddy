@@ -18,6 +18,7 @@ export interface AuthResponse {
     authProvider: string;
     profileImage: string | null;
     hasCompletedOnboarding: boolean;
+    studentId: string | null;
   };
 }
 
@@ -35,10 +36,13 @@ export class AuthService {
       include: ["student"],
     });
 
+    const studentId = userWithStudent?.student?.id ?? null;
+
     const payload = {
-      sub: user.id,
+      sub: user.id, // User.id
       username: user.username,
       email: user.email,
+      studentId, // Student.id
     };
 
     return {
@@ -49,7 +53,8 @@ export class AuthService {
         email: user.email,
         authProvider: user.authProvider,
         profileImage: user.profileImage,
-        hasCompletedOnboarding: Boolean(userWithStudent?.student),
+        hasCompletedOnboarding: Boolean(studentId),
+        studentId,
       },
     };
   }
@@ -64,6 +69,7 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+
     const user = await this.userModel.create({
       username,
       email: email.toLowerCase(),
@@ -84,6 +90,7 @@ export class AuthService {
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
+
     if (!isValidPassword) {
       throw new UnauthorizedException("Invalid email or password");
     }
@@ -98,12 +105,16 @@ export class AuthService {
     });
 
     const payload = ticket.getPayload();
+
     if (!payload?.email || !payload.sub) {
       throw new UnauthorizedException("Invalid Google token");
     }
 
     const email = payload.email.toLowerCase();
-    let user = await this.userModel.findOne({ where: { email } });
+
+    let user = await this.userModel.findOne({
+      where: { email },
+    });
 
     if (!user) {
       user = await this.userModel.create({
@@ -128,8 +139,15 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    const user = await this.userModel.findByPk(userId, { include: ["student"] });
-    if (!user) throw new UnauthorizedException("User not found");
+    const user = await this.userModel.findByPk(userId, {
+      include: ["student"],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    const studentId = user.student?.id ?? null;
 
     return {
       id: user.id,
@@ -137,7 +155,8 @@ export class AuthService {
       email: user.email,
       authProvider: user.authProvider,
       profileImage: user.profileImage,
-      hasCompletedOnboarding: Boolean(user.student),
+      hasCompletedOnboarding: Boolean(studentId),
+      studentId,
     };
   }
 }

@@ -6,6 +6,7 @@ import { OnBoarding } from "./pages/OnBoarding";
 import { AuthPage } from "./pages/Auth";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { CalendarPage } from "./pages/Calendar/Calendar";
 
 const AppLayout = () => (
   <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -28,6 +29,7 @@ function App() {
             <Route path="/onboarding" element={<OnBoarding />} />
             <Route element={<AppLayout />}>
               <Route path="/home" element={<Home />} />
+              <Route path="/Calendar" element={<CalendarPage />} />
             </Route>
           </Route>
         </Routes>

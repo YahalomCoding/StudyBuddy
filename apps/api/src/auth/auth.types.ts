@@ -1,11 +1,19 @@
 import type { Request } from "express";
 
-export interface JwtUser {
+export type JwtUser = {
   sub: string;
   username: string;
-  email?: string | null;
-}
+  email: string | null;
+  studentId?: string | null;
+};
 
-export interface AuthRequest extends Request {
-  user: JwtUser;
-}
+export type AuthenticatedUser = {
+  id: string; // User.id
+  username: string;
+  email: string | null;
+  studentId?: string | null; // Student.id
+};
+
+export type AuthRequest = Request & {
+  user: AuthenticatedUser;
+};

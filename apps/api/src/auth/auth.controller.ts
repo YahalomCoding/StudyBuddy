@@ -43,9 +43,9 @@ export class AuthController {
     return this.authService.googleLogin(body.idToken);
   }
 
+   @Get("me")
   @UseGuards(JwtAuthGuard)
-  @Get("me")
-  me(@Req() req: AuthRequest) {
-    return this.authService.me(req.user.sub);
+  async me(@Req() req: AuthRequest) {
+    return this.authService.me(req.user.id);
   }
 }

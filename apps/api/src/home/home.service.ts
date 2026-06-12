@@ -138,16 +138,19 @@ export class HomeService {
           index + 1,
           transaction
         );
+
         const course = await this.findOrCreateCourse(
           courseSeed.title,
           degree.id,
           transaction
         );
+
         const semesterCourse = await this.findOrCreateSemesterCourse(
           semester.id,
           course.id,
           transaction
         );
+
         const studentSemesterCourse =
           await this.findOrCreateStudentSemesterCourse(
             student.id,
@@ -362,10 +365,8 @@ export class HomeService {
     });
   }
 
-  async getDashboard(studentId?: string): Promise<DashboardResponse> {
-    const resolvedStudentId = await this.resolveStudentId(studentId);
-
-    if (!resolvedStudentId) {
+  async getDashboard(studentId: string): Promise<DashboardResponse> {
+    if (!studentId) {
       return {
         todos: [],
         assignments: [],
@@ -376,11 +377,11 @@ export class HomeService {
 
     const [generalTasks, studentSemesterCourses] = await Promise.all([
       this.generalTaskModel.findAll({
-        where: { studentId: resolvedStudentId },
+        where: { studentId },
         order: [["dueDate", "ASC"]],
       }),
       this.studentSemesterCourseModel.findAll({
-        where: { studentId: resolvedStudentId },
+        where: { studentId },
         include: [
           {
             model: SemesterCourse,
@@ -416,6 +417,7 @@ export class HomeService {
         const courseId = semesterCourse?.course?.id ?? "";
         const semesterNumber = semesterCourse?.semester?.semesterNumber;
         const yearNumber = semesterCourse?.semester?.yearNumber;
+
         const semesterLabel =
           semesterNumber && yearNumber
             ? `סמסטר ${semesterNumber} / ${yearNumber}`
@@ -521,7 +523,7 @@ export class HomeService {
     };
   }
 
-  async createTask(payload: CreateTaskPayload, studentId?: string) {
+  async createTask(payload: CreateTaskPayload, studentId: string) {
     const sequelize = this.studentModel.sequelize;
 
     if (!sequelize) {
@@ -529,10 +531,12 @@ export class HomeService {
     }
 
     return sequelize.transaction(async (transaction) => {
-      const student = await this.resolveOrCreateStudent(studentId, transaction);
+      const student = await this.getStudentById(studentId, transaction);
+
       const estimatedTimeUnit = this.parseDurationUnit(
         payload.estimatedTimeUnit
       );
+
       const task = await this.generalTaskModel.create(
         {
           studentId: student.id,
@@ -552,7 +556,7 @@ export class HomeService {
     });
   }
 
-  async createAssignment(payload: CreateAssignmentPayload, studentId?: string) {
+  async createAssignment(payload: CreateAssignmentPayload, studentId: string) {
     const sequelize = this.studentModel.sequelize;
 
     if (!sequelize) {
@@ -560,7 +564,8 @@ export class HomeService {
     }
 
     return sequelize.transaction(async (transaction) => {
-      const student = await this.resolveOrCreateStudent(studentId, transaction);
+      const student = await this.getStudentById(studentId, transaction);
+
       const studentSemesterCourse =
         await this.findOrCreateStudentSemesterCourseForCourseTitle(
           student.id,
@@ -587,7 +592,7 @@ export class HomeService {
 
   async createUpcomingEvent(
     payload: CreateUpcomingEventPayload,
-    studentId?: string
+    studentId: string
   ) {
     const sequelize = this.studentModel.sequelize;
 
@@ -596,7 +601,8 @@ export class HomeService {
     }
 
     return sequelize.transaction(async (transaction) => {
-      const student = await this.resolveOrCreateStudent(studentId, transaction);
+      const student = await this.getStudentById(studentId, transaction);
+
       const studentSemesterCourse =
         await this.findOrCreateStudentSemesterCourseForCourseTitle(
           student.id,
@@ -637,7 +643,7 @@ export class HomeService {
 
   async createCourseSummaryItem(
     payload: CreateCourseSummaryPayload,
-    studentId?: string
+    studentId: string
   ) {
     const sequelize = this.studentModel.sequelize;
 
@@ -646,7 +652,8 @@ export class HomeService {
     }
 
     return sequelize.transaction(async (transaction) => {
-      const student = await this.resolveOrCreateStudent(studentId, transaction);
+      const student = await this.getStudentById(studentId, transaction);
+
       const studentSemesterCourse =
         await this.findOrCreateStudentSemesterCourseForCourseTitle(
           student.id,
@@ -659,43 +666,19 @@ export class HomeService {
     });
   }
 
-  private async resolveStudentId(studentId?: string): Promise<string | null> {
-    if (studentId) {
-      const student = await this.studentModel.findByPk(studentId);
-      return student ? student.id : null;
-    }
-
-    const firstStudent = await this.studentModel.findOne({
-      order: [["createdAt", "ASC"]],
-    });
-
-    return firstStudent ? firstStudent.id : null;
-  }
-
-  private async resolveOrCreateStudent(
-    studentId: string | undefined,
+  private async getStudentById(
+    studentId: string,
     transaction: Transaction
   ): Promise<Student> {
-    if (studentId) {
-      const student = await this.studentModel.findByPk(studentId, {
-        transaction,
-      });
-
-      if (student) {
-        return student;
-      }
-    }
-
-    const existingStudent = await this.studentModel.findOne({
-      order: [["createdAt", "ASC"]],
+    const student = await this.studentModel.findByPk(studentId, {
       transaction,
     });
 
-    if (existingStudent) {
-      return existingStudent;
+    if (!student) {
+      throw new Error("Student not found");
     }
 
-    return this.findOrCreateSeedStudent(transaction);
+    return student;
   }
 
   private parseDate(value: string | undefined): Date {
@@ -802,21 +785,25 @@ export class HomeService {
 
     const { yearNumber, semesterNumber } =
       this.parseSemesterLabel(semesterLabel);
+
     const semester = await this.findOrCreateSemester(
       yearNumber,
       semesterNumber,
       transaction
     );
+
     const degree = await this.findOrCreateDegree(
       `מסלול ${normalizedCourseTitle}`,
       1,
       transaction
     );
+
     const course = await this.findOrCreateCourse(
       normalizedCourseTitle,
       degree.id,
       transaction
     );
+
     const semesterCourse = await this.findOrCreateSemesterCourse(
       semester.id,
       course.id,
