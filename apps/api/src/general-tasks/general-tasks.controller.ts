@@ -1,7 +1,7 @@
 import { Body, Controller, Param, Patch } from "@nestjs/common";
 import {
-    GeneralTasksService,
-    type UpdateGeneralTaskPayload,
+  GeneralTasksService,
+  type UpdateGeneralTaskPayload,
 } from "./general-tasks.service";
 
 @Controller("general-tasks")

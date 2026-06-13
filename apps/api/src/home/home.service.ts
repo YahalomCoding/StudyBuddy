@@ -98,7 +98,10 @@ export class HomeService {
         { title: "סטטיסטיקה", degreeTitle: "מדעי הנתונים" },
       ];
 
-      const studentSemesterCourseByTitle = new Map<string, StudentSemesterCourse>();
+      const studentSemesterCourseByTitle = new Map<
+        string,
+        StudentSemesterCourse
+      >();
 
       for (const [index, courseSeed] of courses.entries()) {
         const degree = await this.findOrCreateDegree(
@@ -116,13 +119,17 @@ export class HomeService {
           course.id,
           transaction
         );
-        const studentSemesterCourse = await this.findOrCreateStudentSemesterCourse(
-          student.id,
-          semesterCourse.id,
-          transaction
-        );
+        const studentSemesterCourse =
+          await this.findOrCreateStudentSemesterCourse(
+            student.id,
+            semesterCourse.id,
+            transaction
+          );
 
-        studentSemesterCourseByTitle.set(courseSeed.title, studentSemesterCourse);
+        studentSemesterCourseByTitle.set(
+          courseSeed.title,
+          studentSemesterCourse
+        );
       }
 
       const todoSeeds = [
@@ -354,7 +361,9 @@ export class HomeService {
       }),
     ]);
 
-    const studentSemesterCourseIds = studentSemesterCourses.map((item) => item.id);
+    const studentSemesterCourseIds = studentSemesterCourses.map(
+      (item) => item.id
+    );
 
     const [assignments, exams] = await Promise.all([
       studentSemesterCourseIds.length
@@ -436,7 +445,9 @@ export class HomeService {
         };
       }),
       ...exams.map((exam) => {
-        const context = contextByStudentSemesterCourseId.get(exam.studentSemesterCourseId);
+        const context = contextByStudentSemesterCourseId.get(
+          exam.studentSemesterCourseId
+        );
 
         return {
           id: exam.id,
@@ -469,7 +480,9 @@ export class HomeService {
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
-      .sort((left, right) => left.courseTitle.localeCompare(right.courseTitle, "he"));
+      .sort((left, right) =>
+        left.courseTitle.localeCompare(right.courseTitle, "he")
+      );
 
     return {
       todos,
@@ -519,7 +532,9 @@ export class HomeService {
     return "not started";
   }
 
-  private parseAssignmentType(value: string | null | undefined): AssignmentType {
+  private parseAssignmentType(
+    value: string | null | undefined
+  ): AssignmentType {
     if (ASSIGNMENT_TYPES.includes(value as AssignmentType)) {
       return value as AssignmentType;
     }
@@ -637,13 +652,12 @@ export class HomeService {
     semesterCourseId: string,
     transaction: Transaction
   ): Promise<StudentSemesterCourse> {
-    const [studentSemesterCourse] = await this.studentSemesterCourseModel.findOrCreate(
-      {
+    const [studentSemesterCourse] =
+      await this.studentSemesterCourseModel.findOrCreate({
         where: { studentId, semesterCourseId },
         defaults: { studentId, semesterCourseId, grade: null },
         transaction,
-      }
-    );
+      });
 
     return studentSemesterCourse;
   }

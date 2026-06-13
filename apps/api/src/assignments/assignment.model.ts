@@ -1,12 +1,12 @@
 import type { NonAttribute } from "sequelize";
 import {
-    BelongsTo,
-    Column,
-    DataType,
-    ForeignKey,
-    Model,
-    PrimaryKey,
-    Table,
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  Model,
+  PrimaryKey,
+  Table,
 } from "sequelize-typescript";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 
@@ -32,7 +32,11 @@ export class Assignment extends Model<Partial<Assignment>> {
   @Column({ type: DataType.INTEGER, allowNull: true })
   declare grade: number | null;
 
-  @Column({ type: DataType.STRING, allowNull: false, defaultValue: "not started" })
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    defaultValue: "not started",
+  })
   declare status: "not started" | "active" | "done";
 
   @Column({ type: DataType.STRING, allowNull: false, defaultValue: "homework" })

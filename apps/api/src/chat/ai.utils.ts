@@ -1,4 +1,4 @@
-import { env } from "src/env";
+import { env } from "../env";
 
 const chatPromise = import("@tanstack/ai").then((module) => module.chat);
 const createOpenRouterTextPromise = import("@tanstack/ai-openrouter").then(

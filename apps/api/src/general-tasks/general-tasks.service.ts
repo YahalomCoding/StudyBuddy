@@ -41,7 +41,10 @@ export class GeneralTasksService {
       );
     }
 
-    if (payload.estimatedTimeUnit && DURATION_UNITS.includes(payload.estimatedTimeUnit)) {
+    if (
+      payload.estimatedTimeUnit &&
+      DURATION_UNITS.includes(payload.estimatedTimeUnit)
+    ) {
       updateData.estimatedTimeUnit = payload.estimatedTimeUnit;
     }
 

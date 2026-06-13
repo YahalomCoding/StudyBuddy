@@ -5,11 +5,9 @@ const envSchema = z.object({
   API_PORT: z.string().optional(),
   OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
   OPENROUTER_MODEL: z
-    .string()
+    .enum(["nvidia/nemotron-3-nano-30b-a3b:free"])
     .default("nvidia/nemotron-3-nano-30b-a3b:free")
-    .transform((modelName) => {
-      return modelName;
-    }),
+    .transform((modelName) => modelName),
   DB_HOST: z.string(),
   DB_PORT: z.string(),
   DB_USERNAME: z.string(),

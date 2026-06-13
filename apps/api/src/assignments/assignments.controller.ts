@@ -1,7 +1,7 @@
 import { Body, Controller, Param, Patch } from "@nestjs/common";
 import {
-    AssignmentsService,
-    type UpdateAssignmentPayload,
+  AssignmentsService,
+  type UpdateAssignmentPayload,
 } from "./assignments.service";
 
 @Controller("assignments")

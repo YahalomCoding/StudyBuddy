@@ -3,8 +3,6 @@
 import { Body, Controller, Post, Res } from "@nestjs/common";
 import { Readable } from "stream";
 import { type Response } from "express";
-import { Readable } from "stream";
-import { env } from "../env";
 import { getCurrentTimeTool } from "./tools";
 import { loadAiChat } from "./ai.utils";
 
@@ -26,7 +24,7 @@ export class ChatController {
     const stream = chat({
       adapter: aiTextProviderAdapter,
       stream: true,
-      messages: body.messages as Parameters<typeof chat>[0]["messages"],
+      messages: body.messages,
       conversationId: body.conversationId ?? body.data?.conversationId,
       tools: [await getCurrentTimeTool, showNotificationClientDef],
     });
