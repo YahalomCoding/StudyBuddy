@@ -10,7 +10,6 @@ import {
   type UseFormRegister,
 } from "react-hook-form";
 import { RtlSelect, RtlTextField } from "../../components/RTL";
-import { useStyles } from "./style";
 
 interface StepThreePageProps {
   control: Control<QuestionnaireFormInput>;
@@ -27,15 +26,20 @@ export const StepThreePage = ({
   onBack,
   register,
 }: StepThreePageProps) => {
-  const classes = useStyles();
-
   return (
-    <>
+    <Stack gap={3}>
       <Box>
-        <Typography className={classes.secondaryHeadline}>
+        <Typography
+          fontSize={13}
+          fontWeight={600}
+          color="text.secondary"
+          mb={1.5}
+          sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+        >
           חוזקות וחולשות
         </Typography>
-        <Stack sx={{ gap: 2, mt: 1 }}>
+
+        <Stack gap={2}>
           <RtlTextField
             fullWidth
             id="strongTopics"
@@ -47,6 +51,7 @@ export const StepThreePage = ({
             helperText={errors.strongTopics?.message}
             {...register("strongTopics")}
           />
+
           <RtlTextField
             fullWidth
             id="challengingTopics"
@@ -67,31 +72,37 @@ export const StepThreePage = ({
                 id="semesterFocusGoal"
                 label="על מה תרצה/י לשים דגש בסמסטר הקרוב?"
                 placeholder="בחר/י דגש"
-                options={semesterFocusGoals.map((goal) => ({
-                  label: goal,
-                  value: goal,
-                }))}
+                options={semesterFocusGoals.map((goal) => ({ label: goal, value: goal }))}
                 name={field.name}
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 ref={field.ref}
-                formControlProps={{
-                  error: Boolean(errors.semesterFocusGoal),
-                }}
+                formControlProps={{ error: Boolean(errors.semesterFocusGoal) }}
                 helperText={errors.semesterFocusGoal?.message}
               />
             )}
           />
         </Stack>
       </Box>
-      <Box className={classes.actionsRow}>
+
+      <Box sx={{ display: "flex", gap: 1.5 }}>
         <Button
           type="button"
           variant="outlined"
           size="large"
+          fullWidth
           disabled={isSubmitting}
           onClick={onBack}
+          sx={{
+            borderRadius: 2,
+            fontWeight: 600,
+            fontSize: 15,
+            py: 1.2,
+            borderColor: "divider",
+            color: "text.primary",
+            "&:hover": { borderColor: "text.secondary", bgcolor: "action.hover" },
+          }}
         >
           חזרה
         </Button>
@@ -99,11 +110,21 @@ export const StepThreePage = ({
           type="submit"
           variant="contained"
           size="large"
+          fullWidth
           disabled={isSubmitting}
+          sx={{
+            bgcolor: "#22c55e",
+            "&:hover": { bgcolor: "#16a34a" },
+            borderRadius: 2,
+            fontWeight: 600,
+            fontSize: 15,
+            py: 1.2,
+            boxShadow: "none",
+          }}
         >
           {isSubmitting ? "שומר..." : "סיום"}
         </Button>
       </Box>
-    </>
+    </Stack>
   );
 };

@@ -13,24 +13,15 @@ import {
   type UseFormRegister,
 } from "react-hook-form";
 import { RtlSelect, RtlTextField } from "../../components/RTL";
-import { useStyles } from "./style";
 
 const ALL_DAYS_OPTION_VALUE = "__all_days__";
 
 const isStudyAvailabilityDay = (value: string) =>
-  studyAvailabilityDays.includes(
-    value as (typeof studyAvailabilityDays)[number]
-  );
+  studyAvailabilityDays.includes(value as (typeof studyAvailabilityDays)[number]);
 
 const normalizeSelectedValues = (value: string | string[]) => {
-  if (Array.isArray(value)) {
-    return value;
-  }
-
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  if (Array.isArray(value)) return value;
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
 };
 
 interface StepTwoPageProps {
@@ -50,16 +41,20 @@ export const StepTwoPage = ({
   onNext,
   register,
 }: StepTwoPageProps) => {
-  const classes = useStyles();
-
   return (
-    <>
+    <Stack gap={3}>
       <Box>
-        <Typography className={classes.secondaryHeadline}>
+        <Typography
+          fontSize={13}
+          fontWeight={600}
+          color="text.secondary"
+          mb={1.5}
+          sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+        >
           זמינות וזמן לימוד
         </Typography>
 
-        <Stack sx={{ gap: 2, mt: 1 }}>
+        <Stack gap={2}>
           <Controller
             name="studyAvailabilityDays"
             control={control}
@@ -69,14 +64,8 @@ export const StepTwoPage = ({
                 label="באילו ימים את/ה זמינ/ה ללמוד?"
                 placeholder="בחר/י יום אחד או יותר"
                 options={[
-                  {
-                    label: "הכול",
-                    value: ALL_DAYS_OPTION_VALUE,
-                  },
-                  ...studyAvailabilityDays.map((day) => ({
-                    label: day,
-                    value: day,
-                  })),
+                  { label: "הכול", value: ALL_DAYS_OPTION_VALUE },
+                  ...studyAvailabilityDays.map((day) => ({ label: day, value: day })),
                 ]}
                 name={field.name}
                 value={field.value ?? []}
@@ -84,82 +73,56 @@ export const StepTwoPage = ({
                   const selectedValues = normalizeSelectedValues(
                     (event as SelectChangeEvent<string | string[]>).target.value
                   );
-
                   if (selectedValues.includes(ALL_DAYS_OPTION_VALUE)) {
                     const currentValue = field.value ?? [];
                     const areAllSelected = studyAvailabilityDays.every((day) =>
                       currentValue.includes(day)
                     );
-
-                    field.onChange(
-                      areAllSelected ? [] : [...studyAvailabilityDays]
-                    );
+                    field.onChange(areAllSelected ? [] : [...studyAvailabilityDays]);
                     return;
                   }
-
-                  field.onChange(
-                    selectedValues.filter((value) =>
-                      isStudyAvailabilityDay(value)
-                    )
-                  );
+                  field.onChange(selectedValues.filter((value) => isStudyAvailabilityDay(value)));
                 }}
                 onBlur={field.onBlur}
                 multiple
                 ref={field.ref}
                 renderValue={(selected) => {
-                  const selectedDays = normalizeSelectedValues(
-                    selected as string | string[]
-                  ).filter((value) => isStudyAvailabilityDay(value));
-
+                  const selectedDays = normalizeSelectedValues(selected as string | string[]).filter(
+                    (value) => isStudyAvailabilityDay(value)
+                  );
                   if (selectedDays.length === 0) {
-                    return (
-                      <span style={{ opacity: 0.7 }}>בחרי יום אחד או יותר</span>
-                    );
+                    return <span style={{ opacity: 0.7 }}>בחרי יום אחד או יותר</span>;
                   }
-
                   const areAllSelected = studyAvailabilityDays.every((day) =>
                     selectedDays.includes(day)
                   );
-
                   if (areAllSelected) {
                     return (
                       <Chip
                         size="small"
                         label="הכול"
-                        onMouseDown={(event) => event.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                         onDelete={() => field.onChange([])}
                       />
                     );
                   }
-
                   return (
-                    <Stack
-                      direction="row"
-                      spacing={0.75}
-                      flexWrap="wrap"
-                      useFlexGap
-                    >
+                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
                       {selectedDays.map((day) => (
                         <Chip
                           key={day}
                           size="small"
                           label={day}
-                          onMouseDown={(event) => event.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
                           onDelete={() =>
-                            field.onChange(
-                              selectedDays.filter(
-                                (selectedDay) => selectedDay !== day
-                              )
-                            )
+                            field.onChange(selectedDays.filter((d) => d !== day))
                           }
                         />
                       ))}
                     </Stack>
                   );
                 }}
-                formControlProps={{
-                  error: Boolean(errors.studyAvailabilityDays),
-                }}
+                formControlProps={{ error: Boolean(errors.studyAvailabilityDays) }}
                 helperText={errors.studyAvailabilityDays?.message}
               />
             )}
@@ -184,10 +147,7 @@ export const StepTwoPage = ({
                 id="focusTime"
                 label="מתי את/ה הכי מרוכז/ת?"
                 placeholder="בחר/י זמן ריכוז"
-                options={focusTimes.map((time) => ({
-                  label: time,
-                  value: time,
-                }))}
+                options={focusTimes.map((time) => ({ label: time, value: time }))}
                 name={field.name}
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -216,9 +176,7 @@ export const StepTwoPage = ({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 ref={field.ref}
-                formControlProps={{
-                  error: Boolean(errors.preferredStudyDuration),
-                }}
+                formControlProps={{ error: Boolean(errors.preferredStudyDuration) }}
                 helperText={errors.preferredStudyDuration?.message}
               />
             )}
@@ -226,27 +184,46 @@ export const StepTwoPage = ({
         </Stack>
       </Box>
 
-      <Box className={classes.actionsRow}>
+      <Box sx={{ display: "flex", gap: 1.5 }}>
         <Button
           type="button"
           variant="outlined"
           size="large"
+          fullWidth
           disabled={isSubmitting}
           onClick={onBack}
+          sx={{
+            borderRadius: 2,
+            fontWeight: 600,
+            fontSize: 15,
+            py: 1.2,
+            borderColor: "divider",
+            color: "text.primary",
+            "&:hover": { borderColor: "text.secondary", bgcolor: "action.hover" },
+          }}
         >
           חזרה
         </Button>
-
         <Button
           type="button"
           variant="contained"
           size="large"
+          fullWidth
           disabled={isSubmitting}
           onClick={onNext}
+          sx={{
+            bgcolor: "#22c55e",
+            "&:hover": { bgcolor: "#16a34a" },
+            borderRadius: 2,
+            fontWeight: 600,
+            fontSize: 15,
+            py: 1.2,
+            boxShadow: "none",
+          }}
         >
           המשך
         </Button>
       </Box>
-    </>
+    </Stack>
   );
 };

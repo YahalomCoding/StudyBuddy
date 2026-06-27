@@ -1,14 +1,14 @@
-import { OpenRouterModelOptionsByName } from "@tanstack/ai-openrouter";
 import z from "zod";
 
 const envSchema = z.object({
-  PORT: z.string(),
+  PORT: z.string().optional(),
+  API_PORT: z.string().optional(),
   OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
   OPENROUTER_MODEL: z
     .string()
     .default("nvidia/nemotron-3-nano-30b-a3b:free")
     .transform((modelName) => {
-      return modelName as keyof OpenRouterModelOptionsByName;
+      return modelName;
     }),
   DB_HOST: z.string(),
   DB_PORT: z

@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Body, Controller, Post, Res } from "@nestjs/common";
-import { Readable } from "stream";
 import { type Response } from "express";
+import { Readable } from "stream";
+import { getSystemPrompt, loadAiChat } from "./ai.utils";
 import { createLangfuseMiddleware } from "./langfuse.middleware";
 import { getCurrentTimeTool } from "./tools";
-import { getSystemPrompt, loadAiChat } from "./ai.utils";
 
 const LANGFUSE_SYSTEM_PROMPT_NAME = "studybuddy-base-system";
 
