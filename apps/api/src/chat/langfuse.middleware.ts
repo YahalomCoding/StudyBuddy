@@ -1,3 +1,4 @@
+// @ts-expect-error -- @tanstack/ai is ESM-only; type-only import is erased at runtime
 import type { ChatMiddleware } from "@tanstack/ai";
 import {
   ROOT_CONTEXT,
@@ -6,6 +7,7 @@ import {
   trace,
   type Span,
 } from "@opentelemetry/api";
+// @ts-expect-error -- @langfuse/core is ESM-only; the require call works at runtime
 import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import { langfuseSpanProcessor, SERVICE_NAME } from "../instrumentation";
 

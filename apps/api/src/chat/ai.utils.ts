@@ -1,4 +1,5 @@
 import { env } from "../env";
+// @ts-expect-error -- @langfuse/client is ESM-only; the require call works at runtime
 import { LangfuseClient } from "@langfuse/client";
 
 const langfuse = new LangfuseClient();
@@ -10,7 +11,7 @@ const createOpenRouterTextPromise = import("@tanstack/ai-openrouter").then(
 
 const aiTextProviderAdapterPromise = createOpenRouterTextPromise.then(
   (createOpenRouterText) =>
-    createOpenRouterText(env.OPENROUTER_MODEL, env.OPENROUTER_API_KEY)
+    createOpenRouterText(env.OPENROUTER_MODEL as any, env.OPENROUTER_API_KEY)
 );
 
 export const loadAiChat = async () => {
