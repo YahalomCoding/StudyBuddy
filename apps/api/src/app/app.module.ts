@@ -24,6 +24,7 @@ import { AuthModule } from "../auth/auth.module";
 import { ChatModule } from "../chat/chat.module";
 import { CoursesModule } from "../courses/courses.module";
 import { DegreesModule } from "../degrees/degrees.module";
+import { env } from "../env";
 import { ExamsModule } from "../exams/exams.module";
 import { GeneralTasksModule } from "../general-tasks/general-tasks.module";
 import { HomeModule } from "../home/home.module";
@@ -57,11 +58,11 @@ class HttpExceptionFilter extends BaseExceptionFilter {
   imports: [
     SequelizeModule.forRoot({
       dialect: "postgres",
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT ?? "5432"),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
+      host: env.DB_HOST,
+      port: env.DB_PORT,
+      username: env.DB_USERNAME,
+      password: env.DB_PASSWORD,
+      database: env.DB_DATABASE,
       autoLoadModels: true,
       synchronize: true,
     }),

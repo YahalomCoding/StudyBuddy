@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { type UseChatReturn } from "@tanstack/ai-react";
 import { type AnyClientTool, type MessagePart } from "@tanstack/ai-client";
 import {
+  Alert,
   Box,
   CircularProgress,
   Collapse,
@@ -19,9 +20,12 @@ import PersonIcon from "@mui/icons-material/Person";
 import BuildIcon from "@mui/icons-material/Build";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
+import ReplayIcon from "@mui/icons-material/Replay";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PsychologyIcon from "@mui/icons-material/Psychology";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const JsonBlock = ({ label, data }: { label: string; data: unknown }) => {
   const [open, setOpen] = useState(false);
@@ -222,7 +226,7 @@ export const ChatBot = <T extends AnyClientTool[]>({
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { messages, sendMessage, isLoading } = chat;
+  const { messages, sendMessage, isLoading, error, reload } = chat;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -339,12 +343,63 @@ export const ChatBot = <T extends AnyClientTool[]>({
                 }}
               >
                 {parts.map((part, i) => {
-                  if (part.type === "text")
+                  if (part.type === "text") {
+                    if (isAssistant) {
+                      return (
+                        <Box
+                          key={i}
+                          sx={{
+                            "& p": { m: 0 },
+                            "& p + p": { mt: 1 },
+                            "& ul, & ol": { m: 0, pl: 2.5 },
+                            "& code": {
+                              bgcolor: "rgba(0,0,0,0.15)",
+                              px: 0.5,
+                              borderRadius: 0.5,
+                              fontSize: "0.85em",
+                            },
+                            "& pre": {
+                              bgcolor: "rgba(0,0,0,0.15)",
+                              p: 1,
+                              borderRadius: 1,
+                              overflowX: "auto",
+                              "& code": { bgcolor: "transparent", p: 0 },
+                            },
+                            "& table": {
+                              width: "100%",
+                              borderCollapse: "collapse",
+                              my: 1,
+                              fontSize: "0.85em",
+                            },
+                            "& th, & td": {
+                              border: "1px solid rgba(255,255,255,0.3)",
+                              px: 1,
+                              py: 0.5,
+                              textAlign: "left",
+                            },
+                            "& th": {
+                              bgcolor: "rgba(0,0,0,0.15)",
+                              fontWeight: 700,
+                            },
+                            "& tr:nth-of-type(even)": {
+                              bgcolor: "rgba(0,0,0,0.07)",
+                            },
+                          }}
+                        >
+                          <Typography variant="body2" component="div">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {part.content}
+                            </ReactMarkdown>
+                          </Typography>
+                        </Box>
+                      );
+                    }
                     return (
                       <Typography key={i} variant="body2" whiteSpace="pre-wrap">
                         {part.content}
                       </Typography>
                     );
+                  }
                   if (part.type === "thinking") return null;
                   if (part.type === "tool-call")
                     return <ToolCallPart key={i} part={part} />;
@@ -363,6 +418,25 @@ export const ChatBot = <T extends AnyClientTool[]>({
               Thinking…
             </Typography>
           </Box>
+        )}
+
+        {error && (
+          <Alert
+            severity="error"
+            action={
+              <IconButton
+                size="small"
+                color="inherit"
+                onClick={() => reload()}
+                aria-label="Retry"
+              >
+                <ReplayIcon fontSize="small" />
+              </IconButton>
+            }
+            sx={{ mx: 0.5 }}
+          >
+            {error.message || "Something went wrong. Please try again."}
+          </Alert>
         )}
 
         <div ref={bottomRef} />

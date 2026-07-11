@@ -3,8 +3,11 @@
 import { Body, Controller, Post, Res } from "@nestjs/common";
 import { type Response } from "express";
 import { Readable } from "stream";
-import { loadAiChat } from "./ai.utils";
+import { getSystemPrompt, loadAiChat } from "./ai.utils";
+import { createLangfuseMiddleware } from "./langfuse.middleware";
 import { getCurrentTimeTool } from "./tools";
+
+const LANGFUSE_SYSTEM_PROMPT_NAME = "studybuddy-base-system";
 
 @Controller("chat")
 export class ChatController {
@@ -21,12 +24,23 @@ export class ChatController {
 
     const { chat, aiTextProviderAdapter } = await loadAiChat();
 
+    const systemPrompt = await getSystemPrompt(LANGFUSE_SYSTEM_PROMPT_NAME);
     const stream = chat({
       adapter: aiTextProviderAdapter,
       stream: true,
       messages: body.messages as Parameters<typeof chat>[0]["messages"],
       conversationId: body.conversationId ?? body.data?.conversationId,
       tools: [await getCurrentTimeTool, showNotificationClientDef],
+      systemPrompts: [systemPrompt.prompt],
+      // One middleware instance per request — owns its own span state
+      middleware: [
+        createLangfuseMiddleware({
+          userId: body.userId ?? body.data?.userId,
+          tags: body.tags ?? body.data?.tags,
+          promptName: systemPrompt.promptName,
+          promptVersion: systemPrompt.version,
+        }),
+      ],
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
