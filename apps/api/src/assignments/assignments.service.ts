@@ -6,6 +6,7 @@ const ASSIGNMENT_STATUSES = ["not started", "active", "done"] as const;
 type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
 
 const ASSIGNMENT_TYPES = [
+  "assignment",
   "homework",
   "practice",
   "project",
@@ -15,6 +16,8 @@ const ASSIGNMENT_TYPES = [
 type AssignmentType = (typeof ASSIGNMENT_TYPES)[number];
 
 export type UpdateAssignmentPayload = {
+  title?: string;
+  dueDate?: string;
   status?: AssignmentStatus;
   type?: AssignmentType;
 };
@@ -46,7 +49,29 @@ export class AssignmentsService {
       updateData.type = payload.type;
     }
 
+    if (typeof payload.title === "string" && payload.title.trim().length > 0) {
+      updateData.description = payload.title.trim();
+    }
+
+    if (typeof payload.dueDate === "string") {
+      const parsedDueDate = new Date(payload.dueDate);
+      if (!Number.isNaN(parsedDueDate.getTime())) {
+        updateData.deadline = parsedDueDate;
+      }
+    }
+
     await assignment.update(updateData);
     return assignment;
+  }
+
+  async deleteAssignment(id: string): Promise<{ success: true }> {
+    const assignment = await this.assignmentModel.findByPk(id);
+
+    if (!assignment) {
+      throw new NotFoundException("Assignment not found");
+    }
+
+    await assignment.destroy();
+    return { success: true };
   }
 }

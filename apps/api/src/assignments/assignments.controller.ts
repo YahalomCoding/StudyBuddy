@@ -1,7 +1,7 @@
-import { Body, Controller, Param, Patch } from "@nestjs/common";
+import { Body, Controller, Delete, Param, Patch } from "@nestjs/common";
 import {
-    AssignmentsService,
-    type UpdateAssignmentPayload,
+  AssignmentsService,
+  type UpdateAssignmentPayload,
 } from "./assignments.service";
 
 @Controller("assignments")
@@ -14,5 +14,10 @@ export class AssignmentsController {
     @Body() body: UpdateAssignmentPayload
   ) {
     return this.assignmentsService.updateAssignment(id, body);
+  }
+
+  @Delete(":id")
+  async deleteAssignment(@Param("id") id: string) {
+    return this.assignmentsService.deleteAssignment(id);
   }
 }

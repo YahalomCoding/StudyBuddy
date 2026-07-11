@@ -31,7 +31,7 @@ declare global {
     | undefined;
 }
 global.CACHED_SYSTEM_PROMPTS = global.CACHED_SYSTEM_PROMPTS ?? {};
-const CACHED_SYSTEM_PROMPTS = global.CACHED_SYSTEM_PROMPTS!
+const CACHED_SYSTEM_PROMPTS = global.CACHED_SYSTEM_PROMPTS!;
 
 export const getSystemPrompt = async (
   promptName: string

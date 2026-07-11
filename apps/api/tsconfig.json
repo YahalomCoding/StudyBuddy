@@ -1,7 +1,8 @@
 {
   "extends": "@studybuddy/typescript-config/base.json",
   "compilerOptions": {
-    "declaration": true,
+    "declaration": false,
+    "declarationMap": false,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,

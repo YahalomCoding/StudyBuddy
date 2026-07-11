@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import {
-    type HomeDashboardResponse,
-    homeDashboardQueryKey,
+  type HomeDashboardResponse,
+  homeDashboardQueryKey,
 } from "../../api/home";
 
 type DashboardMutationContext = { previousDashboard?: HomeDashboardResponse };
@@ -70,7 +70,13 @@ export const applyOptimisticAssignmentUpdate = async (
   id: string,
   payload: {
     status?: "not started" | "active" | "done";
-    type?: "homework" | "practice" | "project" | "report" | "lab";
+    type?:
+      | "assignment"
+      | "homework"
+      | "practice"
+      | "project"
+      | "report"
+      | "lab";
   }
 ): Promise<DashboardMutationContext> => {
   return applyOptimisticDashboardUpdate(queryClient, (dashboard) => ({
