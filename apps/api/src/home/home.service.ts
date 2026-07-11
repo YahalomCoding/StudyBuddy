@@ -19,6 +19,7 @@ const ASSIGNMENT_STATUSES = ["not started", "active", "done"] as const;
 type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
 
 const ASSIGNMENT_TYPES = [
+  "assignment",
   "homework",
   "practice",
   "project",
@@ -58,6 +59,34 @@ type DashboardResponse = {
     semesterLabel: string;
     courseId: string;
   }[];
+};
+
+export type CreateTaskPayload = {
+  title: string;
+  dueDate: string;
+  estimatedTimeValue: number;
+  estimatedTimeUnit?: DurationUnit;
+};
+
+export type CreateAssignmentPayload = {
+  course: string;
+  title: string;
+  dueDate: string;
+  status?: AssignmentStatus;
+  type?: AssignmentType;
+};
+
+export type CreateUpcomingEventPayload = {
+  kind: "assignment" | "exam";
+  courseTitle: string;
+  description: string;
+  eventDate: string;
+  semesterLabel?: string;
+};
+
+export type CreateCourseSummaryPayload = {
+  courseTitle: string;
+  semesterLabel?: string;
 };
 
 @Injectable()
@@ -109,16 +138,19 @@ export class HomeService {
           index + 1,
           transaction
         );
+
         const course = await this.findOrCreateCourse(
           courseSeed.title,
           degree.id,
           transaction
         );
+
         const semesterCourse = await this.findOrCreateSemesterCourse(
           semester.id,
           course.id,
           transaction
         );
+
         const studentSemesterCourse =
           await this.findOrCreateStudentSemesterCourse(
             student.id,
@@ -333,10 +365,8 @@ export class HomeService {
     });
   }
 
-  async getDashboard(studentId?: string): Promise<DashboardResponse> {
-    const resolvedStudentId = await this.resolveStudentId(studentId);
-
-    if (!resolvedStudentId) {
+  async getDashboard(studentId: string): Promise<DashboardResponse> {
+    if (!studentId) {
       return {
         todos: [],
         assignments: [],
@@ -347,11 +377,11 @@ export class HomeService {
 
     const [generalTasks, studentSemesterCourses] = await Promise.all([
       this.generalTaskModel.findAll({
-        where: { studentId: resolvedStudentId },
+        where: { studentId },
         order: [["dueDate", "ASC"]],
       }),
       this.studentSemesterCourseModel.findAll({
-        where: { studentId: resolvedStudentId },
+        where: { studentId },
         include: [
           {
             model: SemesterCourse,
@@ -387,6 +417,7 @@ export class HomeService {
         const courseId = semesterCourse?.course?.id ?? "";
         const semesterNumber = semesterCourse?.semester?.semesterNumber;
         const yearNumber = semesterCourse?.semester?.yearNumber;
+
         const semesterLabel =
           semesterNumber && yearNumber
             ? `סמסטר ${semesterNumber} / ${yearNumber}`
@@ -492,17 +523,172 @@ export class HomeService {
     };
   }
 
-  private async resolveStudentId(studentId?: string): Promise<string | null> {
-    if (studentId) {
-      const student = await this.studentModel.findByPk(studentId);
-      return student ? student.id : null;
+  async createTask(payload: CreateTaskPayload, studentId: string) {
+    const sequelize = this.studentModel.sequelize;
+
+    if (!sequelize) {
+      throw new Error("Sequelize connection is not available");
     }
 
-    const firstStudent = await this.studentModel.findOne({
-      order: [["createdAt", "ASC"]],
+    return sequelize.transaction(async (transaction) => {
+      const student = await this.getStudentById(studentId, transaction);
+
+      const estimatedTimeUnit = this.parseDurationUnit(
+        payload.estimatedTimeUnit
+      );
+
+      const task = await this.generalTaskModel.create(
+        {
+          studentId: student.id,
+          description: payload.title,
+          dueDate: this.parseDate(payload.dueDate),
+          done: false,
+          estimatedTimeValue: Math.max(
+            1,
+            Math.round(payload.estimatedTimeValue)
+          ),
+          estimatedTimeUnit,
+        },
+        { transaction }
+      );
+
+      return { id: task.id };
+    });
+  }
+
+  async createAssignment(payload: CreateAssignmentPayload, studentId: string) {
+    const sequelize = this.studentModel.sequelize;
+
+    if (!sequelize) {
+      throw new Error("Sequelize connection is not available");
+    }
+
+    return sequelize.transaction(async (transaction) => {
+      const student = await this.getStudentById(studentId, transaction);
+
+      const studentSemesterCourse =
+        await this.findOrCreateStudentSemesterCourseForCourseTitle(
+          student.id,
+          payload.course,
+          undefined,
+          transaction
+        );
+
+      const assignment = await this.assignmentModel.create(
+        {
+          studentSemesterCourseId: studentSemesterCourse.id,
+          description: payload.title,
+          deadline: this.parseDate(payload.dueDate),
+          status: this.parseAssignmentStatus(payload.status),
+          type: this.parseAssignmentType(payload.type),
+          grade: null,
+        },
+        { transaction }
+      );
+
+      return { id: assignment.id };
+    });
+  }
+
+  async createUpcomingEvent(
+    payload: CreateUpcomingEventPayload,
+    studentId: string
+  ) {
+    const sequelize = this.studentModel.sequelize;
+
+    if (!sequelize) {
+      throw new Error("Sequelize connection is not available");
+    }
+
+    return sequelize.transaction(async (transaction) => {
+      const student = await this.getStudentById(studentId, transaction);
+
+      const studentSemesterCourse =
+        await this.findOrCreateStudentSemesterCourseForCourseTitle(
+          student.id,
+          payload.courseTitle,
+          payload.semesterLabel,
+          transaction
+        );
+
+      if (payload.kind === "assignment") {
+        const assignment = await this.assignmentModel.create(
+          {
+            studentSemesterCourseId: studentSemesterCourse.id,
+            description: payload.description,
+            deadline: this.parseDate(payload.eventDate),
+            status: "not started",
+            type: "homework",
+            grade: null,
+          },
+          { transaction }
+        );
+
+        return { id: assignment.id, kind: "assignment" as const };
+      }
+
+      const exam = await this.examModel.create(
+        {
+          studentSemesterCourseId: studentSemesterCourse.id,
+          date: this.parseDate(payload.eventDate),
+          type: payload.description.includes("ב") ? 2 : 1,
+          grade: null,
+        },
+        { transaction }
+      );
+
+      return { id: exam.id, kind: "exam" as const };
+    });
+  }
+
+  async createCourseSummaryItem(
+    payload: CreateCourseSummaryPayload,
+    studentId: string
+  ) {
+    const sequelize = this.studentModel.sequelize;
+
+    if (!sequelize) {
+      throw new Error("Sequelize connection is not available");
+    }
+
+    return sequelize.transaction(async (transaction) => {
+      const student = await this.getStudentById(studentId, transaction);
+
+      const studentSemesterCourse =
+        await this.findOrCreateStudentSemesterCourseForCourseTitle(
+          student.id,
+          payload.courseTitle,
+          payload.semesterLabel,
+          transaction
+        );
+
+      return { id: studentSemesterCourse.id };
+    });
+  }
+
+  private async getStudentById(
+    studentId: string,
+    transaction: Transaction
+  ): Promise<Student> {
+    const student = await this.studentModel.findByPk(studentId, {
+      transaction,
     });
 
-    return firstStudent ? firstStudent.id : null;
+    if (!student) {
+      throw new Error("Student not found");
+    }
+
+    return student;
+  }
+
+  private parseDate(value: string | undefined): Date {
+    const parsed = value ? new Date(value) : new Date();
+
+    if (Number.isNaN(parsed.getTime())) {
+      return new Date();
+    }
+
+    return parsed;
   }
 
   private examTypeToDisplayText(type: number): string {
@@ -540,6 +726,95 @@ export class HomeService {
     }
 
     return "homework";
+  }
+
+  private parseSemesterLabel(value: string | undefined): {
+    yearNumber: number;
+    semesterNumber: number;
+  } {
+    const currentYear = new Date().getFullYear();
+
+    if (!value) {
+      return { yearNumber: currentYear, semesterNumber: 1 };
+    }
+
+    const yearMatch = value.match(/(20\d{2})/);
+    const semesterMatch = value.match(/([12אב])/);
+
+    const yearNumber = yearMatch ? Number(yearMatch[1]) : currentYear;
+    let semesterNumber = 1;
+
+    if (semesterMatch) {
+      const parsedValue = semesterMatch[1];
+      semesterNumber = parsedValue === "2" || parsedValue === "ב" ? 2 : 1;
+    }
+
+    return { yearNumber, semesterNumber };
+  }
+
+  private async findOrCreateStudentSemesterCourseForCourseTitle(
+    studentId: string,
+    courseTitle: string,
+    semesterLabel: string | undefined,
+    transaction: Transaction
+  ): Promise<StudentSemesterCourse> {
+    const normalizedCourseTitle = (courseTitle || "קורס חדש").trim();
+
+    const existingStudentSemesterCourse =
+      await this.studentSemesterCourseModel.findOne({
+        where: { studentId },
+        include: [
+          {
+            model: SemesterCourse,
+            required: true,
+            include: [
+              {
+                model: Course,
+                required: true,
+                where: { title: normalizedCourseTitle },
+              },
+            ],
+          },
+        ],
+        transaction,
+      });
+
+    if (existingStudentSemesterCourse) {
+      return existingStudentSemesterCourse;
+    }
+
+    const { yearNumber, semesterNumber } =
+      this.parseSemesterLabel(semesterLabel);
+
+    const semester = await this.findOrCreateSemester(
+      yearNumber,
+      semesterNumber,
+      transaction
+    );
+
+    const degree = await this.findOrCreateDegree(
+      `מסלול ${normalizedCourseTitle}`,
+      1,
+      transaction
+    );
+
+    const course = await this.findOrCreateCourse(
+      normalizedCourseTitle,
+      degree.id,
+      transaction
+    );
+
+    const semesterCourse = await this.findOrCreateSemesterCourse(
+      semester.id,
+      course.id,
+      transaction
+    );
+
+    return this.findOrCreateStudentSemesterCourse(
+      studentId,
+      semesterCourse.id,
+      transaction
+    );
   }
 
   private async findOrCreateSeedStudent(

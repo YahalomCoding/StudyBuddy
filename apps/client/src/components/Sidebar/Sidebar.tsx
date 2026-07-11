@@ -3,9 +3,11 @@ import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import { Box, Typography } from "@mui/material";
+import { Avatar, Box, Typography } from "@mui/material";
+import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import StuddyBuddyAvatar from "../../assets/images/studybuddyAvatar.png"
+import { jwtDecode } from "jwt-decode";
+import StuddyBuddyAvatar from "../../assets/images/studybuddyAvatar.png";
 
 const NAV_ITEMS = [
   { label: "Home", icon: HomeRoundedIcon, path: "/home" },
@@ -19,12 +21,34 @@ const BOTTOM_ITEMS = [
   { label: "Calendar", icon: CalendarMonthOutlinedIcon, path: "/calendar" },
 ];
 
+type TokenUser = {
+  sub: string;
+  username?: string;
+  email?: string | null;
+  profileImage?: string | null;
+  studentId?: string | null;
+};
+
 interface NavItemProps {
   label: string;
   icon: React.ElementType;
   active?: boolean;
   onClick?: () => void;
 }
+
+const getUserFromToken = (): TokenUser | null => {
+  const token = localStorage.getItem("studybuddy_access_token");
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    return jwtDecode<TokenUser>(token);
+  } catch {
+    return null;
+  }
+};
 
 const NavItem = ({ label, icon: Icon, active, onClick }: NavItemProps) => (
   <Box
@@ -76,6 +100,12 @@ export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const user = useMemo(() => getUserFromToken(), []);
+
+  const displayName = user?.username || "Student";
+  const displayEmail = user?.email || "student@uni.ac.il";
+  const firstLetter = displayName.charAt(0).toUpperCase();
+
   return (
     <Box
       sx={{
@@ -102,7 +132,6 @@ export const Sidebar = () => {
           mb: 3,
         }}
       >
-        {/* Logo placeholder — swap with your <img> or SVG */}
         <Box
           sx={{
             width: 50,
@@ -115,8 +144,14 @@ export const Sidebar = () => {
             flexShrink: 0,
           }}
         >
-          <img src={StuddyBuddyAvatar} width={50} height={50}/>
+          <img
+            src={StuddyBuddyAvatar}
+            width={50}
+            height={50}
+            alt="StudyBuddy"
+          />
         </Box>
+
         <Typography fontWeight={700} fontSize={16} color="text.primary">
           StudyBuddy
         </Typography>
@@ -148,7 +183,7 @@ export const Sidebar = () => {
         ))}
       </Box>
 
-      {/* Profile picture placeholder */}
+      {/* User details */}
       <Box
         sx={{
           mx: 2,
@@ -160,34 +195,39 @@ export const Sidebar = () => {
           gap: 1.5,
         }}
       >
-        {/* Swap this Box for an <Avatar src={userPhotoUrl} /> */}
-        <Box
+        <Avatar
+          src={user?.profileImage || undefined}
           sx={{
             width: 36,
             height: 36,
-            borderRadius: "50%",
             bgcolor: "#e2e8f0",
+            color: "text.secondary",
             border: "2px solid",
             borderColor: "divider",
-            flexShrink: 0,
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "text.secondary",
-            fontSize: 18,
+            fontSize: 16,
+            fontWeight: 700,
           }}
         >
-          👤
-        </Box>
-        <Box>
-          <Typography fontSize={13} fontWeight={600} lineHeight={1.2}>
-            {/* Replace with user name */}
-            Student
+          {!user?.profileImage ? firstLetter : null}
+        </Avatar>
+
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            fontSize={13}
+            fontWeight={600}
+            lineHeight={1.2}
+            noWrap
+          >
+            {displayName}
           </Typography>
-          <Typography fontSize={11} color="text.secondary" lineHeight={1.2}>
-            {/* Replace with user email/role */}
-            student@uni.ac.il
+
+          <Typography
+            fontSize={11}
+            color="text.secondary"
+            lineHeight={1.2}
+            noWrap
+          >
+            {displayEmail}
           </Typography>
         </Box>
       </Box>

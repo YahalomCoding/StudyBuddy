@@ -1,3 +1,11 @@
+import AddIcon from "@mui/icons-material/Add";
+import AddTaskIcon from "@mui/icons-material/AddTask";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
   Box,
   Checkbox,
@@ -15,6 +23,10 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
+  createGeneralTask,
+  createHomeAssignment,
+  deleteGeneralTask,
+  deleteHomeAssignment,
   getHomeDashboard,
   homeDashboardQueryKey,
   updateAssignment,
@@ -22,7 +34,17 @@ import {
 } from "../../api/home";
 import { ChatBotBubble } from "../../components/Chatbot";
 import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
+import {
+  GenericFormModal,
+  type FormValues,
+} from "../../components/GenericFormModal/GenericFormModal";
 import { UpcomingEvents } from "../../components/UpcomingEvents";
+import {
+  buildAssignmentFields,
+  getHomeModalTitle,
+  TASK_FIELDS,
+  type HomeModalType,
+} from "./formConfig";
 import {
   applyOptimisticAssignmentUpdate,
   applyOptimisticTodoDoneUpdate,
@@ -43,62 +65,11 @@ import {
   relativeDueDateToDisplayName,
   statusToDisplayName,
 } from "./utils";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import AddIcon from "@mui/icons-material/Add";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import { GenericFormModal, type FormField, type FormValues } from "../../components/GenericFormModal/GenericFormModal";
-
-// ─── Field schemas ─────────────────────────────────────────────────────────────
-
-const TASK_FIELDS: FormField[] = [
-  { type: "text", name: "title", label: "שם המשימה", placeholder: "Read chapter 5" },
-  { type: "date", name: "dueDate", label: "תאריך יעד" },
-  {
-    type: "select",
-    name: "estimatedTime",
-    label: "זמן משוער",
-    options: [
-      { label: "15 min", value: "15" },
-      { label: "30 min", value: "30" },
-      { label: "1 hour", value: "60" },
-      { label: "2 hours", value: "120" },
-    ],
-  },
-];
-
-const ASSIGNMENT_FIELDS: FormField[] = [
-  { type: "text", name: "course", label: "שם הקורס", placeholder: "Math" },
-  { type: "text", name: "title", label: "שם המשימה", placeholder: "Essay" },
-  { type: "date", name: "dueDate", label: "תאריך יעד" },
-  {
-    type: "select",
-    name: "status",
-    label: "סטאטוס",
-    options: [
-      { label: "Not Started", value: "not_started" },
-      { label: "In Progress", value: "in_progress" },
-      { label: "Completed", value: "completed" },
-    ],
-  },
-  {
-    type: "select",
-    name: "type",
-    label: "סוג המשימה",
-    options: [
-      { label: "Homework", value: "homework" },
-      { label: "Exam", value: "exam" },
-      { label: "Project", value: "project" },
-      { label: "Other", value: "other" },
-    ],
-  },
-];
 
 // ─── Modal state type ──────────────────────────────────────────────────────────
 
 type ModalState = {
-  type: "task" | "assignment";
+  type: HomeModalType;
   values: FormValues;
   editId?: string; // present → edit mode
 };
@@ -128,7 +99,12 @@ const SectionCard = ({
       bgcolor: "background.paper",
     }}
   >
-    <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="space-between"
+      mb={1.5}
+    >
       <Box display="flex" alignItems="center" gap={1}>
         {icon}
         <Typography fontWeight={600} fontSize={15}>
@@ -148,8 +124,6 @@ const SectionCard = ({
   </Paper>
 );
 
-// ─── Main Component ────────────────────────────────────────────────────────────
-
 export const Home = () => {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, isFetched } = useQuery({
@@ -158,14 +132,18 @@ export const Home = () => {
   });
   const isInitialLoading = isLoading && !isFetched;
 
-  // ── Modal state ──────────────────────────────────────────────────────────────
   const [modal, setModal] = useState<ModalState | null>(null);
-
-  // ── Temporary local items (not saved to DB) ──────────────────────────────────
-  const [localTodos, setLocalTodos] = useState<TodoItem[]>([]);
-  const [localAssignments, setLocalAssignments] = useState<AssignmentItem[]>([]);
-
-  // ── Mutations ────────────────────────────────────────────────────────────────
+  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<
+    string | null
+  >(null);
+  const [hoveredTodoId, setHoveredTodoId] = useState<string | null>(null);
+  const [hoveredAssignmentId, setHoveredAssignmentId] = useState<string | null>(
+    null
+  );
+  const [selectedCourseTitle, setSelectedCourseTitle] = useState<string | null>(
+    null
+  );
 
   const { mutate: updateTask } = useMutation({
     meta: { disableLoadingDefault: true },
@@ -185,12 +163,20 @@ export const Home = () => {
       payload,
     }: {
       id: string;
-      payload: { status?: ItemStatus; type?: AssignmentType };
+      payload: {
+        title?: string;
+        dueDate?: string;
+        status?: ItemStatus;
+        type?: AssignmentType;
+      };
     }) => updateAssignment(id, payload),
     onMutate: ({ id, payload }) =>
       applyOptimisticAssignmentUpdate(queryClient, id, payload),
     onError: (_error, _variables, context) => {
-      rollbackOptimisticDashboardUpdate(queryClient, context?.previousDashboard);
+      rollbackOptimisticDashboardUpdate(
+        queryClient,
+        context?.previousDashboard
+      );
     },
   });
 
@@ -213,52 +199,117 @@ export const Home = () => {
         estimatedTimeUnit
       ),
     onError: (_error, _variables, context) => {
-      rollbackOptimisticDashboardUpdate(queryClient, context?.previousDashboard);
+      rollbackOptimisticDashboardUpdate(
+        queryClient,
+        context?.previousDashboard
+      );
     },
   });
 
-  // ── Rows: merge server data + local temp items ────────────────────────────────
+  const updateTodoDetailsMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        title?: string;
+        dueDate?: string;
+        estimatedTimeValue?: number;
+        estimatedTimeUnit?: "minutes" | "hours" | "days";
+      };
+    }) => updateGeneralTask(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const createTaskMutation = useMutation({
+    mutationFn: createGeneralTask,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const createAssignmentMutation = useMutation({
+    mutationFn: createHomeAssignment,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: deleteGeneralTask,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setSelectedTodoId(null);
+      setHoveredTodoId(null);
+    },
+  });
+
+  const deleteAssignmentMutation = useMutation({
+    mutationFn: deleteHomeAssignment,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setSelectedAssignmentId(null);
+      setHoveredAssignmentId(null);
+    },
+  });
+
+  // ── Rows ──────────────────────────────────────────────────────────────────────
 
   const todoRows: TodoItem[] = useMemo(
-    () => [
-      ...(data?.todos ?? []).map((item) => ({ ...item, dueDate: new Date(item.dueDate) })),
-      ...localTodos,
-    ],
-    [data?.todos, localTodos]
+    () =>
+      (data?.todos ?? []).map((item) => ({
+        ...item,
+        dueDate: new Date(item.dueDate),
+      })),
+    [data?.todos]
   );
 
   const assignmentRows: AssignmentItem[] = useMemo(
-    () => [
-      ...(data?.assignments ?? []).map((item) => ({ ...item, dueDate: new Date(item.dueDate) })),
-      ...localAssignments,
-    ],
-    [data?.assignments, localAssignments]
+    () =>
+      (data?.assignments ?? []).map((item) => ({
+        ...item,
+        dueDate: new Date(item.dueDate),
+      })),
+    [data?.assignments]
   );
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
+  const filteredAssignmentRows = useMemo(() => {
+    if (!selectedCourseTitle) {
+      return assignmentRows;
+    }
+
+    return assignmentRows.filter((row) => row.course === selectedCourseTitle);
+  }, [assignmentRows, selectedCourseTitle]);
+
+  const assignmentCourseOptions = useMemo(() => {
+    const uniqueCourseTitles = Array.from(
+      new Set((data?.coursesSummary ?? []).map((course) => course.courseTitle))
+    ).filter(Boolean);
+
+    return uniqueCourseTitles.map((courseTitle) => ({
+      label: courseTitle,
+      value: courseTitle,
+    }));
+  }, [data?.coursesSummary]);
+
+  const assignmentFormFields = useMemo(
+    () => buildAssignmentFields(assignmentCourseOptions),
+    [assignmentCourseOptions]
+  );
+
+  const assignmentEditFields = useMemo(
+    () => assignmentFormFields.filter((field) => field.name !== "course"),
+    [assignmentFormFields]
+  );
 
   const handleTodoToggle = (id: string, currentDone: boolean) => {
-    // If it's a local item, toggle locally
-    if (localTodos.some((t) => t.id === id)) {
-      setLocalTodos((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, done: !currentDone } : t))
-      );
-      return;
-    }
     updateTask({ id, done: !currentDone });
   };
 
   const handleAssignmentStatusCycle = (row: AssignmentItem) => {
-    if (localAssignments.some((a) => a.id === row.id)) {
-      setLocalAssignments((prev) =>
-        prev.map((a) =>
-          a.id === row.id
-            ? { ...a, status: getNextValue(ASSIGNMENT_STATUSES, row.status) }
-            : a
-        )
-      );
-      return;
-    }
     updateAssignmentMutation.mutate({
       id: row.id,
       payload: { status: getNextValue(ASSIGNMENT_STATUSES, row.status) },
@@ -266,78 +317,113 @@ export const Home = () => {
   };
 
   const handleAssignmentTypeCycle = (row: AssignmentItem) => {
-    if (localAssignments.some((a) => a.id === row.id)) {
-      setLocalAssignments((prev) =>
-        prev.map((a) =>
-          a.id === row.id
-            ? { ...a, type: getNextValue(ASSIGNMENT_TYPES, row.type) }
-            : a
-        )
-      );
-      return;
-    }
     updateAssignmentMutation.mutate({
       id: row.id,
       payload: { type: getNextValue(ASSIGNMENT_TYPES, row.type) },
     });
   };
 
-  // ── Modal save handler ────────────────────────────────────────────────────────
+  const handleAddTodoFromAssignment = (row: AssignmentItem) => {
+    createTaskMutation.mutate({
+      title: `מטלה: ${row.title}`,
+      dueDate: row.dueDate.toISOString(),
+      estimatedTimeValue: 30,
+      estimatedTimeUnit: "minutes",
+    });
+  };
+
+  const openAssignmentModal = () => {
+    if (assignmentCourseOptions.length === 0) {
+      return;
+    }
+
+    setModal({ type: "assignment", values: {} });
+  };
+
+  const openTaskEditModal = (row: TodoItem) => {
+    setModal({
+      type: "task",
+      editId: row.id,
+      values: {
+        title: row.title,
+        dueDate: row.dueDate.toISOString().slice(0, 10),
+        estimatedTime: String(row.estimatedTime.value),
+      },
+    });
+  };
+
+  const openAssignmentEditModal = (row: AssignmentItem) => {
+    setModal({
+      type: "assignment",
+      editId: row.id,
+      values: {
+        title: row.title,
+        dueDate: row.dueDate.toISOString().slice(0, 10),
+        status: row.status,
+        type: row.type,
+      },
+    });
+  };
 
   const handleModalSave = (values: FormValues) => {
     if (!modal) return;
 
     if (modal.type === "task") {
       const estimatedMinutes = parseInt(values.estimatedTime ?? "30", 10);
-      const newTask: TodoItem = {
-        id: `local-task-${Date.now()}`,
-        title: values.title ?? "Untitled Task",
-        dueDate: values.dueDate ? new Date(values.dueDate) : new Date(),
-        done: false,
-        estimatedTime: {
-          value: estimatedMinutes < 60 ? estimatedMinutes : estimatedMinutes / 60,
-          unit: estimatedMinutes < 60 ? "minutes" : "hours",
-        },
-      };
 
       if (modal.editId) {
-        setLocalTodos((prev) =>
-          prev.map((t) => (t.id === modal.editId ? newTask : t))
-        );
-      } else {
-        setLocalTodos((prev) => [...prev, newTask]);
+        updateTodoDetailsMutation.mutate({
+          id: modal.editId,
+          payload: {
+            title: values.title ?? "משימה",
+            dueDate: values.dueDate ?? new Date().toISOString(),
+            estimatedTimeValue: Math.max(1, estimatedMinutes),
+            estimatedTimeUnit: "minutes",
+          },
+        });
+        setModal(null);
+        return;
       }
+
+      createTaskMutation.mutate({
+        title: values.title ?? "משימה",
+        dueDate: values.dueDate ?? new Date().toISOString(),
+        estimatedTimeValue: Math.max(1, estimatedMinutes),
+        estimatedTimeUnit: "minutes",
+      });
     }
 
     if (modal.type === "assignment") {
-      const newAssignment: AssignmentItem = {
-        id: `local-assignment-${Date.now()}`,
-        title: values.title ?? "Untitled Assignment",
-        course: values.course ?? "",
-        dueDate: values.dueDate ? new Date(values.dueDate) : new Date(),
-        status: (values.status as ItemStatus) ?? "not_started",
-        type: (values.type as AssignmentType) ?? "homework",
-      };
-
       if (modal.editId) {
-        setLocalAssignments((prev) =>
-          prev.map((a) => (a.id === modal.editId ? newAssignment : a))
-        );
-      } else {
-        setLocalAssignments((prev) => [...prev, newAssignment]);
+        updateAssignmentMutation.mutate({
+          id: modal.editId,
+          payload: {
+            title: values.title ?? "מטלה",
+            dueDate: values.dueDate ?? new Date().toISOString(),
+            status: (values.status as ItemStatus) ?? "not started",
+            type: (values.type as AssignmentType) ?? "assignment",
+          },
+        });
+        setModal(null);
+        return;
       }
+
+      createAssignmentMutation.mutate({
+        course: values.course ?? "",
+        title: values.title ?? "מטלה",
+        dueDate: values.dueDate ?? new Date().toISOString(),
+        status: (values.status as ItemStatus) ?? "not started",
+        type: (values.type as AssignmentType) ?? "assignment",
+      });
     }
 
     setModal(null);
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────────
-
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", p: 0 }}>
       <ChatBotBubble exampleQuestions={["What exams do I have this week?"]} />
 
-      {/* Page header */}
       <Box
         sx={{
           px: 3,
@@ -353,7 +439,17 @@ export const Home = () => {
       </Box>
 
       <Box sx={{ p: 3, maxWidth: 1100, mx: "auto" }}>
-        {/* ── AI Study Plan Banner ───────────────────────────────── */}
+        {selectedCourseTitle && (
+          <Box display="flex" justifyContent="flex-end" mb={1.5}>
+            <Chip
+              label={`מסונן לפי: ${selectedCourseTitle}`}
+              onDelete={() => setSelectedCourseTitle(null)}
+              color="primary"
+              variant="outlined"
+            />
+          </Box>
+        )}
+
         <Paper
           elevation={0}
           sx={{
@@ -419,27 +515,37 @@ export const Home = () => {
         </Paper>
 
         {/* ── Two-column grid ────────────────────────────────────── */}
-        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "minmax(0, 1.45fr) minmax(0, 0.85fr)",
+            },
+            gap: 2,
+          }}
+        >
           {/* LEFT column */}
           <Box display="flex" flexDirection="column" gap={2}>
-
             {/* To Do card */}
             <SectionCard
               title="To Do"
               icon={<CheckCircleIcon sx={{ color: "#22c55e", fontSize: 20 }} />}
             >
               {isInitialLoading && (
-                <Typography color="text.secondary" fontSize={13}>טוען...</Typography>
+                <Typography color="text.secondary" fontSize={13}>
+                  טוען...
+                </Typography>
               )}
               {isError && (
-                <Typography color="error" fontSize={13}>לא הצלחנו לטעון משימות כרגע</Typography>
+                <Typography color="error" fontSize={13}>
+                  לא הצלחנו לטעון משימות כרגע
+                </Typography>
               )}
-              {/* Header row */}
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: "1fr auto auto auto",
+                  gridTemplateColumns: "1fr auto auto auto auto",
                   gap: 1,
                   pb: 0.5,
                   mb: 0.5,
@@ -447,10 +553,41 @@ export const Home = () => {
                   borderColor: "divider",
                 }}
               >
-                <Typography fontSize={12} color="text.secondary" textAlign="right">שם משימה</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">תאריך יעד</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="center">בוצע</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">זמן משוער</Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  שם משימה
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  תאריך יעד
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="center"
+                >
+                  בוצע
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  זמן משוער
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="center"
+                >
+                  פעולות
+                </Typography>
               </Box>
 
               {todoRows.map((row) => (
@@ -458,14 +595,27 @@ export const Home = () => {
                   key={row.id}
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: "1fr auto auto auto",
+                    gridTemplateColumns: "1fr auto auto auto auto",
                     gap: 1,
                     alignItems: "center",
                     py: 0.8,
                     borderBottom: "1px solid",
                     borderColor: "divider",
+                    cursor: "pointer",
+                    transition: "background-color 0.18s ease",
+                    ...(selectedTodoId === row.id && {
+                      bgcolor: "action.selected",
+                    }),
+                    ...(hoveredTodoId === row.id && {
+                      bgcolor: "action.hover",
+                    }),
                     "&:last-of-type": { borderBottom: "none" },
                   }}
+                  onMouseEnter={() => setHoveredTodoId(row.id)}
+                  onMouseLeave={() =>
+                    setHoveredTodoId((prev) => (prev === row.id ? null : prev))
+                  }
+                  onClick={() => setSelectedTodoId(row.id)}
                 >
                   <Typography
                     fontSize={13}
@@ -477,7 +627,11 @@ export const Home = () => {
                   >
                     {row.title}
                   </Typography>
-                  <Typography fontSize={13} color="text.secondary" textAlign="right">
+                  <Typography
+                    fontSize={13}
+                    color="text.secondary"
+                    textAlign="right"
+                  >
                     {formatDueDate(row.dueDate)}
                   </Typography>
                   <Box display="flex" justifyContent="center">
@@ -496,10 +650,10 @@ export const Home = () => {
                     textAlign="right"
                     sx={{ cursor: "pointer" }}
                     onClick={() => {
-                      // Only cycle estimated time for server items
-                      if (localTodos.some((t) => t.id === row.id)) return;
                       const nextEstimatedTimeValue =
-                        row.estimatedTime.value >= 120 ? 15 : row.estimatedTime.value + 15;
+                        row.estimatedTime.value >= 120
+                          ? 15
+                          : row.estimatedTime.value + 15;
                       updateTodoEstimatedTimeMutation.mutate({
                         id: row.id,
                         estimatedTimeValue: nextEstimatedTimeValue,
@@ -509,6 +663,36 @@ export const Home = () => {
                   >
                     {formatDuration(row.estimatedTime)}
                   </Typography>
+                  <Box display="flex" justifyContent="center" gap={0.3}>
+                    {(selectedTodoId === row.id ||
+                      hoveredTodoId === row.id) && (
+                      <>
+                        <IconButton
+                          size="small"
+                          aria-label="ערוך משימה"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openTaskEditModal(row);
+                          }}
+                          sx={{ p: 0.4 }}
+                        >
+                          <EditOutlinedIcon sx={{ fontSize: 17 }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          aria-label="מחק משימה"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            deleteTaskMutation.mutate(row.id);
+                          }}
+                          disabled={deleteTaskMutation.isPending}
+                          sx={{ p: 0.4 }}
+                        >
+                          <DeleteOutlineIcon sx={{ fontSize: 17 }} />
+                        </IconButton>
+                      </>
+                    )}
+                  </Box>
                 </Box>
               ))}
 
@@ -526,15 +710,12 @@ export const Home = () => {
             </SectionCard>
 
             {/* Assignments card */}
-            <SectionCard
-              title="Assignments"
-              onNext={() => setModal({ type: "assignment", values: {} })}
-            >
+            <SectionCard title="Assignments" onNext={openAssignmentModal}>
               {/* Header */}
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: "auto auto 1fr auto auto auto",
+                  gridTemplateColumns: "auto auto 1fr auto auto auto auto auto",
                   gap: 1,
                   pb: 0.5,
                   mb: 0.5,
@@ -542,40 +723,113 @@ export const Home = () => {
                   borderColor: "divider",
                 }}
               >
-                <Typography fontSize={12} color="text.secondary" textAlign="right">סטטוס</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">קורס</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">שם מטלה</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">תאריך יעד</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">סוג</Typography>
-                <Typography fontSize={12} color="text.secondary" textAlign="right">ימים שנותרו</Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  סטטוס
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  קורס
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  שם מטלה
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  תאריך יעד
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  סוג
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="right"
+                >
+                  ימים שנותרו
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="center"
+                >
+                  לטודו
+                </Typography>
+                <Typography
+                  fontSize={12}
+                  color="text.secondary"
+                  textAlign="center"
+                >
+                  פעולות
+                </Typography>
               </Box>
 
               {isInitialLoading && (
-                <Typography color="text.secondary" fontSize={13}>טוען...</Typography>
+                <Typography color="text.secondary" fontSize={13}>
+                  טוען...
+                </Typography>
               )}
               {isError && (
-                <Typography color="error" fontSize={13}>לא הצלחנו לטעון מטלות כרגע</Typography>
+                <Typography color="error" fontSize={13}>
+                  לא הצלחנו לטעון מטלות כרגע
+                </Typography>
               )}
 
-              {assignmentRows.map((row) => {
-                const relativeDueDate = getRelativeDueDate(row.dueDate, row.status);
+              {filteredAssignmentRows.map((row) => {
+                const relativeDueDate = getRelativeDueDate(
+                  row.dueDate,
+                  row.status
+                );
                 return (
                   <Box
                     key={row.id}
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "auto auto 1fr auto auto auto",
+                      gridTemplateColumns:
+                        "auto auto 1fr auto auto auto auto auto",
                       gap: 1,
                       alignItems: "center",
                       py: 0.8,
                       borderBottom: "1px solid",
                       borderColor: "divider",
+                      cursor: "pointer",
+                      transition: "background-color 0.18s ease",
+                      ...(selectedAssignmentId === row.id && {
+                        bgcolor: "action.selected",
+                      }),
+                      ...(hoveredAssignmentId === row.id && {
+                        bgcolor: "action.hover",
+                      }),
                       "&:last-of-type": { borderBottom: "none" },
                       ...(isOverdue(relativeDueDate) && {
                         bgcolor: "var(--sb-home-overdue-row-bg)",
                         borderColor: "var(--sb-home-overdue-row-border)",
                       }),
                     }}
+                    onMouseEnter={() => setHoveredAssignmentId(row.id)}
+                    onMouseLeave={() =>
+                      setHoveredAssignmentId((prev) =>
+                        prev === row.id ? null : prev
+                      )
+                    }
+                    onClick={() => setSelectedAssignmentId(row.id)}
                   >
                     <Chip
                       label={statusToDisplayName(row.status)}
@@ -612,6 +866,47 @@ export const Home = () => {
                     >
                       {relativeDueDateToDisplayName(relativeDueDate)}
                     </Typography>
+                    <Box display="flex" justifyContent="center">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleAddTodoFromAssignment(row)}
+                        disabled={createTaskMutation.isPending}
+                        aria-label="הוסף לטודו"
+                        sx={{ p: 0.4 }}
+                      >
+                        <AddTaskIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Box>
+                    <Box display="flex" justifyContent="center" gap={0.3}>
+                      {(selectedAssignmentId === row.id ||
+                        hoveredAssignmentId === row.id) && (
+                        <>
+                          <IconButton
+                            size="small"
+                            aria-label="ערוך מטלה"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openAssignmentEditModal(row);
+                            }}
+                            sx={{ p: 0.4 }}
+                          >
+                            <EditOutlinedIcon sx={{ fontSize: 17 }} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            aria-label="מחק מטלה"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteAssignmentMutation.mutate(row.id);
+                            }}
+                            disabled={deleteAssignmentMutation.isPending}
+                            sx={{ p: 0.4 }}
+                          >
+                            <DeleteOutlineIcon sx={{ fontSize: 17 }} />
+                          </IconButton>
+                        </>
+                      )}
+                    </Box>
                   </Box>
                 );
               })}
@@ -622,7 +917,7 @@ export const Home = () => {
                 alignItems="center"
                 gap={0.5}
                 sx={{ cursor: "pointer", color: "text.secondary", mt: 1 }}
-                onClick={() => setModal({ type: "assignment", values: {} })}
+                onClick={openAssignmentModal}
               >
                 <AddIcon fontSize="small" />
                 <Typography fontSize={13}>הוסף מטלה</Typography>
@@ -632,8 +927,11 @@ export const Home = () => {
 
           {/* RIGHT column */}
           <Box display="flex" flexDirection="column" gap={2}>
-            <UpcomingEvents />
-            <CoursesSummary />
+            <UpcomingEvents selectedCourseTitle={selectedCourseTitle} />
+            <CoursesSummary
+              selectedCourseTitle={selectedCourseTitle}
+              onCourseSelect={setSelectedCourseTitle}
+            />
           </Box>
         </Box>
       </Box>
@@ -643,23 +941,25 @@ export const Home = () => {
         <GenericFormModal
           open
           onClose={() => setModal(null)}
-          title={
-            modal.editId
-              ? modal.type === "task"
-                ? "Edit Task"
-                : "Edit Assignment"
-              : modal.type === "task"
-              ? "Add Task"
-              : "Add Assignment"
+          title={getHomeModalTitle(modal)}
+          fields={
+            modal.type === "task"
+              ? TASK_FIELDS
+              : modal.editId
+                ? assignmentEditFields
+                : assignmentFormFields
           }
-          fields={modal.type === "task" ? TASK_FIELDS : ASSIGNMENT_FIELDS}
           values={modal.values}
-          onChange={(name: any, value: any) =>
+          onChange={(name: string, value: string) =>
             setModal((prev) =>
-              prev ? { ...prev, values: { ...prev.values, [name]: value } } : null
+              prev
+                ? { ...prev, values: { ...prev.values, [name]: value } }
+                : null
             )
           }
           onSave={handleModalSave}
+          saveLabel="שמור"
+          cancelLabel="ביטול"
         />
       )}
     </Box>

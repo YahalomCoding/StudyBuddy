@@ -3,16 +3,18 @@ import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
-import type { CourseSummaryViewItem } from "./types";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { getHomeDashboard, homeDashboardQueryKey } from "../../api/home";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import {
+  createCourseSummary,
+  getHomeDashboard,
+  homeDashboardQueryKey,
+} from "../../api/home";
 import {
   GenericFormModal,
   type FormField,
   type FormValues,
 } from "../GenericFormModal/GenericFormModal";
-
 const PAGE_SIZE = 3;
 
 const COURSE_FIELDS: FormField[] = [
@@ -20,7 +22,7 @@ const COURSE_FIELDS: FormField[] = [
     type: "text",
     name: "courseTitle",
     label: "שם הקורס",
-    placeholder: "Web Development",
+    placeholder: "פיתוח ווב",
   },
   {
     type: "text",
@@ -32,15 +34,23 @@ const COURSE_FIELDS: FormField[] = [
     type: "text",
     name: "semesterLabel",
     label: "סמסטר",
-    placeholder: "Semester A",
+    placeholder: "סמסטר א'",
   },
 ];
 
-export const CoursesSummary = () => {
+type CoursesSummaryProps = {
+  selectedCourseTitle?: string | null;
+  onCourseSelect?: (courseTitle: string | null) => void;
+};
+
+export const CoursesSummary = ({
+  selectedCourseTitle = null,
+  onCourseSelect,
+}: CoursesSummaryProps) => {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalValues, setModalValues] = useState<FormValues>({});
-  const [localCourses, setLocalCourses] = useState<CourseSummaryViewItem[]>([]);
 
   const { data } = useQuery({
     queryKey: homeDashboardQueryKey,
@@ -52,21 +62,22 @@ export const CoursesSummary = () => {
     [data?.coursesSummary]
   );
 
-  const allItems = useMemo(
-    () => [...serverItems, ...localCourses],
-    [serverItems, localCourses]
-  );
+  const allItems = useMemo(() => serverItems, [serverItems]);
+
+  const createCourseMutation = useMutation({
+    mutationFn: createCourseSummary,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
 
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
-
-  useEffect(() => {
-    setPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+  const currentPage = Math.min(page, totalPages);
 
   const currentItems = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
     return allItems.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [allItems, page]);
+  }, [allItems, currentPage]);
 
   const paddedItems = useMemo(() => {
     const items: ((typeof currentItems)[number] | null)[] = [...currentItems];
@@ -79,11 +90,11 @@ export const CoursesSummary = () => {
   }, [currentItems]);
 
   const handlePrevPage = () => {
-    setPage((prev) => Math.max(1, prev - 1));
+    setPage((prev) => Math.max(1, Math.min(prev, totalPages) - 1));
   };
 
   const handleNextPage = () => {
-    setPage((prev) => Math.min(totalPages, prev + 1));
+    setPage((prev) => Math.min(totalPages, Math.min(prev, totalPages) + 1));
   };
 
   const handleOpenModal = () => {
@@ -97,15 +108,10 @@ export const CoursesSummary = () => {
   };
 
   const handleSaveCourse = (values: FormValues) => {
-    const newCourse: CourseSummaryViewItem = {
-      id: `local-course-${Date.now()}`,
-      studentSemesterCourseId: values.studentSemesterCourseId ?? "",
+    createCourseMutation.mutate({
       courseTitle: values.courseTitle ?? "",
-      courseId: values.courseId ?? "",
       semesterLabel: values.semesterLabel ?? "",
-    };
-
-    setLocalCourses((prev) => [...prev, newCourse]);
+    });
     handleCloseModal();
   };
 
@@ -144,20 +150,19 @@ export const CoursesSummary = () => {
             </Box>
 
             <Typography fontWeight={600} fontSize={15}>
-              My Courses
+              הקורסים שלי
             </Typography>
           </Box>
 
           <Box display="flex" alignItems="center" gap={0.5}>
-
             <Typography fontSize={12} color="text.secondary">
-              עמוד {page} מתוך {totalPages}
+              עמוד {currentPage} מתוך {totalPages}
             </Typography>
 
             <IconButton
               size="small"
               onClick={handlePrevPage}
-              disabled={page === 1}
+              disabled={currentPage === 1}
               sx={{ p: 0.3 }}
             >
               <ChevronRightRoundedIcon fontSize="small" />
@@ -166,16 +171,13 @@ export const CoursesSummary = () => {
             <IconButton
               size="small"
               onClick={handleNextPage}
-              disabled={page === totalPages}
+              disabled={currentPage === totalPages}
               sx={{ p: 0.3 }}
             >
               <ChevronLeftRoundedIcon fontSize="small" />
             </IconButton>
           </Box>
         </Box>
-
-        {/* Rows */}
-
         <Box>
           {paddedItems.map((item, index) => {
             if (!item) {
@@ -204,12 +206,30 @@ export const CoursesSummary = () => {
                   py: 0.8,
                   borderBottom: "1px solid",
                   borderColor: "divider",
+                  cursor: "pointer",
+                  transition: "background-color 0.18s ease",
+                  ...(selectedCourseTitle === item.courseTitle && {
+                    bgcolor: "action.selected",
+                  }),
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
                   "&:last-of-type": {
                     borderBottom: "none",
                   },
                 }}
+                onClick={() => {
+                  if (!onCourseSelect) {
+                    return;
+                  }
+
+                  onCourseSelect(
+                    selectedCourseTitle === item.courseTitle
+                      ? null
+                      : item.courseTitle
+                  );
+                }}
               >
-                {/* Left: icon + text */}
                 <Box display="flex" alignItems="center" gap={1.5}>
                   <Box
                     sx={{
@@ -241,11 +261,6 @@ export const CoursesSummary = () => {
                     </Typography>
                   </Box>
                 </Box>
-
-                {/* Right: course ID */}
-                <Typography fontSize={12} color="text.secondary" flexShrink={0}>
-                  {item.courseId}
-                </Typography>
               </Box>
             );
           })}
@@ -270,7 +285,7 @@ export const CoursesSummary = () => {
       <GenericFormModal
         open={modalOpen}
         onClose={handleCloseModal}
-        title="Add Course"
+        title="הוסף קורס"
         fields={COURSE_FIELDS}
         values={modalValues}
         onChange={(name, value) =>
@@ -280,8 +295,8 @@ export const CoursesSummary = () => {
           }))
         }
         onSave={handleSaveCourse}
-        saveLabel="Save"
-        cancelLabel="Cancel"
+        saveLabel="שמור"
+        cancelLabel="ביטול"
       />
     </>
   );

@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch } from "@nestjs/common";
+import { Body, Controller, Delete, Param, Patch } from "@nestjs/common";
 import {
   GeneralTasksService,
   type UpdateGeneralTaskPayload,
@@ -14,5 +14,10 @@ export class GeneralTasksController {
     @Body() body: UpdateGeneralTaskPayload
   ) {
     return this.generalTasksService.updateTask(id, body);
+  }
+
+  @Delete(":id")
+  async deleteTask(@Param("id") id: string) {
+    return this.generalTasksService.deleteTask(id);
   }
 }

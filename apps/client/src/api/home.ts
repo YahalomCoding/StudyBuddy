@@ -17,7 +17,7 @@ export type HomeDashboardAssignment = {
   course: string;
   title: string;
   dueDate: string;
-  type: "homework" | "practice" | "project" | "report" | "lab";
+  type: "assignment" | "homework" | "practice" | "project" | "report" | "lab";
 };
 
 export type HomeDashboardUpcomingEvent = {
@@ -54,6 +54,8 @@ export const getHomeDashboard = async (): Promise<HomeDashboardResponse> => {
 export const updateGeneralTask = async (
   id: string,
   payload: {
+    title?: string;
+    dueDate?: string;
     done?: boolean;
     estimatedTimeValue?: number;
     estimatedTimeUnit?: "minutes" | "hours" | "days";
@@ -66,10 +68,68 @@ export const updateGeneralTask = async (
 export const updateAssignment = async (
   id: string,
   payload: {
+    title?: string;
+    dueDate?: string;
     status?: "not started" | "active" | "done";
-    type?: "homework" | "practice" | "project" | "report" | "lab";
+    type?:
+      | "assignment"
+      | "homework"
+      | "practice"
+      | "project"
+      | "report"
+      | "lab";
   }
 ) => {
   const response = await baseApi.patch(`/assignments/${id}`, payload);
+  return response.data;
+};
+
+export const deleteGeneralTask = async (id: string) => {
+  const response = await baseApi.delete(`/general-tasks/${id}`);
+  return response.data;
+};
+
+export const deleteHomeAssignment = async (id: string) => {
+  const response = await baseApi.delete(`/assignments/${id}`);
+  return response.data;
+};
+
+export const createGeneralTask = async (payload: {
+  title: string;
+  dueDate: string;
+  estimatedTimeValue: number;
+  estimatedTimeUnit: "minutes" | "hours" | "days";
+}) => {
+  const response = await baseApi.post("/home/tasks", payload);
+  return response.data;
+};
+
+export const createHomeAssignment = async (payload: {
+  course: string;
+  title: string;
+  dueDate: string;
+  status: "not started" | "active" | "done";
+  type: "assignment" | "homework" | "practice" | "project" | "report" | "lab";
+}) => {
+  const response = await baseApi.post("/home/assignments", payload);
+  return response.data;
+};
+
+export const createUpcomingEvent = async (payload: {
+  kind: "assignment" | "exam";
+  courseTitle: string;
+  description: string;
+  eventDate: string;
+  semesterLabel: string;
+}) => {
+  const response = await baseApi.post("/home/events", payload);
+  return response.data;
+};
+
+export const createCourseSummary = async (payload: {
+  courseTitle: string;
+  semesterLabel: string;
+}) => {
+  const response = await baseApi.post("/home/courses", payload);
   return response.data;
 };
