@@ -8,14 +8,10 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { StepOnePage } from "./GeneralDetails";
 import { useCreateQuestionnaireMutation } from "./queries/createQuestionnaireMutation";
+import { useAuth } from "../../contexts/AuthContext";
 import { questionnaireResolver } from "./resolver";
 import { StepThreePage } from "./StepThreePage";
 import { StepTwoPage } from "./StepTwoPage";
-
-const mockUser = {
-  username: "talit",
-  email: "talit@example.com",
-};
 
 const STEPS = [
   { number: 1, label: "פרטים כלליים" },
@@ -25,6 +21,7 @@ const STEPS = [
 
 export const OnBoarding: FC = () => {
   const navigate = useNavigate();
+  const { user, refreshMe } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const { mutateAsync: submitQuestionnaire, isPending } =
@@ -56,6 +53,7 @@ export const OnBoarding: FC = () => {
 
   const onSubmit = async (data: QuestionnaireForm) => {
     await submitQuestionnaire(data);
+    await refreshMe();
     navigate("/home", { replace: true });
   };
 
@@ -224,7 +222,7 @@ export const OnBoarding: FC = () => {
               שאלון פתיחה
             </Typography>
             <Typography fontSize={13} color="text.secondary">
-              מחובר כ-{mockUser.username} ({mockUser.email})
+              מחובר כ-{user?.username} {user?.email ? `(${user.email})` : ""}
             </Typography>
           </Box>
 

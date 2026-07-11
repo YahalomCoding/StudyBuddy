@@ -20,6 +20,7 @@ import {
 } from "nestjs-zod";
 import { ZodError } from "zod";
 import { AssignmentsModule } from "../assignments/assignments.module";
+import { AuthModule } from "../auth/auth.module";
 import { ChatModule } from "../chat/chat.module";
 import { CoursesModule } from "../courses/courses.module";
 import { DegreesModule } from "../degrees/degrees.module";
@@ -66,6 +67,7 @@ class HttpExceptionFilter extends BaseExceptionFilter {
       synchronize: true,
     }),
     ChatModule,
+    AuthModule,
     DegreesModule,
     UsersModule,
     CoursesModule,

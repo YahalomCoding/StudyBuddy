@@ -1,7 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import type { QuestionnaireForm } from "@studybuddy/schemas";
-import { randomUUID } from "node:crypto";
 import { Student } from "../students/student.model";
 import { User } from "../users/user.model";
 
@@ -12,41 +11,28 @@ export class QuestionnaireService {
     @InjectModel(Student) private readonly studentModel: typeof Student
   ) {}
 
-  async submit(data: QuestionnaireForm): Promise<Student> {
-    const sequelize = this.userModel.sequelize;
+  async submit(userId: string, data: QuestionnaireForm): Promise<Student> {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) throw new NotFoundException("User not found");
 
-    if (!sequelize) {
-      throw new Error("Sequelize connection is not available");
+    const existingStudent = await this.studentModel.findOne({ where: { userId } });
+    if (existingStudent) {
+      throw new BadRequestException("Onboarding was already submitted for this user");
     }
 
-    return sequelize.transaction(async (transaction) => {
-      const user = await this.userModel.create(
-        {
-          username: `${data.nickname}-${randomUUID()}`,
-          password: "placeholder",
-        },
-        { transaction }
-      );
-
-      const student = await this.studentModel.create(
-        {
-          userId: user.id,
-          studyType: data.studyType,
-          faculty: data.faculty,
-          coursesPerSemester: data.coursesPerSemester,
-          workStatus: data.workStatus,
-          studyAvailabilityDays: data.studyAvailabilityDays,
-          realisticStudyHoursPerDay: data.realisticStudyHoursPerDay,
-          focusTime: data.focusTime,
-          preferredStudyDuration: data.preferredStudyDuration,
-          strongTopics: data.strongTopics,
-          challengingTopics: data.challengingTopics,
-          semesterFocusGoal: data.semesterFocusGoal,
-        },
-        { transaction }
-      );
-
-      return student;
+    return this.studentModel.create({
+      userId,
+      studyType: data.studyType,
+      faculty: data.faculty,
+      coursesPerSemester: data.coursesPerSemester,
+      workStatus: data.workStatus,
+      studyAvailabilityDays: data.studyAvailabilityDays,
+      realisticStudyHoursPerDay: data.realisticStudyHoursPerDay,
+      focusTime: data.focusTime,
+      preferredStudyDuration: data.preferredStudyDuration,
+      strongTopics: data.strongTopics,
+      challengingTopics: data.challengingTopics,
+      semesterFocusGoal: data.semesterFocusGoal,
     });
   }
 }
