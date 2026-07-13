@@ -10,6 +10,9 @@ import { InjectModel } from "@nestjs/sequelize";
 import { Assignment } from "./assignment.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
+import { Course } from "../courses/course.model";
+import { Semester } from "../semesters/semester.model";
+import { SemesterCourse } from "../semester-courses/semester-course.model";
 
 const ASSIGNMENT_STATUSES = ["not started", "active", "done"] as const;
 type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
@@ -175,5 +178,69 @@ export class AssignmentsService {
     await assignment.destroy();
 
     return { success: true };
+  }
+
+  async getOrderedFormattedAssignmentsByStudentId(studentId: string) {
+    const orderedAssignmentsByStudentId = await this.assignmentModel.findAll({
+      attributes: ["id", "status", "description", "deadline", "type"],
+      include: [
+        {
+          model: StudentSemesterCourse,
+          required: true,
+          attributes: ["id"],
+          include: [
+            {
+              model: Student,
+              required: true,
+              attributes: ["id"],
+              where: { id: studentId },
+            },
+            {
+              model: SemesterCourse,
+              required: true,
+              attributes: ["id"],
+              include: [
+                {
+                  model: Course,
+                  required: true,
+                  attributes: ["id", "title"],
+                },
+                {
+                  model: Semester,
+                  required: true,
+                  attributes: ["id", "yearNumber", "semesterNumber"],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [["deadline", "ASC"]],
+    });
+
+    const orderedFormattedAssignmentsByStudentId =
+      orderedAssignmentsByStudentId.map(
+        ({
+          id,
+          status,
+          studentSemesterCourse: {
+            semesterCourse: {
+              course: { title: course },
+            },
+          },
+          description: title,
+          deadline,
+          type,
+        }) => ({
+          id,
+          status,
+          course,
+          title,
+          dueDate: deadline.toISOString(),
+          type,
+        })
+      );
+
+    return orderedFormattedAssignmentsByStudentId;
   }
 }

@@ -11,6 +11,11 @@ import { Semester } from "../semesters/semester.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
 import { User } from "../users/user.model";
+import { GeneralTasksService } from "../general-tasks/general-tasks.service";
+import { StudentSemesterCoursesService } from "../student-semester-courses/student-semester-courses.service";
+import { AssignmentsService } from "../assignments/assignments.service";
+import { ExamsService } from "../exams/exams.service";
+import { UpcomingEventsTypesEnum } from "../types";
 
 const DURATION_UNITS = ["minutes", "hours", "days"] as const;
 type DurationUnit = (typeof DURATION_UNITS)[number];
@@ -46,7 +51,7 @@ type DashboardResponse = {
   }[];
   upcomingEvents: {
     id: string;
-    kind: "assignment" | "exam";
+    kind: UpcomingEventsTypesEnum;
     courseTitle: string;
     description: string;
     eventDate: string;
@@ -105,7 +110,11 @@ export class HomeService {
     @InjectModel(SemesterCourse)
     private readonly semesterCourseModel: typeof SemesterCourse,
     @InjectModel(StudentSemesterCourse)
-    private readonly studentSemesterCourseModel: typeof StudentSemesterCourse
+    private readonly studentSemesterCourseModel: typeof StudentSemesterCourse,
+    private readonly generalTasksService: GeneralTasksService,
+    private readonly assignmentsService: AssignmentsService,
+    private readonly examsService: ExamsService,
+    private readonly studentSemesterCoursesService: StudentSemesterCoursesService
   ) {}
 
   async seedDemoData() {
@@ -366,160 +375,29 @@ export class HomeService {
   }
 
   async getDashboard(studentId: string): Promise<DashboardResponse> {
-    if (!studentId) {
-      return {
-        todos: [],
-        assignments: [],
-        upcomingEvents: [],
-        coursesSummary: [],
-      };
-    }
-
-    const [generalTasks, studentSemesterCourses] = await Promise.all([
-      this.generalTaskModel.findAll({
-        where: { studentId },
-        order: [["dueDate", "ASC"]],
-      }),
-      this.studentSemesterCourseModel.findAll({
-        where: { studentId },
-        include: [
-          {
-            model: SemesterCourse,
-            include: [Course, Semester],
-          },
-        ],
-      }),
-    ]);
-
-    const studentSemesterCourseIds = studentSemesterCourses.map(
-      (item) => item.id
-    );
-
-    const [assignments, exams] = await Promise.all([
-      studentSemesterCourseIds.length
-        ? this.assignmentModel.findAll({
-            where: { studentSemesterCourseId: studentSemesterCourseIds },
-            order: [["deadline", "ASC"]],
-          })
-        : Promise.resolve([]),
-      studentSemesterCourseIds.length
-        ? this.examModel.findAll({
-            where: { studentSemesterCourseId: studentSemesterCourseIds },
-            order: [["date", "ASC"]],
-          })
-        : Promise.resolve([]),
-    ]);
-
-    const contextByStudentSemesterCourseId = new Map(
-      studentSemesterCourses.map((item) => {
-        const semesterCourse = item.semesterCourse;
-        const courseTitle = semesterCourse?.course?.title ?? "";
-        const courseId = semesterCourse?.course?.id ?? "";
-        const semesterNumber = semesterCourse?.semester?.semesterNumber;
-        const yearNumber = semesterCourse?.semester?.yearNumber;
-
-        const semesterLabel =
-          semesterNumber && yearNumber
-            ? `סמסטר ${semesterNumber} / ${yearNumber}`
-            : "";
-
-        return [
-          item.id,
-          {
-            courseTitle,
-            courseId,
-            semesterLabel,
-          },
-        ] as const;
-      })
-    );
-
-    const todos = generalTasks.map((task) => ({
-      id: task.id,
-      title: task.description,
-      dueDate: task.dueDate.toISOString(),
-      done: task.done ?? false,
-      estimatedTime: {
-        value: task.estimatedTimeValue ?? 30,
-        unit: this.parseDurationUnit(task.estimatedTimeUnit),
-      },
-    }));
-
-    const assignmentsForHome = assignments.map((assignment) => {
-      const context = contextByStudentSemesterCourseId.get(
-        assignment.studentSemesterCourseId
+    const orderedFormattedGeneralTasksByStudentId =
+      await this.generalTasksService.getOrderedFormattedGeneralTasksByStudentId(
+        studentId
       );
 
-      return {
-        id: assignment.id,
-        status: this.parseAssignmentStatus(assignment.status),
-        course: context?.courseTitle || "ללא קורס",
-        title: assignment.description,
-        dueDate: assignment.deadline.toISOString(),
-        type: this.parseAssignmentType(assignment.type),
-      };
-    });
+    const orderedFormattedAssignmentsByStudentId =
+      await this.assignmentsService.getOrderedFormattedAssignmentsByStudentId(
+        studentId
+      );
 
-    const upcomingEvents = [
-      ...assignments.map((assignment) => {
-        const context = contextByStudentSemesterCourseId.get(
-          assignment.studentSemesterCourseId
-        );
+    const oredredFormattedExamsByStudentdId =
+      await this.examsService.getOredredFormattedExamsByStudentdId(studentId);
 
-        return {
-          id: assignment.id,
-          kind: "assignment" as const,
-          courseTitle: context?.courseTitle || "ללא קורס",
-          description: assignment.description,
-          eventDate: assignment.deadline.toISOString(),
-          semesterLabel: context?.semesterLabel || "",
-        };
-      }),
-      ...exams.map((exam) => {
-        const context = contextByStudentSemesterCourseId.get(
-          exam.studentSemesterCourseId
-        );
-
-        return {
-          id: exam.id,
-          kind: "exam" as const,
-          courseTitle: context?.courseTitle || "ללא קורס",
-          description: this.examTypeToDisplayText(exam.type),
-          eventDate: exam.date.toISOString(),
-          semesterLabel: context?.semesterLabel || "",
-        };
-      }),
-    ].sort(
-      (left, right) =>
-        new Date(left.eventDate).getTime() - new Date(right.eventDate).getTime()
-    );
-
-    const coursesSummary = studentSemesterCourses
-      .map((item) => {
-        const context = contextByStudentSemesterCourseId.get(item.id);
-
-        if (!context || !context.courseId || !context.courseTitle) {
-          return null;
-        }
-
-        return {
-          id: item.id,
-          studentSemesterCourseId: item.id,
-          courseId: context.courseId,
-          courseTitle: context.courseTitle,
-          semesterLabel: context.semesterLabel,
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null)
-      .sort((left, right) =>
-        left.courseTitle.localeCompare(right.courseTitle, "he")
+    const orderedFormattedCoursesByStudentId =
+      await this.studentSemesterCoursesService.getOrderedFormattedCoursesByStudentId(
+        studentId
       );
 
     return {
-      todos,
-      assignments: assignmentsForHome,
-      upcomingEvents,
-      coursesSummary,
+      todos: orderedFormattedGeneralTasksByStudentId,
+      assignments: orderedFormattedAssignmentsByStudentId,
+      upcomingEvents: oredredFormattedExamsByStudentdId,
+      coursesSummary: orderedFormattedCoursesByStudentId,
     };
   }
 
@@ -689,17 +567,6 @@ export class HomeService {
     }
 
     return parsed;
-  }
-
-  private examTypeToDisplayText(type: number): string {
-    switch (type) {
-      case 1:
-        return "מבחן";
-      case 2:
-        return "מועד ב'";
-      default:
-        return "בחינה";
-    }
   }
 
   private parseDurationUnit(value: string | null | undefined): DurationUnit {

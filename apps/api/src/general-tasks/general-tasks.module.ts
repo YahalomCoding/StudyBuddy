@@ -8,5 +8,6 @@ import { GeneralTasksService } from "./general-tasks.service";
   imports: [SequelizeModule.forFeature([GeneralTask])],
   controllers: [GeneralTasksController],
   providers: [GeneralTasksService],
+  exports: [GeneralTasksService],
 })
 export class GeneralTasksModule {}

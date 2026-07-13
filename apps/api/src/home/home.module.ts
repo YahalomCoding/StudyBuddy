@@ -12,6 +12,10 @@ import { Student } from "../students/student.model";
 import { User } from "../users/user.model";
 import { HomeController } from "./home.controller";
 import { HomeService } from "./home.service";
+import { GeneralTasksModule } from "../general-tasks/general-tasks.module";
+import { StudentSemesterCoursesModule } from "../student-semester-courses/student-semester-courses.module";
+import { AssignmentsModule } from "../assignments/assignments.module";
+import { ExamsModule } from "../exams/exams.module";
 
 @Module({
   imports: [
@@ -27,6 +31,10 @@ import { HomeService } from "./home.service";
       Degree,
       Semester,
     ]),
+    GeneralTasksModule,
+    AssignmentsModule,
+    ExamsModule,
+    StudentSemesterCoursesModule,
   ],
   controllers: [HomeController],
   providers: [HomeService],
