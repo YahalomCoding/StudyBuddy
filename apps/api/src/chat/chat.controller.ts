@@ -28,7 +28,7 @@ export class ChatController {
     const stream = chat({
       adapter: aiTextProviderAdapter,
       stream: true,
-      messages: body.messages as Parameters<typeof chat>[0]["messages"],
+      messages: body.messages,
       conversationId: body.conversationId ?? body.data?.conversationId,
       tools: [await getCurrentTimeTool, showNotificationClientDef],
       systemPrompts: [systemPrompt.prompt],

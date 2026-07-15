@@ -31,7 +31,7 @@ export class AssignmentsController {
   @Post("import-ics")
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor("file"))
-  async importAssignmentsFromIcs(
+  importAssignmentsFromIcs(
     @Req() req: any,
     @UploadedFile() file: UploadedIcsFile
   ) {
@@ -40,6 +40,7 @@ export class AssignmentsController {
     }
 
     return this.assignmentsService.importAssignmentsFromIcs(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
       req.user.id,
       file.buffer
     );
@@ -54,7 +55,7 @@ export class AssignmentsController {
   }
 
   @Delete(":id")
-  async deleteAssignment(@Param("id") id: string) {
+  deleteAssignment(@Param("id") id: string) {
     return this.assignmentsService.deleteAssignment(id);
   }
 }

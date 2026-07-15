@@ -1,5 +1,4 @@
 import { env } from "../env";
-// @ts-expect-error -- @langfuse/client is ESM-only; the require call works at runtime
 import { LangfuseClient } from "@langfuse/client";
 
 const langfuse = new LangfuseClient();
@@ -31,7 +30,7 @@ declare global {
     | undefined;
 }
 global.CACHED_SYSTEM_PROMPTS = global.CACHED_SYSTEM_PROMPTS ?? {};
-const CACHED_SYSTEM_PROMPTS = global.CACHED_SYSTEM_PROMPTS!;
+const CACHED_SYSTEM_PROMPTS = global.CACHED_SYSTEM_PROMPTS;
 
 export const getSystemPrompt = async (
   promptName: string

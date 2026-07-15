@@ -1,9 +1,9 @@
+/* eslint-disable turbo/no-undeclared-env-vars */
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { SequelizeModule } from "@nestjs/sequelize";
 import type { StringValue } from "ms";
-
 import { User } from "../users/user.model";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";

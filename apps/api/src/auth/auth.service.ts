@@ -1,3 +1,4 @@
+/* eslint-disable turbo/no-undeclared-env-vars */
 import {
   BadRequestException,
   Injectable,
@@ -24,7 +25,9 @@ export interface AuthResponse {
 
 @Injectable()
 export class AuthService {
-  private readonly googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  private readonly googleClient = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID
+  );
 
   constructor(
     @InjectModel(User) private readonly userModel: typeof User,

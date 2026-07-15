@@ -24,6 +24,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix("api");
 
+  // eslint-disable-next-line turbo/no-undeclared-env-vars
   await app.listen(process.env.API_PORT ?? process.env.PORT ?? 3000);
 }
 

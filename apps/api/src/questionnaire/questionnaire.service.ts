@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import type { QuestionnaireForm } from "@studybuddy/schemas";
 import { Student } from "../students/student.model";
@@ -15,9 +19,13 @@ export class QuestionnaireService {
     const user = await this.userModel.findByPk(userId);
     if (!user) throw new NotFoundException("User not found");
 
-    const existingStudent = await this.studentModel.findOne({ where: { userId } });
+    const existingStudent = await this.studentModel.findOne({
+      where: { userId },
+    });
     if (existingStudent) {
-      throw new BadRequestException("Onboarding was already submitted for this user");
+      throw new BadRequestException(
+        "Onboarding was already submitted for this user"
+      );
     }
 
     return this.studentModel.create({

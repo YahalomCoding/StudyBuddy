@@ -1,4 +1,3 @@
-/* eslint-disable turbo/no-undeclared-env-vars */
 import {
   ArgumentsHost,
   Catch,
@@ -42,7 +41,7 @@ class HttpExceptionFilter extends BaseExceptionFilter {
 
   catch(exception: HttpException, host: ArgumentsHost) {
     if (exception instanceof ZodSerializationException) {
-      const serializationException = exception as ZodSerializationException;
+      const serializationException = exception;
       const zodError = serializationException.getZodError();
 
       if (zodError instanceof ZodError) {

@@ -1,12 +1,12 @@
 import type { NonAttribute } from "sequelize";
 import {
-    BelongsTo,
-    Column,
-    DataType,
-    ForeignKey,
-    Model,
-    PrimaryKey,
-    Table,
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  Model,
+  PrimaryKey,
+  Table,
 } from "sequelize-typescript";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Student } from "../students/student.model";

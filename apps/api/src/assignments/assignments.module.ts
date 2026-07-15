@@ -7,7 +7,9 @@ import { StudentSemesterCourse } from "../student-semester-courses/student-semes
 import { Student } from "../students/student.model";
 
 @Module({
-  imports: [SequelizeModule.forFeature([Assignment, StudentSemesterCourse, Student])],
+  imports: [
+    SequelizeModule.forFeature([Assignment, StudentSemesterCourse, Student]),
+  ],
   controllers: [AssignmentsController],
   providers: [AssignmentsService],
   exports: [AssignmentsService],

@@ -1,6 +1,8 @@
 {
   "extends": "@studybuddy/typescript-config/base.json",
   "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
     "declaration": false,
     "declarationMap": false,
     "removeComments": true,
@@ -9,7 +11,6 @@
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
     "sourceMap": true,
-    "outDir": "./dist",
     "incremental": true,
     "noImplicitAny": true,
     "strictBindCallApply": false,

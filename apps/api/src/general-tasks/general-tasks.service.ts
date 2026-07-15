@@ -75,4 +75,39 @@ export class GeneralTasksService {
     await task.destroy();
     return { success: true };
   }
+
+  async getOrderedFormattedGeneralTasksByStudentId(studentId: string) {
+    const orderedGeneralTasksByStudentId = await this.generalTaskModel.findAll({
+      where: { studentId },
+      attributes: [
+        "id",
+        "description",
+        "dueDate",
+        "done",
+        "estimatedTimeValue",
+        "estimatedTimeUnit",
+      ],
+      order: [["dueDate", "ASC"]],
+    });
+
+    const orderedFormattedGeneralTasksByStudentId =
+      orderedGeneralTasksByStudentId.map(
+        ({
+          id,
+          description: title,
+          dueDate,
+          done,
+          estimatedTimeValue,
+          estimatedTimeUnit,
+        }) => ({
+          id,
+          title,
+          dueDate: dueDate.toISOString(),
+          done,
+          estimatedTime: { value: estimatedTimeValue, unit: estimatedTimeUnit },
+        })
+      );
+
+    return orderedFormattedGeneralTasksByStudentId;
+  }
 }

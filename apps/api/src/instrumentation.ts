@@ -4,7 +4,6 @@
  * so the OTel SDK is registered before LLM clients are initialized.
  */
 import { NodeSDK } from "@opentelemetry/sdk-node";
-// @ts-expect-error -- @langfuse/otel is ESM-only; the require call works at runtime
 import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 

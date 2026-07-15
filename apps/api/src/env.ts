@@ -9,11 +9,9 @@ const envSchema = z.object({
   API_PORT: z.string().optional(),
   OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
   OPENROUTER_MODEL: z
-    .string()
+    .enum(["nvidia/nemotron-3-nano-30b-a3b:free"])
     .default("nvidia/nemotron-3-nano-30b-a3b:free")
-    .transform((modelName) => {
-      return modelName;
-    }),
+    .transform((modelName) => modelName),
   DB_HOST: z.string(),
   DB_PORT: z
     .string()
@@ -28,9 +26,7 @@ const envSchema = z.object({
   // Langfuse tracing & prompt management
   LANGFUSE_PUBLIC_KEY: z.string().optional(),
   LANGFUSE_SECRET_KEY: z.string().optional(),
-  LANGFUSE_BASE_URL: z.url()
-    .optional()
-    .default("https://cloud.langfuse.com"),
+  LANGFUSE_BASE_URL: z.url().optional().default("https://cloud.langfuse.com"),
 });
 
 export const env = envSchema.parse(process.env);
