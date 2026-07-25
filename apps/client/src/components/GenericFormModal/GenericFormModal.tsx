@@ -11,7 +11,7 @@ import {
   Button,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 // ─── Field definitions ────────────────────────────────────────────────────────
@@ -55,6 +55,13 @@ export const GenericFormModal = ({
   extraActions,
 }: GenericFormModalProps) => {
   const [triedToSave, setTriedToSave] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTriedToSave(false);
+    }
+  }, [open]);
 
   const isFieldEmpty = (fieldName: string) => {
     return !values[fieldName] || values[fieldName].trim() === "";

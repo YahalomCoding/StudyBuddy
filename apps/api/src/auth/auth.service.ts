@@ -34,7 +34,7 @@ export class AuthService {
     private readonly jwtService: JwtService
   ) {}
 
-  private async signUser(user: User): Promise<AuthResponse> {
+  async signUser(user: User): Promise<AuthResponse> {
     const userWithStudent = await this.userModel.findByPk(user.id, {
       include: ["student"],
     });
