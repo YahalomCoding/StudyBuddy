@@ -5,11 +5,6 @@ type StreamCallbacks = {
   onReasoningDelta?: (delta: string) => void;
 };
 
-const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem("studybuddy_access_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const streamSse = async (
   endpoint: string,
   onDelta: (delta: string) => void,
@@ -21,9 +16,7 @@ const streamSse = async (
   const connection = fetchServerSentEvents(
     `${import.meta.env.VITE_API_URL}${endpoint}`,
     {
-      headers: {
-        ...getAuthHeader(),
-      },
+      credentials: "include",
       body: {},
     }
   );

@@ -4,8 +4,10 @@ import {
   NotFoundException,
   Post,
   Req,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { InjectModel } from "@nestjs/sequelize";
 import { questionnaireSchema } from "@studybuddy/schemas";
 import { createZodDto } from "nestjs-zod";
@@ -27,7 +29,11 @@ export class QuestionnaireController {
   ) {}
 
   @Post()
-  async submit(@Req() req: AuthRequest, @Body() body: QuestionnaireDto) {
+  async submit(
+    @Req() req: AuthRequest,
+    @Body() body: QuestionnaireDto,
+    @Res({ passthrough: true }) res: Response
+  ) {
     await this.questionnaireService.submit(req.user.id, body);
 
     const userWithStudent = await this.userModel.findByPk(req.user.id, {
@@ -38,6 +44,11 @@ export class QuestionnaireController {
       throw new NotFoundException("User not found after onboarding");
     }
 
-    return this.authService.signUser(userWithStudent);
+    const session = await this.authService.signUser(userWithStudent);
+    this.authService.setAuthCookie(res, session.accessToken);
+
+    return {
+      user: session.user,
+    };
   }
 }

@@ -25,7 +25,6 @@ import {
 import { useChat } from "@tanstack/ai-react";
 import { useSimpleResizeToRight } from "../../utils/hooks";
 import { ResizeIcon } from "./ResizeIcon";
-import { useAuth } from "../../contexts/AuthContext";
 
 export const ChatBotBubble = <T extends AnyClientTool[]>({
   tools,
@@ -77,13 +76,12 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
     [showNotificationTool, tools]
   );
 
-  const auth = useAuth()
   const chatOptions = useMemo(
     () =>
       createChatClientOptions({
         connection: fetchServerSentEvents(
           `${import.meta.env.VITE_API_URL}/ai/chat`,
-          { headers: { Authorization: `Bearer ${auth?.token ?? ""}` } }
+          { credentials: "include" }
         ),
         tools: allTools,
       }),

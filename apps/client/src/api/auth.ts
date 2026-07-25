@@ -7,10 +7,10 @@ export interface AuthUser {
   authProvider: string;
   profileImage: string | null;
   hasCompletedOnboarding: boolean;
+  studentId: string | null;
 }
 
 export interface AuthResponse {
-  accessToken: string;
   user: AuthUser;
 }
 
@@ -27,8 +27,11 @@ export const authApi = {
     const { data } = await baseApi.post<AuthResponse>("/auth/google", { idToken });
     return data;
   },
-  me: async () => {
-    const { data } = await baseApi.get<AuthUser>("/auth/me");
+  userinfo: async () => {
+    const { data } = await baseApi.get<AuthResponse>("/auth/userinfo");
     return data;
   },
+  logout: async () => {
+    await baseApi.post("/auth/logout", {});
+  }
 };
