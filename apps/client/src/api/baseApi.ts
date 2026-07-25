@@ -5,18 +5,11 @@ const API_BASE_URL =
 
 const baseApi = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-});
-
-baseApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem("studybuddy_access_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
 });
 
 export default baseApi;

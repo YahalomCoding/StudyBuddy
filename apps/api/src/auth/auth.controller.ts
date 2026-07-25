@@ -1,8 +1,17 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
+import type { Response } from "express";
 import { z } from "zod";
 import { createZodDto } from "nestjs-zod";
 import { AuthService } from "./auth.service";
-import { JwtAuthGuard } from "./auth.guard";
+import { JwtAuthGuard } from "./jwt-auth.guard";
 import type { AuthRequest } from "./auth.types";
 
 const registerSchema = z.object({
@@ -28,24 +37,51 @@ class GoogleDto extends createZodDto(googleSchema) {}
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  private async setAuthCookieAndReturnUser(
+    res: Response,
+    authAction: Promise<Awaited<ReturnType<AuthService["signUser"]>>>
+  ) {
+    const session = await authAction;
+    this.authService.setAuthCookie(res, session.accessToken);
+    return {
+      user: session.user,
+    };
+  }
+
   @Post("register")
-  register(@Body() body: RegisterDto) {
-    return this.authService.register(body.username, body.email, body.password);
+  register(@Body() body: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    return this.setAuthCookieAndReturnUser(
+      res,
+      this.authService.register(body.username, body.email, body.password)
+    );
   }
 
   @Post("login")
-  login(@Body() body: LoginDto) {
-    return this.authService.login(body.email, body.password);
+  login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
+    return this.setAuthCookieAndReturnUser(
+      res,
+      this.authService.login(body.email, body.password)
+    );
   }
 
   @Post("google")
-  google(@Body() body: GoogleDto) {
-    return this.authService.googleLogin(body.idToken);
+  google(@Body() body: GoogleDto, @Res({ passthrough: true }) res: Response) {
+    return this.setAuthCookieAndReturnUser(
+      res,
+      this.authService.googleLogin(body.idToken)
+    );
   }
 
-  @Get("me")
+  @Post("logout")
+  logout(@Res({ passthrough: true }) res: Response) {
+    this.authService.clearAuthCookie(res);
+    return { success: true };
+  }
+
+  @Get("userinfo")
   @UseGuards(JwtAuthGuard)
-  async me(@Req() req: AuthRequest) {
-    return this.authService.me(req.user.id);
+  async userinfo(@Req() req: AuthRequest) {
+    const user = await this.authService.me(req.user.id);
+    return { user };
   }
 }
