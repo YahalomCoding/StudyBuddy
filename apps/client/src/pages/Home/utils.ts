@@ -30,13 +30,20 @@ export const getNextValue = <T>(values: T[], current: T): T => {
   return values[currentIndex + 1] as T;
 };
 
-const dueDateFormatter = new Intl.DateTimeFormat("he-IL", {
-  day: "numeric",
-  month: "long",
+const dueDateFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
 });
 
-export const formatDueDate = (value: Date): string => {
-  return dueDateFormatter.format(value);
+export const formatDueDate = (value: Date | string): string => {
+  const dateValue = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(dateValue.getTime())) {
+    return "";
+  }
+
+  return dueDateFormatter.format(dateValue);
 };
 
 export const formatDuration = ({ value, unit }: DurationValue): string => {

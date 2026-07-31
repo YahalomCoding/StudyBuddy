@@ -20,6 +20,7 @@ import {
   homeDashboardQueryKey,
   updateAssignment,
 } from "../../api/home";
+import { formatDueDate } from "../Home/utils";
 
 const COLUMN_CONFIG = [
   {
@@ -272,7 +273,7 @@ export const AssignmentsPage = () => {
                                 variant="caption"
                                 color="text.secondary"
                               >
-                                Due: {assignment.dueDate}
+                                Due: {formatDueDate(assignment.dueDate)}
                               </Typography>
                             </Stack>
                           </CardContent>
