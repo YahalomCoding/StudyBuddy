@@ -54,6 +54,23 @@ const statusToDisplayName = (status: HomeDashboardAssignment["status"]) => {
   }
 };
 
+const typeToDisplayName = (type: HomeDashboardAssignment["type"]) => {
+  switch (type) {
+    case "homework":
+      return "שיעורי בית";
+    case "practice":
+      return "תרגול";
+    case "project":
+      return "פרויקט";
+    case "report":
+      return 'דו"ח';
+    case "lab":
+      return "מעבדה";
+    default:
+      return "מטלה";
+  }
+};
+
 export const AssignmentsPage = () => {
   const queryClient = useQueryClient();
   const [draggedAssignmentId, setDraggedAssignmentId] = useState<string | null>(
@@ -213,7 +230,7 @@ export const AssignmentsPage = () => {
                           color: "text.secondary",
                         }}
                       >
-                        אין מטלות כאן עדיין.
+                        אין מטלות עדיין.
                       </Box>
                     ) : (
                       groupedAssignments[column.id].map((assignment) => (
@@ -248,14 +265,22 @@ export const AssignmentsPage = () => {
                                 {assignment.course}
                               </Typography>
                               <Stack
-                                direction="row"
-                                spacing={1}
-                                flexWrap="wrap"
+                                direction="column"
+                                spacing={0.8}
+                                alignItems="flex-start"
                               >
                                 <Chip
-                                  label={assignment.type}
+                                  label={typeToDisplayName(assignment.type)}
                                   size="small"
-                                  sx={{ textTransform: "capitalize" }}
+                                  variant="filled"
+                                  sx={{
+                                    fontWeight: 700,
+                                    backgroundColor: "#f8d7e3",
+                                    color: "#8b3f5d",
+                                    border: "1px solid #efc2d4",
+                                    borderRadius: 999,
+                                    px: 0.8,
+                                  }}
                                 />
                                 <Chip
                                   label={statusToDisplayName(assignment.status)}
