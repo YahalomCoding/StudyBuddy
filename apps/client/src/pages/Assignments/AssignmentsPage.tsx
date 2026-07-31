@@ -25,20 +25,20 @@ import { formatDueDate } from "../Home/utils";
 const COLUMN_CONFIG = [
   {
     id: "not started" as const,
-    title: "Not Started",
-    subtitle: "Planned and waiting",
+    title: "לא התחיל",
+    subtitle: "מתוכנן וממתין",
     color: "#f59e0b",
   },
   {
     id: "active" as const,
-    title: "In Progress",
-    subtitle: "Currently being worked on",
+    title: "בתהליך",
+    subtitle: "כרגע נמצא בעבודה",
     color: "#3b82f6",
   },
   {
     id: "done" as const,
-    title: "Completed",
-    subtitle: "Finished tasks",
+    title: "הושלם",
+    subtitle: "משימות שהסתיימו",
     color: "#10b981",
   },
 ];
@@ -46,11 +46,11 @@ const COLUMN_CONFIG = [
 const statusToDisplayName = (status: HomeDashboardAssignment["status"]) => {
   switch (status) {
     case "active":
-      return "In Progress";
+      return "בתהליך";
     case "done":
-      return "Completed";
+      return "הושלם";
     default:
-      return "Not Started";
+      return "לא התחיל";
   }
 };
 
@@ -155,10 +155,10 @@ export const AssignmentsPage = () => {
       <Stack spacing={3}>
         <Box>
           <Typography variant="h4" fontWeight={700}>
-            Assignments Board
+            לוח מטלות
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            Drag cards between the columns to update their status instantly.
+            גרור כרטיסים בין העמודות כדי לעדכן את הסטטוס באופן מיידי.
           </Typography>
         </Box>
 
@@ -213,7 +213,7 @@ export const AssignmentsPage = () => {
                           color: "text.secondary",
                         }}
                       >
-                        No assignments here yet.
+                        אין מטלות כאן עדיין.
                       </Box>
                     ) : (
                       groupedAssignments[column.id].map((assignment) => (
@@ -273,7 +273,7 @@ export const AssignmentsPage = () => {
                                 variant="caption"
                                 color="text.secondary"
                               >
-                                Due: {formatDueDate(assignment.dueDate)}
+                                תאריך יעד: {formatDueDate(assignment.dueDate)}
                               </Typography>
                             </Stack>
                           </CardContent>
