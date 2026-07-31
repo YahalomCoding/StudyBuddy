@@ -1,12 +1,18 @@
-import { StyledEngineProvider } from "@mui/material";
-import { Box } from "@mui/material";
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Box, StyledEngineProvider } from "@mui/material";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Sidebar } from "./components/Sidebar/Sidebar";
+import { AssignmentsPage } from "./pages/Assignments";
+import { AuthPage } from "./pages/Auth";
+import { CalendarPage } from "./pages/Calendar/Calendar";
 import { Home } from "./pages/Home";
 import { OnBoarding } from "./pages/OnBoarding";
-import { AuthPage } from "./pages/Auth";
-import { Sidebar } from "./components/Sidebar/Sidebar";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { CalendarPage } from "./pages/Calendar/Calendar";
 
 const AppLayout = () => (
   <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -29,6 +35,7 @@ function App() {
             <Route path="/onboarding" element={<OnBoarding />} />
             <Route element={<AppLayout />}>
               <Route path="/home" element={<Home />} />
+              <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/Calendar" element={<CalendarPage />} />
             </Route>
           </Route>

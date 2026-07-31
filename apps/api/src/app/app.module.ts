@@ -18,9 +18,9 @@ import {
   ZodValidationPipe,
 } from "nestjs-zod";
 import { ZodError } from "zod";
+import { AIModule } from "../ai/ai.module";
 import { AssignmentsModule } from "../assignments/assignments.module";
 import { AuthModule } from "../auth/auth.module";
-import { AIModule } from "../ai/ai.module";
 import { CoursesModule } from "../courses/courses.module";
 import { DegreesModule } from "../degrees/degrees.module";
 import { env } from "../env";
