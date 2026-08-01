@@ -34,14 +34,6 @@ const roundGrade = (value: number | null) => {
   return Math.round(value * 10) / 10;
 };
 
-const getGradeColor = (value: number | null) => {
-  if (value === null) return "default";
-  if (value >= 85) return "success";
-  if (value >= 70) return "primary";
-  if (value >= 60) return "warning";
-  return "error";
-};
-
 export const GradesPage = () => {
   const classes = useStyles();
   const { data, isLoading } = useQuery({
@@ -157,22 +149,14 @@ export const GradesPage = () => {
                       </TableCell>
                       <TableCell align="center">
                         {course.examGrade !== null ? (
-                          <Chip
-                            label={`${course.examGrade}`}
-                            color={getGradeColor(course.examGrade)}
-                            size="small"
-                          />
+                          <Typography>{course.examGrade}</Typography>
                         ) : (
                           "—"
                         )}
                       </TableCell>
                       <TableCell align="center">
                         {course.assignmentGrade !== null ? (
-                          <Chip
-                            label={`${course.assignmentGrade}`}
-                            color={getGradeColor(course.assignmentGrade)}
-                            size="small"
-                          />
+                          <Typography>{course.assignmentGrade}</Typography>
                         ) : (
                           "—"
                         )}
@@ -181,8 +165,8 @@ export const GradesPage = () => {
                         {course.finalGrade !== null ? (
                           <Chip
                             label={`${course.finalGrade}`}
-                            color={getGradeColor(course.finalGrade)}
                             size="small"
+                            sx={classes.finalGradeChip(course.finalGrade)}
                           />
                         ) : (
                           "—"

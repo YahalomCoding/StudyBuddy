@@ -67,6 +67,43 @@ export const useStyles = () => ({
   creditChip: css({
     borderRadius: "999px",
     height: "24px",
+    backgroundColor: "#f8dce8",
+    color: "#8a4b65",
+    borderColor: "#e8b8cb",
+  }),
+
+  finalGradeChip: (value: number | null) => ({
+    backgroundColor:
+      value === null
+        ? "#f8e9f2"
+        : value >= 85
+          ? "#eaf8ea"
+          : value >= 70
+            ? "#f2f8e8"
+            : value >= 60
+              ? "#fff7e6"
+              : "#fdeceb",
+    color:
+      value === null
+        ? "#7d4a66"
+        : value >= 85
+          ? "#3f7d4f"
+          : value >= 70
+            ? "#6c7a3a"
+            : value >= 60
+              ? "#9a6b1d"
+              : "#a2463b",
+    border:
+      value === null
+        ? "1px solid #e9cfe0"
+        : value >= 85
+          ? "1px solid #cfe9d1"
+          : value >= 70
+            ? "1px solid #dfe8c3"
+            : value >= 60
+              ? "1px solid #f4dfb2"
+              : "1px solid #f2c5bd",
+    fontWeight: 600,
   }),
 
   loaderBox: css({
