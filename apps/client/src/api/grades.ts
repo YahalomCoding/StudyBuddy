@@ -3,6 +3,8 @@ import baseApi from "./baseApi";
 export type GradesResponseItem = {
   courseId: string;
   courseTitle: string;
+  semesterYearNumber: number | null;
+  semesterNumber: number | null;
   credits: number;
   examGrade: number | null;
   assignmentGrade: number | null;

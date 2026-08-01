@@ -28,6 +28,8 @@ import { useStyles } from "./style";
 type CourseGradeSummary = {
   courseId: string;
   courseTitle: string;
+  semesterYearNumber: number | null;
+  semesterNumber: number | null;
   credits: number;
   examGrade: number | null;
   assignmentGrade: number | null;
@@ -77,6 +79,8 @@ export const GradesPage = () => {
       .map((course: CourseGradeSummary) => ({
         courseId: course.courseId,
         courseTitle: course.courseTitle,
+        semesterYearNumber: course.semesterYearNumber,
+        semesterNumber: course.semesterNumber,
         credits: course.credits,
         examGrade: roundGrade(course.examGrade),
         assignmentGrade: roundGrade(course.assignmentGrade),
@@ -85,9 +89,21 @@ export const GradesPage = () => {
         assignmentId: course.assignmentId ?? null,
       }))
       .sort((left: CourseGradeSummary, right: CourseGradeSummary) => {
-        const leftFinal = left.finalGrade ?? -1;
-        const rightFinal = right.finalGrade ?? -1;
-        return rightFinal - leftFinal;
+        const leftYear = left.semesterYearNumber ?? Number.MAX_SAFE_INTEGER;
+        const rightYear = right.semesterYearNumber ?? Number.MAX_SAFE_INTEGER;
+
+        if (leftYear !== rightYear) {
+          return leftYear - rightYear;
+        }
+
+        const leftSemester = left.semesterNumber ?? Number.MAX_SAFE_INTEGER;
+        const rightSemester = right.semesterNumber ?? Number.MAX_SAFE_INTEGER;
+
+        if (leftSemester !== rightSemester) {
+          return leftSemester - rightSemester;
+        }
+
+        return left.courseTitle.localeCompare(right.courseTitle, "he");
       });
   }, [data]);
 

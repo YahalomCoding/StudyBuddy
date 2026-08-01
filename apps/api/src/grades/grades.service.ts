@@ -4,6 +4,7 @@ import { Assignment } from "../assignments/assignment.model";
 import { Course } from "../courses/course.model";
 import { Exam } from "../exams/exam.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
+import { Semester } from "../semesters/semester.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
 
@@ -139,6 +140,10 @@ export class GradesService {
             model: this.semesterCourseModel,
             include: [
               {
+                model: Semester,
+                attributes: ["yearNumber", "semesterNumber"],
+              },
+              {
                 model: this.courseModel,
                 attributes: ["id", "title", "credits"],
               },
@@ -204,10 +209,13 @@ export class GradesService {
           examGrade !== null && assignmentGrade !== null
             ? examGrade * 0.6 + assignmentGrade * 0.4
             : (examGrade ?? assignmentGrade);
+        const semester = studentSemesterCourse.semesterCourse?.semester;
 
         return {
           courseId: course.id,
           courseTitle: course.title,
+          semesterYearNumber: semester?.yearNumber ?? null,
+          semesterNumber: semester?.semesterNumber ?? null,
           credits: Number(course.credits ?? 0),
           examGrade:
             examGrade !== null ? Math.round(examGrade * 10) / 10 : null,
