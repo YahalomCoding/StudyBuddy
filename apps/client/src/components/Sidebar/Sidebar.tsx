@@ -3,6 +3,7 @@ import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import { Avatar, Box, Typography } from "@mui/material";
 import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -14,11 +15,11 @@ const NAV_ITEMS = [
   { label: "Assignments", icon: AssignmentOutlinedIcon, path: "/assignments" },
   { label: "Grades", icon: GridViewOutlinedIcon, path: "/grades" },
   { label: "Calendar", icon: CalendarMonthOutlinedIcon, path: "/calendar" },
+  { label: "Import syllabus", icon: UploadFileOutlinedIcon, path: "/syllabus" },
 ];
 
 const BOTTOM_ITEMS = [
   { label: "Settings", icon: SettingsOutlinedIcon, path: "/settings" },
-  { label: "Calendar", icon: CalendarMonthOutlinedIcon, path: "/calendar" },
 ];
 
 type TokenUser = {
@@ -212,12 +213,7 @@ export const Sidebar = () => {
         </Avatar>
 
         <Box sx={{ minWidth: 0 }}>
-          <Typography
-            fontSize={13}
-            fontWeight={600}
-            lineHeight={1.2}
-            noWrap
-          >
+          <Typography fontSize={13} fontWeight={600} lineHeight={1.2} noWrap>
             {displayName}
           </Typography>
 

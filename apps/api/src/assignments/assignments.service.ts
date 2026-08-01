@@ -10,7 +10,7 @@ import { InjectModel } from "@nestjs/sequelize";
 import { Assignment } from "./assignment.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
-import { Course } from "../courses/course.model";
+import { Course } from "../courses/courses.model";
 import { Semester } from "../semesters/semester.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 

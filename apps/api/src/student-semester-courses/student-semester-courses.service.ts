@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { StudentSemesterCourse } from "./student-semester-course.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
-import { Course } from "../courses/course.model";
+import { Course } from "../courses/courses.model";
 import { Semester } from "../semesters/semester.model";
 
 @Injectable()

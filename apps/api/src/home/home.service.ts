@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import type { Transaction } from "sequelize";
 import { Assignment } from "../assignments/assignment.model";
-import { Course } from "../courses/course.model";
+import { Course } from "../courses/courses.model";
 import { Degree } from "../degrees/degree.model";
 import { Exam } from "../exams/exam.model";
 import { GeneralTask } from "../general-tasks/general-task.model";

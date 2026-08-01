@@ -9,21 +9,39 @@ import {
   Table,
 } from "sequelize-typescript";
 import type { NonAttribute } from "sequelize";
+
 import { Degree } from "../degrees/degree.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Semester } from "../semesters/semester.model";
 
-@Table
+@Table({
+  indexes: [
+    {
+      name: "courses_degree_title_unique",
+      unique: true,
+      fields: ["degreeId", "title"],
+    },
+  ],
+})
 export class Course extends Model<Partial<Course>> {
   @PrimaryKey
-  @Column({ type: DataType.UUID, defaultValue: DataType.UUIDV4 })
+  @Column({
+    type: DataType.UUID,
+    defaultValue: DataType.UUIDV4,
+  })
   declare id: string;
 
-  @Column({ type: DataType.STRING, allowNull: false })
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
   declare title: string;
 
   @ForeignKey(() => Degree)
-  @Column({ type: DataType.UUID, allowNull: false, unique: true })
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+  })
   declare degreeId: string;
 
   @BelongsTo(() => Degree)
