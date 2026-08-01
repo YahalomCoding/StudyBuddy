@@ -57,6 +57,18 @@ export const useStyles = () => ({
     backgroundColor: "var(--mui-palette-background-paper)",
   }),
 
+  courseCell: css({
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexWrap: "wrap",
+  }),
+
+  creditChip: css({
+    borderRadius: "999px",
+    height: "24px",
+  }),
+
   loaderBox: css({
     display: "flex",
     justifyContent: "center",

@@ -133,20 +133,27 @@ export const GradesPage = () => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>קורס</TableCell>
+                    <TableCell align="right">קורס</TableCell>
                     <TableCell align="center">מבחן</TableCell>
                     <TableCell align="center">מטלה</TableCell>
                     <TableCell align="center">ציון סופי</TableCell>
-                    <TableCell align="center">נקודות זכות</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {courseSummaries.map((course) => (
                     <TableRow key={course.courseId} hover>
                       <TableCell>
-                        <Typography fontWeight={600}>
-                          {course.courseTitle}
-                        </Typography>
+                        <Box className={classes.courseCell}>
+                          <Typography fontWeight={600}>
+                            {course.courseTitle}
+                          </Typography>
+                          <Chip
+                            label={`${course.credits} נ"ז`}
+                            size="small"
+                            variant="outlined"
+                            className={classes.creditChip}
+                          />
+                        </Box>
                       </TableCell>
                       <TableCell align="center">
                         {course.examGrade !== null ? (
@@ -181,7 +188,6 @@ export const GradesPage = () => {
                           "—"
                         )}
                       </TableCell>
-                      <TableCell align="center">{course.credits}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
