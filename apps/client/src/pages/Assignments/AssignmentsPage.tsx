@@ -21,6 +21,7 @@ import {
   updateAssignment,
 } from "../../api/home";
 import { formatDueDate, getRelativeDueDate } from "../Home/utils";
+import { useStyles } from "./style";
 
 const COLUMN_CONFIG = [
   {
@@ -98,6 +99,7 @@ const getDaysLeftLabel = (
 };
 
 export const AssignmentsPage = () => {
+  const classes = useStyles();
   const queryClient = useQueryClient();
   const [draggedAssignmentId, setDraggedAssignmentId] = useState<string | null>(
     null
@@ -191,73 +193,44 @@ export const AssignmentsPage = () => {
   };
 
   return (
-    <Box
-      sx={{
-        p: { xs: 2, md: 4 },
-        bgcolor: "background.default",
-        minHeight: "100vh",
-      }}
-    >
-      <Stack spacing={3}>
-        <Box>
-          <Typography variant="h4" fontWeight={700}>
+    <Box className={classes.page}>
+      <Stack spacing={3} className={classes.pageContent}>
+        <Box className={classes.header}>
+          <Typography variant="h4" className={classes.title}>
             לוח מטלות
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+          <Typography variant="body1" className={classes.subtitle}>
             גרור כרטיסים בין העמודות כדי לעדכן את הסטטוס באופן מיידי.
           </Typography>
         </Box>
 
         {isLoading ? (
-          <Box display="flex" justifyContent="center" sx={{ py: 8 }}>
+          <Box className={classes.loaderBox}>
             <CircularProgress />
           </Box>
         ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "repeat(3, minmax(0, 1fr))",
-              },
-              gap: 2.5,
-            }}
-          >
+          <Box className={classes.boardGrid}>
             {COLUMN_CONFIG.map((column) => (
               <Box
                 key={column.id}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => handleDrop(column.id)}
-                sx={{
-                  minHeight: 420,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 3,
-                  bgcolor: alpha(column.color, 0.08),
-                  p: 2,
+                className={classes.column}
+                style={{
+                  backgroundColor: alpha(column.color, 0.08),
+                  borderColor: alpha(column.color, 0.28),
                 }}
               >
                 <Stack spacing={1.5}>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>
+                  <Box className={classes.columnHeader}>
+                    <Typography variant="h6" className={classes.columnTitle}>
                       {column.title}
                     </Typography>
                   </Box>
                   <Divider />
-                  <Stack spacing={1.5}>
+                  <Stack spacing={1.5} className={classes.columnBody}>
                     {groupedAssignments[column.id].length === 0 ? (
-                      <Box
-                        sx={{
-                          border: "1px dashed",
-                          borderColor: "divider",
-                          borderRadius: 2,
-                          py: 4,
-                          textAlign: "center",
-                          color: "text.secondary",
-                        }}
-                      >
-                        אין מטלות עדיין.
-                      </Box>
+                      <Box className={classes.emptyState}>אין מטלות עדיין.</Box>
                     ) : (
                       groupedAssignments[column.id].map((assignment) => (
                         <Card
@@ -267,50 +240,31 @@ export const AssignmentsPage = () => {
                             setDraggedAssignmentId(assignment.id)
                           }
                           onDragEnd={() => setDraggedAssignmentId(null)}
-                          sx={{
-                            cursor: "grab",
-                            border: "1px solid",
-                            borderColor: "divider",
-                            boxShadow: "none",
-                            bgcolor: "background.paper",
-                            transition: "transform 0.2s ease",
-                            "&:hover": {
-                              transform: "translateY(-2px)",
-                            },
-                          }}
+                          className={classes.assignmentCard}
                         >
-                          <CardContent sx={{ p: 2, pb: "16px !important" }}>
-                            <Stack spacing={1.2}>
-                              <Typography variant="subtitle1" fontWeight={700}>
+                          <CardContent className={classes.cardContent}>
+                            <Stack spacing={1.2} className={classes.cardInner}>
+                              <Typography
+                                variant="subtitle1"
+                                className={classes.assignmentTitle}
+                              >
                                 {assignment.title}
                               </Typography>
                               <Typography
                                 variant="body2"
-                                color="text.secondary"
+                                className={classes.assignmentCourse}
                               >
                                 {assignment.course}
                               </Typography>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                                flexWrap="wrap"
-                                useFlexGap
-                              >
+                              <Stack className={classes.chipRow}>
                                 <Chip
+                                  className={classes.typeChip}
                                   label={typeToDisplayName(assignment.type)}
                                   size="small"
                                   variant="filled"
-                                  sx={{
-                                    fontWeight: 700,
-                                    backgroundColor: "#f8d7e3",
-                                    color: "#8b3f5d",
-                                    border: "1px solid #efc2d4",
-                                    borderRadius: 999,
-                                    px: 0.8,
-                                  }}
                                 />
                                 <Chip
+                                  className={classes.statusChip}
                                   label={statusToDisplayName(assignment.status)}
                                   size="small"
                                   color={
@@ -322,21 +276,16 @@ export const AssignmentsPage = () => {
                                   }
                                 />
                               </Stack>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                                flexWrap="wrap"
-                                useFlexGap
-                              >
+                              <Stack className={classes.metaRow}>
                                 <Typography
                                   variant="caption"
-                                  color="text.secondary"
+                                  className={classes.dueDateText}
                                 >
                                   תאריך יעד: {formatDueDate(assignment.dueDate)}
                                 </Typography>
                                 <Typography
                                   variant="caption"
+                                  className={classes.daysLabel}
                                   color={
                                     assignment.status === "done"
                                       ? "success.main"
