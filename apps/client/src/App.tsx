@@ -11,6 +11,7 @@ import { Sidebar } from "./components/Sidebar/Sidebar";
 import { AssignmentsPage } from "./pages/Assignments";
 import { AuthPage } from "./pages/Auth";
 import { CalendarPage } from "./pages/Calendar/Calendar";
+import { GradesPage } from "./pages/Grades";
 import { Home } from "./pages/Home";
 import { OnBoarding } from "./pages/OnBoarding";
 
@@ -36,6 +37,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/home" element={<Home />} />
               <Route path="/assignments" element={<AssignmentsPage />} />
+              <Route path="/grades" element={<GradesPage />} />
               <Route path="/Calendar" element={<CalendarPage />} />
             </Route>
           </Route>

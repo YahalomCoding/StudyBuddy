@@ -8,6 +8,7 @@ export type Course = {
   id: string;
   title: string;
   degreeId: string;
+  credits: number;
 };
 
 export type SemesterCourse = {
@@ -27,6 +28,7 @@ export type Assignment = {
   studentSemesterCourseId: string;
   description: string;
   deadline: string;
+  grade?: number;
 };
 
 export type Exam = {
