@@ -72,6 +72,24 @@ export const useStyles = () => ({
     borderColor: "#e8b8cb",
   }),
 
+  gradeCell: css({
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+  }),
+
+  editButton: css({
+    color: "var(--mui-palette-text-secondary)",
+    padding: "4px",
+  }),
+
+  dialogContent: css({
+    display: "grid",
+    gap: "12px",
+    paddingTop: "8px",
+  }),
+
   finalGradeChip: (value: number | null) => ({
     backgroundColor:
       value === null

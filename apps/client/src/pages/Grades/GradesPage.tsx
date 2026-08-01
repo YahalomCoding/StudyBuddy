@@ -1,8 +1,15 @@
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
   Box,
+  Button,
   Card,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   Stack,
   Table,
   TableBody,
@@ -10,11 +17,16 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { getGrades } from "../../api/grades";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import {
+  getGrades,
+  updateCourseGrades,
+  type UpdateCourseGradesPayload,
+} from "../../api/grades";
 import { useStyles } from "./style";
 
 type CourseGradeSummary = {
@@ -36,9 +48,29 @@ const roundGrade = (value: number | null) => {
 
 export const GradesPage = () => {
   const classes = useStyles();
+  const queryClient = useQueryClient();
+  const [editingCell, setEditingCell] = useState<{
+    courseId: string;
+    type: "exam" | "assignment";
+    value: string;
+  } | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["grades"],
     queryFn: getGrades,
+  });
+
+  const updateGradeMutation = useMutation({
+    mutationFn: ({
+      courseId,
+      payload,
+    }: {
+      courseId: string;
+      payload: UpdateCourseGradesPayload;
+    }) => updateCourseGrades(courseId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["grades"] });
+      setEditingCell(null);
+    },
   });
 
   const courseSummaries = useMemo<CourseGradeSummary[]>(() => {
@@ -83,6 +115,44 @@ export const GradesPage = () => {
     (sum, course) => sum + course.credits,
     0
   );
+
+  const handleOpenEditor = (
+    course: CourseGradeSummary,
+    type: "exam" | "assignment"
+  ) => {
+    setEditingCell({
+      courseId: course.courseId,
+      type,
+      value:
+        type === "exam"
+          ? (course.examGrade?.toString() ?? "")
+          : (course.assignmentGrade?.toString() ?? ""),
+    });
+  };
+
+  const handleSave = () => {
+    if (!editingCell) {
+      return;
+    }
+
+    const trimmedValue = editingCell.value.trim();
+    const parsedValue = trimmedValue === "" ? null : Number(trimmedValue);
+
+    if (
+      parsedValue !== null &&
+      (!Number.isFinite(parsedValue) || parsedValue < 0 || parsedValue > 100)
+    ) {
+      return;
+    }
+
+    updateGradeMutation.mutate({
+      courseId: editingCell.courseId,
+      payload:
+        editingCell.type === "exam"
+          ? { examGrade: parsedValue }
+          : { assignmentGrade: parsedValue },
+    });
+  };
 
   return (
     <Box className={classes.page}>
@@ -148,18 +218,38 @@ export const GradesPage = () => {
                         </Box>
                       </TableCell>
                       <TableCell align="center">
-                        {course.examGrade !== null ? (
-                          <Typography>{course.examGrade}</Typography>
-                        ) : (
-                          "—"
-                        )}
+                        <Box className={classes.gradeCell}>
+                          {course.examGrade !== null ? (
+                            <Typography>{course.examGrade}</Typography>
+                          ) : (
+                            <Typography color="text.secondary">—</Typography>
+                          )}
+                          <IconButton
+                            size="small"
+                            className={classes.editButton}
+                            onClick={() => handleOpenEditor(course, "exam")}
+                          >
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                       <TableCell align="center">
-                        {course.assignmentGrade !== null ? (
-                          <Typography>{course.assignmentGrade}</Typography>
-                        ) : (
-                          "—"
-                        )}
+                        <Box className={classes.gradeCell}>
+                          {course.assignmentGrade !== null ? (
+                            <Typography>{course.assignmentGrade}</Typography>
+                          ) : (
+                            <Typography color="text.secondary">—</Typography>
+                          )}
+                          <IconButton
+                            size="small"
+                            className={classes.editButton}
+                            onClick={() =>
+                              handleOpenEditor(course, "assignment")
+                            }
+                          >
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                       <TableCell align="center">
                         {course.finalGrade !== null ? (
@@ -180,6 +270,44 @@ export const GradesPage = () => {
           )}
         </Card>
       </Box>
+
+      <Dialog
+        open={Boolean(editingCell)}
+        onClose={() => setEditingCell(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>עדכון ציון</DialogTitle>
+        <DialogContent className={classes.dialogContent}>
+          <Typography variant="body2" color="text.secondary">
+            {editingCell?.type === "exam"
+              ? "הכנס ציון חדש למבחן"
+              : "הכנס ציון חדש למטלה"}
+          </Typography>
+          <TextField
+            label={editingCell?.type === "exam" ? "ציון מבחן" : "ציון מטלה"}
+            type="number"
+            value={editingCell?.value ?? ""}
+            onChange={(event) =>
+              setEditingCell((current) =>
+                current ? { ...current, value: event.target.value } : current
+              )
+            }
+            inputProps={{ min: 0, max: 100, step: 0.1 }}
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingCell(null)}>ביטול</Button>
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={updateGradeMutation.isPending}
+          >
+            {updateGradeMutation.isPending ? "שומר…" : "שמור"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

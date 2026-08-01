@@ -9,7 +9,23 @@ export type GradesResponseItem = {
   finalGrade: number | null;
 };
 
+export type UpdateCourseGradesPayload = {
+  examGrade?: number | null;
+  assignmentGrade?: number | null;
+};
+
 export const getGrades = async () => {
   const { data } = await baseApi.get<GradesResponseItem[]>("/grades");
+  return data;
+};
+
+export const updateCourseGrades = async (
+  courseId: string,
+  payload: UpdateCourseGradesPayload
+) => {
+  const { data } = await baseApi.patch<GradesResponseItem[]>(
+    `/grades/${courseId}`,
+    payload
+  );
   return data;
 };

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Assignment } from "../assignments/assignment.model";
 import { Course } from "../courses/course.model";
@@ -20,6 +20,68 @@ export class GradesService {
     @InjectModel(StudentSemesterCourse)
     private readonly studentSemesterCourseModel: typeof StudentSemesterCourse
   ) {}
+
+  private normalizeGradeValue(value: number | null | undefined) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const parsedValue = Number(value);
+
+    if (!Number.isFinite(parsedValue)) {
+      return null;
+    }
+
+    return Math.min(100, Math.max(0, parsedValue));
+  }
+
+  async updateStudentCourseGrades(
+    studentId: string,
+    courseId: string,
+    payload: { examGrade?: number | null; assignmentGrade?: number | null }
+  ) {
+    const studentSemesterCourse = await this.studentSemesterCourseModel.findOne(
+      {
+        where: { studentId },
+        include: [
+          {
+            model: this.semesterCourseModel,
+            include: [
+              {
+                model: this.courseModel,
+                where: { id: courseId },
+                attributes: ["id"],
+              },
+            ],
+          },
+        ],
+      }
+    );
+
+    if (!studentSemesterCourse) {
+      throw new NotFoundException("Course not found for this student");
+    }
+
+    if (payload.examGrade !== undefined) {
+      const normalizedGrade = this.normalizeGradeValue(payload.examGrade);
+
+      await this.examModel.update(
+        { grade: normalizedGrade },
+        { where: { studentSemesterCourseId: studentSemesterCourse.id } }
+      );
+    }
+
+    if (payload.assignmentGrade !== undefined) {
+      const normalizedGrade = this.normalizeGradeValue(payload.assignmentGrade);
+
+      await this.assignmentModel.update(
+        { grade: normalizedGrade },
+        { where: { studentSemesterCourseId: studentSemesterCourse.id } }
+      );
+    }
+
+    return this.getStudentGrades(studentId);
+  }
 
   async getStudentGrades(studentId: string) {
     const student = await this.studentModel.findByPk(studentId);
