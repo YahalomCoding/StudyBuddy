@@ -20,25 +20,22 @@ import {
   homeDashboardQueryKey,
   updateAssignment,
 } from "../../api/home";
-import { formatDueDate } from "../Home/utils";
+import { formatDueDate, getRelativeDueDate } from "../Home/utils";
 
 const COLUMN_CONFIG = [
   {
     id: "not started" as const,
     title: "לא התחיל",
-    subtitle: "מתוכנן וממתין",
     color: "#f59e0b",
   },
   {
     id: "active" as const,
     title: "בתהליך",
-    subtitle: "כרגע נמצא בעבודה",
     color: "#3b82f6",
   },
   {
     id: "done" as const,
     title: "הושלם",
-    subtitle: "משימות שהסתיימו",
     color: "#10b981",
   },
 ];
@@ -69,6 +66,35 @@ const typeToDisplayName = (type: HomeDashboardAssignment["type"]) => {
     default:
       return "מטלה";
   }
+};
+
+const getDaysLeftLabel = (
+  dueDate: string,
+  status: HomeDashboardAssignment["status"]
+) => {
+  const relativeDueDate = getRelativeDueDate(new Date(dueDate), status);
+
+  if (status === "done") {
+    return "הושלם";
+  }
+
+  if (relativeDueDate.kind === "today") {
+    return "היום";
+  }
+
+  if (relativeDueDate.kind === "due_in") {
+    return relativeDueDate.days === 1
+      ? "נותר יום אחד"
+      : `נותרו ${relativeDueDate.days} ימים`;
+  }
+
+  if (relativeDueDate.kind === "overdue") {
+    return relativeDueDate.days === 1
+      ? "יום אחד באיחור"
+      : `${relativeDueDate.days} ימים באיחור`;
+  }
+
+  return "";
 };
 
 export const AssignmentsPage = () => {
@@ -127,7 +153,10 @@ export const AssignmentsPage = () => {
     },
   });
 
-  const assignments = data?.assignments ?? [];
+  const assignments = useMemo(
+    () => data?.assignments ?? [],
+    [data?.assignments]
+  );
 
   const groupedAssignments = useMemo(() => {
     return COLUMN_CONFIG.reduce(
@@ -213,9 +242,6 @@ export const AssignmentsPage = () => {
                     <Typography variant="h6" fontWeight={700}>
                       {column.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {column.subtitle}
-                    </Typography>
                   </Box>
                   <Divider />
                   <Stack spacing={1.5}>
@@ -265,9 +291,11 @@ export const AssignmentsPage = () => {
                                 {assignment.course}
                               </Typography>
                               <Stack
-                                direction="column"
-                                spacing={0.8}
-                                alignItems="flex-start"
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                flexWrap="wrap"
+                                useFlexGap
                               >
                                 <Chip
                                   label={typeToDisplayName(assignment.type)}
@@ -294,12 +322,39 @@ export const AssignmentsPage = () => {
                                   }
                                 />
                               </Stack>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                flexWrap="wrap"
+                                useFlexGap
                               >
-                                תאריך יעד: {formatDueDate(assignment.dueDate)}
-                              </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  תאריך יעד: {formatDueDate(assignment.dueDate)}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color={
+                                    assignment.status === "done"
+                                      ? "success.main"
+                                      : getDaysLeftLabel(
+                                            assignment.dueDate,
+                                            assignment.status
+                                          ).includes("באיחור")
+                                        ? "error.main"
+                                        : "primary.main"
+                                  }
+                                  fontWeight={700}
+                                >
+                                  {getDaysLeftLabel(
+                                    assignment.dueDate,
+                                    assignment.status
+                                  )}
+                                </Typography>
+                              </Stack>
                             </Stack>
                           </CardContent>
                         </Card>
