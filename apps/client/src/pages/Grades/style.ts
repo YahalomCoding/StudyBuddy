@@ -84,10 +84,10 @@ export const useStyles = () => ({
     padding: "4px",
   }),
 
-  dialogContent: css({
-    display: "grid",
-    gap: "12px",
-    paddingTop: "8px",
+  inlineEditor: css({
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   }),
 
   finalGradeChip: (value: number | null) => ({

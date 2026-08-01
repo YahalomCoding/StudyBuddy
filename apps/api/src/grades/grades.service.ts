@@ -38,7 +38,12 @@ export class GradesService {
   async updateStudentCourseGrades(
     studentId: string,
     courseId: string,
-    payload: { examGrade?: number | null; assignmentGrade?: number | null }
+    payload: {
+      examGrade?: number | null;
+      assignmentGrade?: number | null;
+      examId?: string | null;
+      assignmentId?: string | null;
+    }
   ) {
     const studentSemesterCourse = await this.studentSemesterCourseModel.findOne(
       {
@@ -64,20 +69,22 @@ export class GradesService {
 
     if (payload.examGrade !== undefined) {
       const normalizedGrade = this.normalizeGradeValue(payload.examGrade);
+      const where = {
+        studentSemesterCourseId: studentSemesterCourse.id,
+        ...(payload.examId ? { id: payload.examId } : {}),
+      };
 
-      await this.examModel.update(
-        { grade: normalizedGrade },
-        { where: { studentSemesterCourseId: studentSemesterCourse.id } }
-      );
+      await this.examModel.update({ grade: normalizedGrade }, { where });
     }
 
     if (payload.assignmentGrade !== undefined) {
       const normalizedGrade = this.normalizeGradeValue(payload.assignmentGrade);
+      const where = {
+        studentSemesterCourseId: studentSemesterCourse.id,
+        ...(payload.assignmentId ? { id: payload.assignmentId } : {}),
+      };
 
-      await this.assignmentModel.update(
-        { grade: normalizedGrade },
-        { where: { studentSemesterCourseId: studentSemesterCourse.id } }
-      );
+      await this.assignmentModel.update({ grade: normalizedGrade }, { where });
     }
 
     return this.getStudentGrades(studentId);
@@ -164,6 +171,8 @@ export class GradesService {
               : null,
           finalGrade:
             finalGrade !== null ? Math.round(finalGrade * 10) / 10 : null,
+          examId: exams[0]?.id ?? null,
+          assignmentId: assignments[0]?.id ?? null,
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);

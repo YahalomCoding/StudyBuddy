@@ -7,11 +7,15 @@ export type GradesResponseItem = {
   examGrade: number | null;
   assignmentGrade: number | null;
   finalGrade: number | null;
+  examId?: string | null;
+  assignmentId?: string | null;
 };
 
 export type UpdateCourseGradesPayload = {
   examGrade?: number | null;
   assignmentGrade?: number | null;
+  examId?: string | null;
+  assignmentId?: string | null;
 };
 
 export const getGrades = async () => {

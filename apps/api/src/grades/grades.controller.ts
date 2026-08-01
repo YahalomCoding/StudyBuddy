@@ -13,6 +13,8 @@ import { GradesService } from "./grades.service";
 type UpdateCourseGradesPayload = {
   examGrade?: number | null;
   assignmentGrade?: number | null;
+  examId?: string | null;
+  assignmentId?: string | null;
 };
 
 @Controller("grades")

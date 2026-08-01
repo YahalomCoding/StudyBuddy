@@ -5,10 +5,6 @@ import {
   Card,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   IconButton,
   Stack,
   Table,
@@ -36,6 +32,8 @@ type CourseGradeSummary = {
   examGrade: number | null;
   assignmentGrade: number | null;
   finalGrade: number | null;
+  examId?: string | null;
+  assignmentId?: string | null;
 };
 
 const roundGrade = (value: number | null) => {
@@ -53,6 +51,7 @@ export const GradesPage = () => {
     courseId: string;
     type: "exam" | "assignment";
     value: string;
+    gradeId?: string | null;
   } | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["grades"],
@@ -82,6 +81,8 @@ export const GradesPage = () => {
         examGrade: roundGrade(course.examGrade),
         assignmentGrade: roundGrade(course.assignmentGrade),
         finalGrade: roundGrade(course.finalGrade),
+        examId: course.examId ?? null,
+        assignmentId: course.assignmentId ?? null,
       }))
       .sort((left: CourseGradeSummary, right: CourseGradeSummary) => {
         const leftFinal = left.finalGrade ?? -1;
@@ -116,7 +117,7 @@ export const GradesPage = () => {
     0
   );
 
-  const handleOpenEditor = (
+  const handleStartEdit = (
     course: CourseGradeSummary,
     type: "exam" | "assignment"
   ) => {
@@ -127,6 +128,10 @@ export const GradesPage = () => {
         type === "exam"
           ? (course.examGrade?.toString() ?? "")
           : (course.assignmentGrade?.toString() ?? ""),
+      gradeId:
+        type === "exam"
+          ? (course.examId ?? null)
+          : (course.assignmentId ?? null),
     });
   };
 
@@ -149,8 +154,11 @@ export const GradesPage = () => {
       courseId: editingCell.courseId,
       payload:
         editingCell.type === "exam"
-          ? { examGrade: parsedValue }
-          : { assignmentGrade: parsedValue },
+          ? { examGrade: parsedValue, examId: editingCell.gradeId ?? null }
+          : {
+              assignmentGrade: parsedValue,
+              assignmentId: editingCell.gradeId ?? null,
+            },
     });
   };
 
@@ -219,36 +227,106 @@ export const GradesPage = () => {
                       </TableCell>
                       <TableCell align="center">
                         <Box className={classes.gradeCell}>
-                          {course.examGrade !== null ? (
-                            <Typography>{course.examGrade}</Typography>
+                          {editingCell?.courseId === course.courseId &&
+                          editingCell?.type === "exam" ? (
+                            <Box className={classes.inlineEditor}>
+                              <TextField
+                                value={editingCell.value}
+                                onChange={(event) =>
+                                  setEditingCell((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          value: event.target.value,
+                                        }
+                                      : current
+                                  )
+                                }
+                                size="small"
+                                type="number"
+                                inputProps={{ min: 0, max: 100, step: 0.1 }}
+                              />
+                              <Button
+                                size="small"
+                                variant="contained"
+                                onClick={handleSave}
+                                disabled={updateGradeMutation.isPending}
+                              >
+                                {updateGradeMutation.isPending ? "…" : "שמור"}
+                              </Button>
+                            </Box>
                           ) : (
-                            <Typography color="text.secondary">—</Typography>
+                            <>
+                              {course.examGrade !== null ? (
+                                <Typography>{course.examGrade}</Typography>
+                              ) : (
+                                <Typography color="text.secondary">
+                                  —
+                                </Typography>
+                              )}
+                              <IconButton
+                                size="small"
+                                className={classes.editButton}
+                                onClick={() => handleStartEdit(course, "exam")}
+                              >
+                                <EditOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </>
                           )}
-                          <IconButton
-                            size="small"
-                            className={classes.editButton}
-                            onClick={() => handleOpenEditor(course, "exam")}
-                          >
-                            <EditOutlinedIcon fontSize="small" />
-                          </IconButton>
                         </Box>
                       </TableCell>
                       <TableCell align="center">
                         <Box className={classes.gradeCell}>
-                          {course.assignmentGrade !== null ? (
-                            <Typography>{course.assignmentGrade}</Typography>
+                          {editingCell?.courseId === course.courseId &&
+                          editingCell?.type === "assignment" ? (
+                            <Box className={classes.inlineEditor}>
+                              <TextField
+                                value={editingCell.value}
+                                onChange={(event) =>
+                                  setEditingCell((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          value: event.target.value,
+                                        }
+                                      : current
+                                  )
+                                }
+                                size="small"
+                                type="number"
+                                inputProps={{ min: 0, max: 100, step: 0.1 }}
+                              />
+                              <Button
+                                size="small"
+                                variant="contained"
+                                onClick={handleSave}
+                                disabled={updateGradeMutation.isPending}
+                              >
+                                {updateGradeMutation.isPending ? "…" : "שמור"}
+                              </Button>
+                            </Box>
                           ) : (
-                            <Typography color="text.secondary">—</Typography>
+                            <>
+                              {course.assignmentGrade !== null ? (
+                                <Typography>
+                                  {course.assignmentGrade}
+                                </Typography>
+                              ) : (
+                                <Typography color="text.secondary">
+                                  —
+                                </Typography>
+                              )}
+                              <IconButton
+                                size="small"
+                                className={classes.editButton}
+                                onClick={() =>
+                                  handleStartEdit(course, "assignment")
+                                }
+                              >
+                                <EditOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </>
                           )}
-                          <IconButton
-                            size="small"
-                            className={classes.editButton}
-                            onClick={() =>
-                              handleOpenEditor(course, "assignment")
-                            }
-                          >
-                            <EditOutlinedIcon fontSize="small" />
-                          </IconButton>
                         </Box>
                       </TableCell>
                       <TableCell align="center">
@@ -270,44 +348,6 @@ export const GradesPage = () => {
           )}
         </Card>
       </Box>
-
-      <Dialog
-        open={Boolean(editingCell)}
-        onClose={() => setEditingCell(null)}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>עדכון ציון</DialogTitle>
-        <DialogContent className={classes.dialogContent}>
-          <Typography variant="body2" color="text.secondary">
-            {editingCell?.type === "exam"
-              ? "הכנס ציון חדש למבחן"
-              : "הכנס ציון חדש למטלה"}
-          </Typography>
-          <TextField
-            label={editingCell?.type === "exam" ? "ציון מבחן" : "ציון מטלה"}
-            type="number"
-            value={editingCell?.value ?? ""}
-            onChange={(event) =>
-              setEditingCell((current) =>
-                current ? { ...current, value: event.target.value } : current
-              )
-            }
-            inputProps={{ min: 0, max: 100, step: 0.1 }}
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditingCell(null)}>ביטול</Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={updateGradeMutation.isPending}
-          >
-            {updateGradeMutation.isPending ? "שומר…" : "שמור"}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
