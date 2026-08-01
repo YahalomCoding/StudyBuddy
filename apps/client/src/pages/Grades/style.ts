@@ -56,4 +56,10 @@ export const useStyles = () => ({
     overflow: "hidden",
     backgroundColor: "var(--mui-palette-background-paper)",
   }),
+
+  loaderBox: css({
+    display: "flex",
+    justifyContent: "center",
+    padding: "32px 0",
+  }),
 });
