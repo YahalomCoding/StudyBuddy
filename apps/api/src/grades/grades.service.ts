@@ -51,9 +51,11 @@ export class GradesService {
         include: [
           {
             model: this.semesterCourseModel,
+            required: true,
             include: [
               {
                 model: this.courseModel,
+                required: true,
                 where: { id: courseId },
                 attributes: ["id"],
               },
@@ -74,7 +76,22 @@ export class GradesService {
         ...(payload.examId ? { id: payload.examId } : {}),
       };
 
-      await this.examModel.update({ grade: normalizedGrade }, { where });
+      const updateResult = await this.examModel.update(
+        { grade: normalizedGrade },
+        { where }
+      );
+      const affectedRows = Array.isArray(updateResult)
+        ? updateResult[0]
+        : updateResult;
+
+      if (Number(affectedRows) === 0) {
+        await this.examModel.create({
+          studentSemesterCourseId: studentSemesterCourse.id,
+          grade: normalizedGrade,
+          date: new Date(),
+          type: 1,
+        });
+      }
     }
 
     if (payload.assignmentGrade !== undefined) {
@@ -84,7 +101,24 @@ export class GradesService {
         ...(payload.assignmentId ? { id: payload.assignmentId } : {}),
       };
 
-      await this.assignmentModel.update({ grade: normalizedGrade }, { where });
+      const updateResult = await this.assignmentModel.update(
+        { grade: normalizedGrade },
+        { where }
+      );
+      const affectedRows = Array.isArray(updateResult)
+        ? updateResult[0]
+        : updateResult;
+
+      if (Number(affectedRows) === 0) {
+        await this.assignmentModel.create({
+          studentSemesterCourseId: studentSemesterCourse.id,
+          description: "Grade entry",
+          deadline: new Date(),
+          grade: normalizedGrade,
+          status: "done",
+          type: "assignment",
+        });
+      }
     }
 
     return this.getStudentGrades(studentId);
@@ -112,14 +146,18 @@ export class GradesService {
           },
           {
             model: this.assignmentModel,
-            attributes: ["id", "description", "grade"],
-            where: { grade: { [Symbol.for("ne")]: null } },
+            attributes: [
+              "id",
+              "description",
+              "grade",
+              "createdAt",
+              "updatedAt",
+            ],
             required: false,
           },
           {
             model: this.examModel,
-            attributes: ["id", "type", "grade"],
-            where: { grade: { [Symbol.for("ne")]: null } },
+            attributes: ["id", "type", "grade", "createdAt", "updatedAt"],
             required: false,
           },
         ],
@@ -133,26 +171,34 @@ export class GradesService {
           return null;
         }
 
-        const exams = (studentSemesterCourse.exams ?? []).filter(
-          (exam) => exam.grade !== null
-        );
-        const assignments = (studentSemesterCourse.assignments ?? []).filter(
-          (assignment) => assignment.grade !== null
-        );
+        const exams = studentSemesterCourse.exams ?? [];
+        const assignments = studentSemesterCourse.assignments ?? [];
+        const latestGradedExam = exams
+          .filter((exam) => exam.grade !== null)
+          .sort((left, right) => {
+            const leftTimestamp = new Date(
+              left.updatedAt ?? left.createdAt ?? 0
+            ).getTime();
+            const rightTimestamp = new Date(
+              right.updatedAt ?? right.createdAt ?? 0
+            ).getTime();
+            return rightTimestamp - leftTimestamp;
+          })[0];
+        const latestGradedAssignment = assignments
+          .filter((assignment) => assignment.grade !== null)
+          .sort((left, right) => {
+            const leftTimestamp = new Date(
+              left.updatedAt ?? left.createdAt ?? 0
+            ).getTime();
+            const rightTimestamp = new Date(
+              right.updatedAt ?? right.createdAt ?? 0
+            ).getTime();
+            return rightTimestamp - leftTimestamp;
+          })[0];
 
-        const examGrade =
-          exams.length > 0
-            ? exams.reduce((sum, exam) => sum + (exam.grade ?? 0), 0) /
-              exams.length
-            : null;
+        const examGrade = latestGradedExam?.grade ?? null;
 
-        const assignmentGrade =
-          assignments.length > 0
-            ? assignments.reduce(
-                (sum, assignment) => sum + (assignment.grade ?? 0),
-                0
-              ) / assignments.length
-            : null;
+        const assignmentGrade = latestGradedAssignment?.grade ?? null;
 
         const finalGrade =
           examGrade !== null && assignmentGrade !== null
@@ -171,8 +217,9 @@ export class GradesService {
               : null,
           finalGrade:
             finalGrade !== null ? Math.round(finalGrade * 10) / 10 : null,
-          examId: exams[0]?.id ?? null,
-          assignmentId: assignments[0]?.id ?? null,
+          examId: latestGradedExam?.id ?? exams[0]?.id ?? null,
+          assignmentId:
+            latestGradedAssignment?.id ?? assignments[0]?.id ?? null,
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
