@@ -26,16 +26,6 @@ const ASSIGNMENT_BASE_FIELDS: FormField[] = [
   { type: "date", name: "dueDate", label: "תאריך יעד" },
   {
     type: "select",
-    name: "status",
-    label: "סטאטוס",
-    options: [
-      { label: "לא התחיל", value: "not started" },
-      { label: "פעיל", value: "active" },
-      { label: "הושלם", value: "done" },
-    ],
-  },
-  {
-    type: "select",
     name: "type",
     label: "סוג המשימה",
     options: [
