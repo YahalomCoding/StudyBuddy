@@ -12,6 +12,7 @@
     "target": "ES2023",
     "sourceMap": true,
     "incremental": true,
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo",
     "noImplicitAny": true,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": true,

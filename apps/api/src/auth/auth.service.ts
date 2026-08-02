@@ -4,11 +4,13 @@ import {
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { JwtService } from "@nestjs/jwt";
 import { InjectModel } from "@nestjs/sequelize";
 import { OAuth2Client } from "google-auth-library";
 import * as bcrypt from "bcrypt";
 import { User } from "../users/user.model";
+import { AUTH_COOKIE_NAME } from "./auth.constants";
 
 export interface AuthResponse {
   accessToken: string;
@@ -34,7 +36,26 @@ export class AuthService {
     private readonly jwtService: JwtService
   ) {}
 
-  private async signUser(user: User): Promise<AuthResponse> {
+  setAuthCookie(res: Response, accessToken: string) {
+    res.cookie(AUTH_COOKIE_NAME, accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+  }
+
+  clearAuthCookie(res: Response) {
+    res.clearCookie(AUTH_COOKIE_NAME, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+  }
+
+  async signUser(user: User): Promise<AuthResponse> {
     const userWithStudent = await this.userModel.findByPk(user.id, {
       include: ["student"],
     });

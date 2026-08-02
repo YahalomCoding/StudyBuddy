@@ -20,7 +20,7 @@ import {
 import { ZodError } from "zod";
 import { AssignmentsModule } from "../assignments/assignments.module";
 import { AuthModule } from "../auth/auth.module";
-import { ChatModule } from "../chat/chat.module";
+import { AIModule } from "../ai/ai.module";
 import { CoursesModule } from "../courses/courses.module";
 import { DegreesModule } from "../degrees/degrees.module";
 import { env } from "../env";
@@ -66,7 +66,7 @@ class HttpExceptionFilter extends BaseExceptionFilter {
       autoLoadModels: true,
       synchronize: true,
     }),
-    ChatModule,
+    AIModule,
     AuthModule,
     DegreesModule,
     UsersModule,

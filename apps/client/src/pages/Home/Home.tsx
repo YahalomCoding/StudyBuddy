@@ -1,6 +1,5 @@
 import AddIcon from "@mui/icons-material/Add";
 import AddTaskIcon from "@mui/icons-material/AddTask";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -33,6 +32,7 @@ import {
   updateGeneralTask,
 } from "../../api/home";
 import { ChatBotBubble } from "../../components/Chatbot";
+import { HomeAiFeatures } from "../../components/HomeAiFeatures/HomeAiFeatures";
 import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
 import { CourseDetailsModal } from "../../components/CourseDetailsModal";
 import {
@@ -452,7 +452,7 @@ export const Home = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", p: 0 }}>
-      <ChatBotBubble exampleQuestions={["What exams do I have this week?"]} />
+      <ChatBotBubble exampleQuestions={["What should I do for the upcoming exams?"]} />
 
       <Box
         sx={{
@@ -480,69 +480,7 @@ export const Home = () => {
           </Box>
         )}
 
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: "divider",
-            p: 2,
-            mb: 2.5,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            bgcolor: "background.paper",
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <AutoAwesomeIcon sx={{ color: "white", fontSize: 24 }} />
-            </Box>
-            <Box>
-              <Typography fontWeight={600} fontSize={15}>
-                Generate AI Study Plan
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                A custom AI-generated study plan map you progress.{" "}
-                <Typography
-                  component="span"
-                  variant="body2"
-                  color="primary"
-                  sx={{ cursor: "pointer" }}
-                >
-                  Learn more!
-                </Typography>
-              </Typography>
-            </Box>
-          </Box>
-          <Box
-            sx={{
-              bgcolor: "#22c55e",
-              color: "white",
-              px: 3,
-              py: 1.2,
-              borderRadius: 2.5,
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: "pointer",
-              "&:hover": { bgcolor: "#16a34a" },
-              transition: "background 0.2s",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Generate Plan
-          </Box>
-        </Paper>
+        <HomeAiFeatures />
 
         {/* ── Two-column grid ────────────────────────────────────── */}
         <Box

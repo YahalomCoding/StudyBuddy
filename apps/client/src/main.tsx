@@ -8,6 +8,7 @@ import theme from "./theme.ts";
 import { LoadingProvider } from "./contexts/LoadingContext.tsx";
 import { QueryClientWrapper } from "./contexts/QueryClientWrapper.tsx";
 import { AuthProvider } from "./contexts/AuthContext";
+import { AiFeaturesProvider } from "./contexts/AiFeaturesContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -16,8 +17,10 @@ createRoot(document.getElementById("root")!).render(
         <LoadingProvider>
           <QueryClientWrapper>
             <AuthProvider>
-              <CssBaseline />
-              <App />
+              <AiFeaturesProvider>
+                <CssBaseline />
+                <App />
+              </AiFeaturesProvider>
             </AuthProvider>
           </QueryClientWrapper>
         </LoadingProvider>

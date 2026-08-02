@@ -36,6 +36,8 @@ export interface LangfuseMiddlewareOptions {
   promptName?: string;
   /** Langfuse prompt version to link. */
   promptVersion?: number;
+  /** System prompts to include in the trace (captured as metadata). */
+  systemPrompts?: string[];
 }
 
 /**
@@ -113,6 +115,9 @@ export function createLangfuseMiddleware(
               model: ctx.model,
               source: ctx.source,
               streaming: ctx.streaming,
+              ...(options?.systemPrompts?.length
+                ? { systemPrompts: options.systemPrompts }
+                : {}),
             }),
             ...(ctx.conversationId
               ? {

@@ -5,10 +5,9 @@ import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import { Avatar, Box, Typography } from "@mui/material";
-import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
 import StuddyBuddyAvatar from "../../assets/images/studybuddyAvatar.png";
+import { useAuth } from "../../contexts/AuthContext";
 
 const NAV_ITEMS = [
   { label: "Home", icon: HomeRoundedIcon, path: "/home" },
@@ -22,34 +21,12 @@ const BOTTOM_ITEMS = [
   { label: "Settings", icon: SettingsOutlinedIcon, path: "/settings" },
 ];
 
-type TokenUser = {
-  sub: string;
-  username?: string;
-  email?: string | null;
-  profileImage?: string | null;
-  studentId?: string | null;
-};
-
 interface NavItemProps {
   label: string;
   icon: React.ElementType;
   active?: boolean;
   onClick?: () => void;
 }
-
-const getUserFromToken = (): TokenUser | null => {
-  const token = localStorage.getItem("studybuddy_access_token");
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    return jwtDecode<TokenUser>(token);
-  } catch {
-    return null;
-  }
-};
 
 const NavItem = ({ label, icon: Icon, active, onClick }: NavItemProps) => (
   <Box
@@ -100,8 +77,7 @@ const NavItem = ({ label, icon: Icon, active, onClick }: NavItemProps) => (
 export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const user = useMemo(() => getUserFromToken(), []);
+  const { user } = useAuth();
 
   const displayName = user?.username || "Student";
   const displayEmail = user?.email || "student@uni.ac.il";

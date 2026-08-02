@@ -7,16 +7,10 @@ loadEnv({ path: path.resolve(__dirname, "../.env") });
 const envSchema = z.object({
   PORT: z.string().optional(),
   API_PORT: z.string().optional(),
-
-  OPENROUTER_API_KEY: z
-    .string()
-    .trim()
-    .min(1, "OPENROUTER_API_KEY is required"),
-
+  OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
   OPENROUTER_MODEL: z
     .string()
-    .trim()
-    .min(1, "OPENROUTER_MODEL is required")
+    .min(1)
     .default("nvidia/nemotron-3-nano-30b-a3b:free"),
 
   SYLLABUS_AI_TIMEOUT_MS: z.coerce

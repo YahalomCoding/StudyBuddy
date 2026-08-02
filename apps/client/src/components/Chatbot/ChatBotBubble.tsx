@@ -80,7 +80,7 @@ export const ChatBotBubble = <T extends AnyClientTool[]>({
     () =>
       createChatClientOptions({
         connection: fetchServerSentEvents(
-          `${import.meta.env.VITE_API_URL}/chat`,
+          `${import.meta.env.VITE_API_URL}/ai/chat`,
           { credentials: "include" }
         ),
         tools: allTools,

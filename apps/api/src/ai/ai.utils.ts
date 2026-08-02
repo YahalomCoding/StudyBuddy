@@ -13,6 +13,13 @@ const aiTextProviderAdapterPromise = createOpenRouterTextPromise.then(
     createOpenRouterText(env.OPENROUTER_MODEL as any, env.OPENROUTER_API_KEY)
 );
 
+export const LANGFUSE_PROMPT_NAMES = {
+  baseChat: "studybuddy-base-system",
+  studyPlan: "studybuddy-study-plan",
+  deadlineInsights: "studybuddy-deadline-insights",
+  assignmentGeneration: "studybuddy-ai-feature-assignment-generation",
+} as const;
+
 export const loadAiChat = async () => {
   const [chat, aiTextProviderAdapter] = await Promise.all([
     chatPromise,
