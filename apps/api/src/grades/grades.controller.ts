@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import type { AssessmentKind } from "../syllabi/syllabus.schemas";
 import { GradesService } from "./grades.service";
 
 type UpdateCourseGradesPayload = {
@@ -15,6 +16,9 @@ type UpdateCourseGradesPayload = {
   assignmentGrade?: number | null;
   examId?: string | null;
   assignmentId?: string | null;
+  assessmentTitle?: string | null;
+  assessmentDueDate?: string | null;
+  assessmentKind?: AssessmentKind | null;
 };
 
 @Controller("grades")
@@ -38,7 +42,7 @@ export class GradesController {
   async updateCourseGrades(
     @Req() req: { user?: { studentId?: string } },
     @Param("courseId") courseId: string,
-    @Body() body: UpdateCourseGradesPayload
+    @Body() body: UpdateCourseGradesPayload,
   ) {
     const studentId = req.user?.studentId;
 
@@ -49,7 +53,7 @@ export class GradesController {
     return this.gradesService.updateStudentCourseGrades(
       studentId,
       courseId,
-      body
+      body,
     );
   }
 }

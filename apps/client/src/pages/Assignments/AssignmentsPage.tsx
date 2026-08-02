@@ -194,6 +194,10 @@ export const AssignmentsPage = () => {
 
   return (
     <Box className={classes.page}>
+      <Box className={classes.topBar}>
+        <Typography className={classes.topBarTitle}>מטלות</Typography>
+      </Box>
+
       <Stack spacing={3} className={classes.pageContent}>
         <Box className={classes.header}>
           <Typography variant="h4" className={classes.title}>

@@ -18,6 +18,7 @@ export const LANGFUSE_PROMPT_NAMES = {
   studyPlan: "studybuddy-study-plan",
   deadlineInsights: "studybuddy-deadline-insights",
   assignmentGeneration: "studybuddy-ai-feature-assignment-generation",
+  syllabusExtraction: "studybuddy-syllabus-extraction",
 } as const;
 
 export const loadAiChat = async () => {
@@ -52,4 +53,37 @@ export const getSystemPrompt = async (
     version: prompt.version,
   };
   return CACHED_SYSTEM_PROMPTS[promptName];
+};
+
+
+export const getSystemPromptWithFallback = async (
+  promptName: string,
+  fallbackPrompt: string,
+): Promise<{
+  promptName: string;
+  prompt: string;
+  version?: number;
+  source: "langfuse" | "local";
+}> => {
+  if (!env.LANGFUSE_PUBLIC_KEY || !env.LANGFUSE_SECRET_KEY) {
+    return {
+      promptName,
+      prompt: fallbackPrompt,
+      source: "local",
+    };
+  }
+
+  try {
+    const prompt = await getSystemPrompt(promptName);
+    return {
+      ...prompt,
+      source: "langfuse",
+    };
+  } catch {
+    return {
+      promptName,
+      prompt: fallbackPrompt,
+      source: "local",
+    };
+  }
 };

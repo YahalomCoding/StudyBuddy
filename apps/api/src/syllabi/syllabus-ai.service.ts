@@ -1,4 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
+import {
+  getSystemPromptWithFallback,
+  LANGFUSE_PROMPT_NAMES,
+} from "../ai/ai.utils";
+import { startLangfuseTrace } from "../ai/langfuse-generation";
 import { env } from "../env";
 import { aiSyllabusDataSchema, type AiSyllabusData } from "./syllabus.schemas";
 
@@ -6,6 +11,8 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_LOGGED_CHARACTERS = 15_000;
 const MAX_INPUT_SAMPLE_CHARACTERS = 3_000;
 const MAX_ATTEMPTS = 2;
+const MAX_LANGFUSE_INPUT_CHARACTERS = 12_000;
+const MAX_LANGFUSE_OUTPUT_CHARACTERS = 15_000;
 
 const EMPTY_COURSE: AiSyllabusData["course"] = {
   title: null,
@@ -22,6 +29,12 @@ export type SyllabusParseResult = {
   data: AiSyllabusData;
   parser: "ai" | "heuristic";
   warnings: string[];
+};
+
+export type SyllabusParseContext = {
+  userId?: string;
+  sourceFileName?: string;
+  pageCount?: number;
 };
 
 type OpenRouterResponse = {
@@ -51,13 +64,39 @@ type OpenRouterResponse = {
 export class SyllabusAiService {
   private readonly logger = new Logger(SyllabusAiService.name);
 
-  async parse(text: string): Promise<SyllabusParseResult> {
+  async parse(
+    text: string,
+    context: SyllabusParseContext = {},
+  ): Promise<SyllabusParseResult> {
     this.logger.log(
       `Sending ${text.length} extracted characters to ${env.OPENROUTER_MODEL}`,
     );
     this.logger.debug(
       `AI input sample:\n${text.slice(0, MAX_INPUT_SAMPLE_CHARACTERS)}`,
     );
+
+    const managedPrompt = await getSystemPromptWithFallback(
+      LANGFUSE_PROMPT_NAMES.syllabusExtraction,
+      this.systemPrompt(),
+    );
+
+    const langfuseTrace = startLangfuseTrace({
+      name: "syllabus-import",
+      userId: context.userId,
+      tags: ["syllabus-import", "openrouter", managedPrompt.source],
+      input: {
+        sourceFileName: context.sourceFileName,
+        pageCount: context.pageCount,
+        characterCount: text.length,
+      },
+      metadata: {
+        feature: "syllabus-import",
+        model: env.OPENROUTER_MODEL,
+        promptSource: managedPrompt.source,
+        promptName: managedPrompt.promptName,
+        promptVersion: managedPrompt.version,
+      },
+    });
 
     let previousFailure = "";
 
@@ -67,6 +106,8 @@ export class SyllabusAiService {
           text,
           attempt,
           previousFailure,
+          managedPrompt,
+          langfuseTrace,
         );
 
         this.logger.debug(
@@ -104,13 +145,30 @@ export class SyllabusAiService {
           );
         }
 
+        const warnings =
+          attempt === 1
+            ? []
+            : [
+                "The first AI extraction attempt was invalid, so StudyBuddy retried it.",
+              ];
+
+        await langfuseTrace.success(
+          {
+            parser: "ai",
+            attempt,
+            courseTitle: cleaned.course.title,
+            lecturers: cleaned.lecturers.length,
+            assessments: cleaned.assessments.length,
+            topics: cleaned.topics.length,
+            warnings,
+          },
+          { promptSource: managedPrompt.source },
+        );
+
         return {
           data: cleaned,
           parser: "ai",
-          warnings:
-            attempt === 1
-              ? []
-              : ["The first AI extraction attempt was invalid, so StudyBuddy retried it."],
+          warnings,
         };
       } catch (error) {
         previousFailure =
@@ -125,12 +183,27 @@ export class SyllabusAiService {
       `Falling back to heuristic parser after ${MAX_ATTEMPTS} failed AI attempts`,
     );
 
+    const fallbackData = this.heuristicParse(text);
+    const warnings = [
+      `AI extraction failed: ${previousFailure}. StudyBuddy used a basic text parser. Review every field carefully before confirming.`,
+    ];
+
+    await langfuseTrace.warning(
+      {
+        parser: "heuristic",
+        courseTitle: fallbackData.course.title,
+        assessments: fallbackData.assessments.length,
+        topics: fallbackData.topics.length,
+        warnings,
+      },
+      previousFailure || "AI extraction failed; heuristic fallback used",
+      { promptSource: managedPrompt.source },
+    );
+
     return {
-      data: this.heuristicParse(text),
+      data: fallbackData,
       parser: "heuristic",
-      warnings: [
-        `AI extraction failed: ${previousFailure}. StudyBuddy used a basic text parser. Review every field carefully before confirming.`,
-      ],
+      warnings,
     };
   }
 
@@ -138,6 +211,13 @@ export class SyllabusAiService {
     text: string,
     attempt: number,
     previousFailure: string,
+    managedPrompt: {
+      promptName: string;
+      prompt: string;
+      version?: number;
+      source: "langfuse" | "local";
+    },
+    langfuseTrace: ReturnType<typeof startLangfuseTrace>,
   ): Promise<string> {
     const controller = new AbortController();
     const startedAt = Date.now();
@@ -145,6 +225,10 @@ export class SyllabusAiService {
       () => controller.abort(),
       env.SYLLABUS_AI_TIMEOUT_MS,
     );
+
+    let generation: ReturnType<
+      ReturnType<typeof startLangfuseTrace>["startGeneration"]
+    > | null = null;
 
     try {
       const retryInstruction =
@@ -163,6 +247,47 @@ export class SyllabusAiService {
               "For Hebrew abbreviations, use Hebrew gershayim ״.",
               "Examples: ד״ר, תשפ״ו, נ״ז and ש״ס.",
             ].join("\n");
+
+      const userPrompt = [
+        "Extract the syllabus into one compact JSON object.",
+        "Return JSON only. Do not use markdown, explanations, JSON Patch, or JSON Pointer paths.",
+        "Every property name must be a normal property name, for example assessments, not /assessments.",
+        "Never place an unescaped ASCII double quote inside a JSON string.",
+        "For Hebrew abbreviations use Hebrew gershayim ״, for example ד״ר and תשפ״ו.",
+        retryInstruction,
+        "",
+        "--- BEGIN SYLLABUS ---",
+        text,
+        "--- END SYLLABUS ---",
+      ].join("\n");
+
+      generation = langfuseTrace.startGeneration({
+        name: `syllabus-extraction-attempt-${attempt}`,
+        provider: "openrouter",
+        model: env.OPENROUTER_MODEL,
+        promptName:
+          managedPrompt.source === "langfuse"
+            ? managedPrompt.promptName
+            : undefined,
+        promptVersion: managedPrompt.version,
+        modelParameters: {
+          temperature: 0,
+          topP: 0.1,
+          maxTokens: 8_000,
+          reasoningEffort: "none",
+        },
+        input: {
+          system: managedPrompt.prompt,
+          user: userPrompt.slice(0, MAX_LANGFUSE_INPUT_CHARACTERS),
+          inputTruncated:
+            userPrompt.length > MAX_LANGFUSE_INPUT_CHARACTERS,
+        },
+        metadata: {
+          attempt,
+          promptSource: managedPrompt.source,
+          characterCount: text.length,
+        },
+      });
 
       const response = await fetch(OPENROUTER_URL, {
         method: "POST",
@@ -184,22 +309,11 @@ export class SyllabusAiService {
           messages: [
             {
               role: "system",
-              content: this.systemPrompt(),
+              content: managedPrompt.prompt,
             },
             {
               role: "user",
-              content: [
-                "Extract the syllabus into one compact JSON object.",
-                "Return JSON only. Do not use markdown, explanations, JSON Patch, or JSON Pointer paths.",
-                "Every property name must be a normal property name, for example assessments, not /assessments.",
-                "Never place an unescaped ASCII double quote inside a JSON string.",
-                "For Hebrew abbreviations use Hebrew gershayim ״, for example ד״ר and תשפ״ו.",
-                retryInstruction,
-                "",
-                "--- BEGIN SYLLABUS ---",
-                text,
-                "--- END SYLLABUS ---",
-              ].join("\n"),
+              content: userPrompt,
             },
           ],
         }),
@@ -251,8 +365,30 @@ export class SyllabusAiService {
         );
       }
 
+      generation.success({
+        output: content.slice(0, MAX_LANGFUSE_OUTPUT_CHARACTERS),
+        durationMs: Date.now() - startedAt,
+        finishReason: choice?.finish_reason,
+        usage: {
+          inputTokens: payload.usage?.prompt_tokens,
+          outputTokens: payload.usage?.completion_tokens,
+          totalTokens: payload.usage?.total_tokens,
+          cost: payload.usage?.cost,
+        },
+        metadata: {
+          nativeFinishReason: choice?.native_finish_reason,
+          outputTruncated:
+            content.length > MAX_LANGFUSE_OUTPUT_CHARACTERS,
+        },
+      });
+
       return content;
     } catch (error) {
+      generation?.error(error, {
+        attempt,
+        durationMs: Date.now() - startedAt,
+      });
+
       if (
         error instanceof Error &&
         (error.name === "AbortError" ||

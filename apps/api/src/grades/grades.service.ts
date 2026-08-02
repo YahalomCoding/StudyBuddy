@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { Op } from "sequelize";
 import { Assignment } from "../assignments/assignment.model";
 import { Course } from "../courses/courses.model";
 import { Exam } from "../exams/exam.model";
@@ -7,6 +8,37 @@ import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Semester } from "../semesters/semester.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
+import { CourseSyllabus } from "../syllabi/course-syllabus.model";
+import type {
+  AssessmentKind,
+  SyllabusData,
+} from "../syllabi/syllabus.schemas";
+
+type SyllabusAssessment = SyllabusData["assessments"][number];
+
+type UpdateCourseGradesPayload = {
+  examGrade?: number | null;
+  assignmentGrade?: number | null;
+  examId?: string | null;
+  assignmentId?: string | null;
+  assessmentTitle?: string | null;
+  assessmentDueDate?: string | null;
+  assessmentKind?: AssessmentKind | null;
+};
+
+type GradeAssessmentItem = {
+  id: string;
+  databaseId: string | null;
+  source: "syllabus" | "assignment" | "exam";
+  title: string;
+  kind: AssessmentKind;
+  typeLabel: string;
+  gradeType: "assignment" | "exam";
+  weightPercent: number | null;
+  grade: number | null;
+  dueDate: string | null;
+  weightedContribution: number | null;
+};
 
 @Injectable()
 export class GradesService {
@@ -19,7 +51,9 @@ export class GradesService {
     private readonly semesterCourseModel: typeof SemesterCourse,
     @InjectModel(Student) private readonly studentModel: typeof Student,
     @InjectModel(StudentSemesterCourse)
-    private readonly studentSemesterCourseModel: typeof StudentSemesterCourse
+    private readonly studentSemesterCourseModel: typeof StudentSemesterCourse,
+    @InjectModel(CourseSyllabus)
+    private readonly courseSyllabusModel: typeof CourseSyllabus,
   ) {}
 
   private normalizeGradeValue(value: number | null | undefined) {
@@ -39,12 +73,7 @@ export class GradesService {
   async updateStudentCourseGrades(
     studentId: string,
     courseId: string,
-    payload: {
-      examGrade?: number | null;
-      assignmentGrade?: number | null;
-      examId?: string | null;
-      assignmentId?: string | null;
-    }
+    payload: UpdateCourseGradesPayload,
   ) {
     const studentSemesterCourse = await this.studentSemesterCourseModel.findOne(
       {
@@ -63,7 +92,7 @@ export class GradesService {
             ],
           },
         ],
-      }
+      },
     );
 
     if (!studentSemesterCourse) {
@@ -71,55 +100,23 @@ export class GradesService {
     }
 
     if (payload.examGrade !== undefined) {
-      const normalizedGrade = this.normalizeGradeValue(payload.examGrade);
-      const where = {
-        studentSemesterCourseId: studentSemesterCourse.id,
-        ...(payload.examId ? { id: payload.examId } : {}),
-      };
-
-      const updateResult = await this.examModel.update(
-        { grade: normalizedGrade },
-        { where }
+      await this.saveExamGrade(
+        studentSemesterCourse.id,
+        payload.examId,
+        payload.examGrade,
+        payload.assessmentDueDate,
       );
-      const affectedRows = Array.isArray(updateResult)
-        ? updateResult[0]
-        : updateResult;
-
-      if (Number(affectedRows) === 0) {
-        await this.examModel.create({
-          studentSemesterCourseId: studentSemesterCourse.id,
-          grade: normalizedGrade,
-          date: new Date(),
-          type: 1,
-        });
-      }
     }
 
     if (payload.assignmentGrade !== undefined) {
-      const normalizedGrade = this.normalizeGradeValue(payload.assignmentGrade);
-      const where = {
-        studentSemesterCourseId: studentSemesterCourse.id,
-        ...(payload.assignmentId ? { id: payload.assignmentId } : {}),
-      };
-
-      const updateResult = await this.assignmentModel.update(
-        { grade: normalizedGrade },
-        { where }
+      await this.saveAssignmentGrade(
+        studentSemesterCourse.id,
+        payload.assignmentId,
+        payload.assignmentGrade,
+        payload.assessmentTitle,
+        payload.assessmentDueDate,
+        payload.assessmentKind,
       );
-      const affectedRows = Array.isArray(updateResult)
-        ? updateResult[0]
-        : updateResult;
-
-      if (Number(affectedRows) === 0) {
-        await this.assignmentModel.create({
-          studentSemesterCourseId: studentSemesterCourse.id,
-          description: "Grade entry",
-          deadline: new Date(),
-          grade: normalizedGrade,
-          status: "done",
-          type: "assignment",
-        });
-      }
     }
 
     return this.getStudentGrades(studentId);
@@ -154,6 +151,8 @@ export class GradesService {
             attributes: [
               "id",
               "description",
+              "deadline",
+              "type",
               "grade",
               "createdAt",
               "updatedAt",
@@ -162,11 +161,37 @@ export class GradesService {
           },
           {
             model: this.examModel,
-            attributes: ["id", "type", "grade", "createdAt", "updatedAt"],
+            attributes: [
+              "id",
+              "type",
+              "date",
+              "grade",
+              "createdAt",
+              "updatedAt",
+            ],
             required: false,
           },
         ],
       });
+
+    const studentSemesterCourseIds = studentSemesterCourses.map(
+      (item) => item.id,
+    );
+    const syllabusRecords = studentSemesterCourseIds.length
+      ? await this.courseSyllabusModel.findAll({
+          where: {
+            studentSemesterCourseId: {
+              [Op.in]: studentSemesterCourseIds,
+            },
+          },
+        })
+      : [];
+    const syllabusByCourseId = new Map(
+      syllabusRecords.map((record) => [
+        record.studentSemesterCourseId,
+        record.parsedData,
+      ]),
+    );
 
     return studentSemesterCourses
       .map((studentSemesterCourse) => {
@@ -176,60 +201,458 @@ export class GradesService {
           return null;
         }
 
-        const exams = studentSemesterCourse.exams ?? [];
-        const assignments = studentSemesterCourse.assignments ?? [];
-        const latestGradedExam = exams
-          .filter((exam) => exam.grade !== null)
-          .sort((left, right) => {
-            const leftTimestamp = new Date(
-              left.updatedAt ?? left.createdAt ?? 0
-            ).getTime();
-            const rightTimestamp = new Date(
-              right.updatedAt ?? right.createdAt ?? 0
-            ).getTime();
-            return rightTimestamp - leftTimestamp;
-          })[0];
-        const latestGradedAssignment = assignments
-          .filter((assignment) => assignment.grade !== null)
-          .sort((left, right) => {
-            const leftTimestamp = new Date(
-              left.updatedAt ?? left.createdAt ?? 0
-            ).getTime();
-            const rightTimestamp = new Date(
-              right.updatedAt ?? right.createdAt ?? 0
-            ).getTime();
-            return rightTimestamp - leftTimestamp;
-          })[0];
-
-        const examGrade = latestGradedExam?.grade ?? null;
-
-        const assignmentGrade = latestGradedAssignment?.grade ?? null;
-
-        const finalGrade =
-          examGrade !== null && assignmentGrade !== null
-            ? examGrade * 0.6 + assignmentGrade * 0.4
-            : (examGrade ?? assignmentGrade);
+        const syllabus =
+          syllabusByCourseId.get(studentSemesterCourse.id) ?? null;
+        const assessments = this.buildAssessmentRows(
+          syllabus,
+          studentSemesterCourse.assignments ?? [],
+          studentSemesterCourse.exams ?? [],
+        );
+        const calculation = this.calculateCourseGrade(assessments);
+        const examAssessments = assessments.filter(
+          (assessment) => assessment.gradeType === "exam",
+        );
+        const assignmentAssessments = assessments.filter(
+          (assessment) => assessment.gradeType === "assignment",
+        );
         const semester = studentSemesterCourse.semesterCourse?.semester;
 
         return {
           courseId: course.id,
-          courseTitle: course.title,
+          studentSemesterCourseId: studentSemesterCourse.id,
+          courseTitle: syllabus?.course.title?.trim() || course.title,
           semesterYearNumber: semester?.yearNumber ?? null,
           semesterNumber: semester?.semesterNumber ?? null,
           credits: Number(course.credits ?? 0),
-          examGrade:
-            examGrade !== null ? Math.round(examGrade * 10) / 10 : null,
-          assignmentGrade:
-            assignmentGrade !== null
-              ? Math.round(assignmentGrade * 10) / 10
-              : null,
-          finalGrade:
-            finalGrade !== null ? Math.round(finalGrade * 10) / 10 : null,
-          examId: latestGradedExam?.id ?? exams[0]?.id ?? null,
+          examGrade: this.averageGrades(examAssessments),
+          assignmentGrade: this.averageGrades(assignmentAssessments),
+          finalGrade: calculation.finalGrade,
+          currentGrade: calculation.currentGrade,
+          totalWeightPercent: calculation.totalWeightPercent,
+          completedWeightPercent: calculation.completedWeightPercent,
+          examId:
+            examAssessments.find((assessment) => assessment.grade !== null)
+              ?.databaseId ?? examAssessments[0]?.databaseId ?? null,
           assignmentId:
-            latestGradedAssignment?.id ?? assignments[0]?.id ?? null,
+            assignmentAssessments.find(
+              (assessment) => assessment.grade !== null,
+            )?.databaseId ?? assignmentAssessments[0]?.databaseId ?? null,
+          assessments,
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
+  }
+
+  private async saveExamGrade(
+    studentSemesterCourseId: string,
+    examId: string | null | undefined,
+    grade: number | null,
+    assessmentDueDate?: string | null,
+  ) {
+    const normalizedGrade = this.normalizeGradeValue(grade);
+    let exam: Exam | null = null;
+
+    if (examId) {
+      exam = await this.examModel.findOne({
+        where: { id: examId, studentSemesterCourseId },
+      });
+    }
+
+    const date = this.parseDateOnly(assessmentDueDate) ?? new Date();
+
+    if (!exam) {
+      exam = await this.examModel.findOne({
+        where: { studentSemesterCourseId, date, type: 1 },
+      });
+    }
+
+    if (exam) {
+      await exam.update({ grade: normalizedGrade });
+      return;
+    }
+
+    await this.examModel.create({
+      studentSemesterCourseId,
+      grade: normalizedGrade,
+      date,
+      type: 1,
+    });
+  }
+
+  private async saveAssignmentGrade(
+    studentSemesterCourseId: string,
+    assignmentId: string | null | undefined,
+    grade: number | null,
+    assessmentTitle?: string | null,
+    assessmentDueDate?: string | null,
+    assessmentKind?: AssessmentKind | null,
+  ) {
+    const normalizedGrade = this.normalizeGradeValue(grade);
+    const description = assessmentTitle?.trim() || "Grade entry";
+    let assignment: Assignment | null = null;
+
+    if (assignmentId) {
+      assignment = await this.assignmentModel.findOne({
+        where: { id: assignmentId, studentSemesterCourseId },
+      });
+    }
+
+    if (!assignment && assessmentTitle?.trim()) {
+      assignment = await this.assignmentModel.findOne({
+        where: {
+          studentSemesterCourseId,
+          description: assessmentTitle.trim(),
+        },
+      });
+    }
+
+    if (assignment) {
+      await assignment.update({ grade: normalizedGrade });
+      return;
+    }
+
+    await this.assignmentModel.create({
+      studentSemesterCourseId,
+      description,
+      deadline: this.parseDateOnly(assessmentDueDate) ?? new Date(),
+      grade: normalizedGrade,
+      status: normalizedGrade === null ? "not started" : "done",
+      type: this.mapAssessmentKind(assessmentKind ?? "assignment"),
+    });
+  }
+
+  private buildAssessmentRows(
+    syllabus: SyllabusData | null,
+    assignments: Assignment[],
+    exams: Exam[],
+  ): GradeAssessmentItem[] {
+    const usedAssignmentIds = new Set<string>();
+    const usedExamIds = new Set<string>();
+
+    const syllabusRows = (syllabus?.assessments ?? []).map(
+      (assessment, index): GradeAssessmentItem => {
+        if (assessment.kind === "exam") {
+          const exam = this.findMatchingExam(
+            assessment,
+            exams,
+            usedExamIds,
+          );
+
+          if (exam) usedExamIds.add(exam.id);
+
+          return this.toAssessmentRow(
+            assessment,
+            index,
+            exam ?? null,
+            null,
+          );
+        }
+
+        const assignment = this.findMatchingAssignment(
+          assessment,
+          assignments,
+          usedAssignmentIds,
+        );
+
+        if (assignment) usedAssignmentIds.add(assignment.id);
+
+        return this.toAssessmentRow(
+          assessment,
+          index,
+          null,
+          assignment ?? null,
+        );
+      },
+    );
+
+    const extraAssignments = assignments
+      .filter((assignment) => !usedAssignmentIds.has(assignment.id))
+      .map<GradeAssessmentItem>((assignment) => ({
+        id: `assignment-${assignment.id}`,
+        databaseId: assignment.id,
+        source: "assignment",
+        title: assignment.description,
+        kind: this.assignmentTypeToKind(assignment.type),
+        typeLabel: this.assignmentTypeLabel(assignment.type),
+        gradeType: "assignment",
+        weightPercent: null,
+        grade: assignment.grade,
+        dueDate: this.toDateOnly(assignment.deadline),
+        weightedContribution: null,
+      }));
+
+    const extraExams = exams
+      .filter((exam) => !usedExamIds.has(exam.id))
+      .map<GradeAssessmentItem>((exam) => ({
+        id: `exam-${exam.id}`,
+        databaseId: exam.id,
+        source: "exam",
+        title: this.examTypeLabel(exam.type),
+        kind: "exam",
+        typeLabel: this.examTypeLabel(exam.type),
+        gradeType: "exam",
+        weightPercent: null,
+        grade: exam.grade,
+        dueDate: this.toDateOnly(exam.date),
+        weightedContribution: null,
+      }));
+
+    return [...syllabusRows, ...extraAssignments, ...extraExams].sort(
+      (left, right) => {
+        if (!left.dueDate && !right.dueDate) {
+          return left.title.localeCompare(right.title, "he");
+        }
+        if (!left.dueDate) return 1;
+        if (!right.dueDate) return -1;
+        return left.dueDate.localeCompare(right.dueDate);
+      },
+    );
+  }
+
+  private toAssessmentRow(
+    assessment: SyllabusAssessment,
+    index: number,
+    exam: Exam | null,
+    assignment: Assignment | null,
+  ): GradeAssessmentItem {
+    const grade = assignment?.grade ?? exam?.grade ?? null;
+    const weightPercent = assessment.weightPercent;
+
+    return {
+      id: assessment.id || `syllabus-assessment-${index + 1}`,
+      databaseId: assignment?.id ?? exam?.id ?? null,
+      source: "syllabus",
+      title: assessment.title,
+      kind: assessment.kind,
+      typeLabel: this.assessmentKindLabel(assessment.kind),
+      gradeType: assessment.kind === "exam" ? "exam" : "assignment",
+      weightPercent,
+      grade,
+      dueDate:
+        assignment?.deadline || exam?.date
+          ? this.toDateOnly(assignment?.deadline ?? exam?.date ?? null)
+          : assessment.dueDate,
+      weightedContribution:
+        grade !== null && weightPercent !== null
+          ? this.roundGrade((grade * weightPercent) / 100)
+          : null,
+    };
+  }
+
+  private calculateCourseGrade(assessments: GradeAssessmentItem[]) {
+    const weightedAssessments = assessments.filter(
+      (assessment) =>
+        assessment.weightPercent !== null && assessment.weightPercent > 0,
+    );
+    const gradedWeightedAssessments = weightedAssessments.filter(
+      (assessment) => assessment.grade !== null,
+    );
+    const totalWeightPercent = weightedAssessments.reduce(
+      (sum, assessment) => sum + (assessment.weightPercent ?? 0),
+      0,
+    );
+    const completedWeightPercent = gradedWeightedAssessments.reduce(
+      (sum, assessment) => sum + (assessment.weightPercent ?? 0),
+      0,
+    );
+    const weightedNumerator = gradedWeightedAssessments.reduce(
+      (sum, assessment) =>
+        sum +
+        (assessment.grade ?? 0) * (assessment.weightPercent ?? 0),
+      0,
+    );
+
+    if (totalWeightPercent > 0) {
+      return {
+        totalWeightPercent: this.roundGrade(totalWeightPercent) ?? 0,
+        completedWeightPercent:
+          this.roundGrade(completedWeightPercent) ?? 0,
+        currentGrade:
+          completedWeightPercent > 0
+            ? this.roundGrade(weightedNumerator / completedWeightPercent)
+            : null,
+        finalGrade:
+          gradedWeightedAssessments.length === weightedAssessments.length
+            ? this.roundGrade(weightedNumerator / totalWeightPercent)
+            : null,
+      };
+    }
+
+    const gradedAssessments = assessments.filter(
+      (assessment) => assessment.grade !== null,
+    );
+    const average = this.averageGrades(gradedAssessments);
+
+    return {
+      totalWeightPercent: 0,
+      completedWeightPercent: 0,
+      currentGrade: average,
+      finalGrade:
+        assessments.length > 0 && gradedAssessments.length === assessments.length
+          ? average
+          : null,
+    };
+  }
+
+  private averageGrades(assessments: GradeAssessmentItem[]) {
+    const grades = assessments
+      .map((assessment) => assessment.grade)
+      .filter((grade): grade is number => grade !== null);
+
+    if (grades.length === 0) return null;
+
+    return this.roundGrade(
+      grades.reduce((sum, grade) => sum + grade, 0) / grades.length,
+    );
+  }
+
+  private findMatchingAssignment(
+    assessment: SyllabusAssessment,
+    assignments: Assignment[],
+    usedIds: Set<string>,
+  ) {
+    const normalizedTitle = this.normalizeText(assessment.title);
+    const titleMatch = assignments.find(
+      (assignment) =>
+        !usedIds.has(assignment.id) &&
+        this.normalizeText(assignment.description) === normalizedTitle,
+    );
+
+    if (titleMatch) return titleMatch;
+
+    if (assessment.dueDate) {
+      return assignments.find(
+        (assignment) =>
+          !usedIds.has(assignment.id) &&
+          this.toDateOnly(assignment.deadline) === assessment.dueDate,
+      );
+    }
+
+    return undefined;
+  }
+
+  private findMatchingExam(
+    assessment: SyllabusAssessment,
+    exams: Exam[],
+    usedIds: Set<string>,
+  ) {
+    if (assessment.dueDate) {
+      const dateMatch = exams.find(
+        (exam) =>
+          !usedIds.has(exam.id) &&
+          this.toDateOnly(exam.date) === assessment.dueDate,
+      );
+
+      if (dateMatch) return dateMatch;
+    }
+
+    return exams.find((exam) => !usedIds.has(exam.id));
+  }
+
+  private normalizeText(value: string) {
+    return value.trim().toLocaleLowerCase("he").replace(/\s+/g, " ");
+  }
+
+  private parseDateOnly(value?: string | null): Date | null {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const date = new Date(`${value}T12:00:00.000Z`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  private toDateOnly(value: Date | null): string | null {
+    return value ? value.toISOString().slice(0, 10) : null;
+  }
+
+  private roundGrade(value: number | null) {
+    return value === null ? null : Math.round(value * 10) / 10;
+  }
+
+  private mapAssessmentKind(
+    kind: AssessmentKind,
+  ): Assignment["type"] {
+    switch (kind) {
+      case "project":
+      case "presentation":
+        return "project";
+      case "lab":
+        return "lab";
+      case "participation":
+        return "practice";
+      case "assignment":
+        return "assignment";
+      case "other":
+      case "exam":
+        return "homework";
+      default:
+        return "homework";
+    }
+  }
+
+  private assignmentTypeToKind(type: Assignment["type"]): AssessmentKind {
+    switch (type) {
+      case "project":
+        return "project";
+      case "lab":
+        return "lab";
+      case "practice":
+        return "participation";
+      case "assignment":
+      case "homework":
+      case "report":
+        return "assignment";
+      default:
+        return "assignment";
+    }
+  }
+
+  private assignmentTypeLabel(type: Assignment["type"]) {
+    switch (type) {
+      case "assignment":
+        return "מטלה";
+      case "homework":
+        return "שיעורי בית";
+      case "practice":
+        return "תרגול";
+      case "project":
+        return "פרויקט";
+      case "report":
+        return "דוח";
+      case "lab":
+        return "מעבדה";
+      default:
+        return "מטלה";
+    }
+  }
+
+  private assessmentKindLabel(kind: AssessmentKind) {
+    switch (kind) {
+      case "assignment":
+        return "מטלה";
+      case "exam":
+        return "מבחן";
+      case "project":
+        return "פרויקט";
+      case "presentation":
+        return "מצגת";
+      case "participation":
+        return "השתתפות";
+      case "lab":
+        return "מעבדה";
+      case "other":
+        return "אחר";
+      default:
+        return "אחר";
+    }
+  }
+
+  private examTypeLabel(type: number) {
+    switch (type) {
+      case 1:
+        return "מועד א׳";
+      case 2:
+        return "מועד ב׳";
+      default:
+        return "מבחן";
+    }
   }
 }

@@ -467,7 +467,7 @@ export const Home = () => {
           gap: 1,
         }}
       >
-        <Typography fontWeight={500}>Home</Typography>
+        <Typography fontWeight={500}>בית </Typography>
       </Box>
 
       <Box sx={{ p: 3, maxWidth: 1100, mx: "auto" }}>

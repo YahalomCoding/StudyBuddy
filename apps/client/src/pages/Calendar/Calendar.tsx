@@ -248,7 +248,7 @@ export const CalendarPage = () => {
     <Box className={classes.page}>
       <Box className={classes.topBar}>
         <Typography className={classes.topBarTitle}>
-          Calendar
+          לוח שנה
         </Typography>
       </Box>
 

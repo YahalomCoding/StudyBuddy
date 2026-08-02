@@ -110,7 +110,11 @@ export class SyllabiService {
     }
 
     const extractedPdf = await this.pdfService.extractText(file.buffer);
-    const parsed = await this.aiService.parse(extractedPdf.text);
+    const parsed = await this.aiService.parse(extractedPdf.text, {
+      userId,
+      sourceFileName: file.originalname,
+      pageCount: extractedPdf.pageCount,
+    });
     const availableDegrees = await this.getAvailableDegrees(student.id);
     const syllabus = this.toEditableSyllabus(parsed.data);
 
@@ -170,6 +174,7 @@ export class SyllabiService {
       const course = await this.findOrCreateCourse(
         payload.syllabus.course.title,
         degree.id,
+        payload.syllabus.course.credits,
         transaction,
       );
       const semester = await this.findOrCreateSemester(
@@ -675,9 +680,14 @@ export class SyllabiService {
   private async findOrCreateCourse(
     title: string,
     degreeId: string,
+    credits: number | null,
     transaction: Transaction,
   ): Promise<{ id: string }> {
     const normalizedTitle = title.trim();
+    const normalizedCredits =
+      credits !== null && Number.isFinite(Number(credits))
+        ? Math.max(0, Number(credits))
+        : null;
 
     /*
      * Course is already registered in SequelizeModule by the application's
@@ -685,23 +695,59 @@ export class SyllabiService {
      * compatible with branches where the Course model file is located
      * elsewhere.
      */
+    type CourseRecord = {
+      id: string;
+      credits: number;
+      update: (
+        values: { credits: number },
+        options: { transaction: Transaction },
+      ) => Promise<unknown>;
+    };
+
     const courseModel = (
       this.sequelize as unknown as {
         model: (modelName: string) => {
           findOrCreate: (options: {
             where: { title: string; degreeId: string };
-            defaults: { title: string; degreeId: string };
+            defaults: {
+              title: string;
+              degreeId: string;
+              credits: number;
+            };
             transaction: Transaction;
-          }) => Promise<[{ id: string }, boolean]>;
+          }) => Promise<[CourseRecord, boolean]>;
         };
       }
     ).model("Course");
 
-    const [course] = await courseModel.findOrCreate({
+    const [course, created] = await courseModel.findOrCreate({
       where: { title: normalizedTitle, degreeId },
-      defaults: { title: normalizedTitle, degreeId },
+      defaults: {
+        title: normalizedTitle,
+        degreeId,
+        credits: normalizedCredits ?? 0,
+      },
       transaction,
     });
+
+    /*
+     * The full syllabus is still stored in CourseSyllabus.parsedData, but
+     * credits are also copied to Courses.credits so the rest of the app
+     * (including Grades) can use them without reading the syllabus JSON.
+     *
+     * When the course already exists, importing a syllabus with a credits
+     * value refreshes the existing Course row as well.
+     */
+    if (
+      !created &&
+      normalizedCredits !== null &&
+      Number(course.credits) !== normalizedCredits
+    ) {
+      await course.update(
+        { credits: normalizedCredits },
+        { transaction },
+      );
+    }
 
     return course;
   }
