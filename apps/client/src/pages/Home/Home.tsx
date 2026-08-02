@@ -32,13 +32,13 @@ import {
   updateGeneralTask,
 } from "../../api/home";
 import { ChatBotBubble } from "../../components/Chatbot";
-import { HomeAiFeatures } from "../../components/HomeAiFeatures/HomeAiFeatures";
 import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
 import { CourseDetailsModal } from "../../components/CourseDetailsModal";
 import {
   GenericFormModal,
   type FormValues,
 } from "../../components/GenericFormModal/GenericFormModal";
+import { HomeAiFeatures } from "../../components/HomeAiFeatures/HomeAiFeatures";
 import { UpcomingEvents } from "../../components/UpcomingEvents";
 import {
   buildAssignmentFields,
@@ -442,7 +442,7 @@ export const Home = () => {
         course: values.course ?? "",
         title: values.title ?? "מטלה",
         dueDate: values.dueDate ?? new Date().toISOString(),
-        status: (values.status as ItemStatus) ?? "not started",
+        status: "not started",
         type: (values.type as AssignmentType) ?? "assignment",
       });
     }
@@ -452,7 +452,9 @@ export const Home = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", p: 0 }}>
-      <ChatBotBubble exampleQuestions={["What should I do for the upcoming exams?"]} />
+      <ChatBotBubble
+        exampleQuestions={["What should I do for the upcoming exams?"]}
+      />
 
       <Box
         sx={{

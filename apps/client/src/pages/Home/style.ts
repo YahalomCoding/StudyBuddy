@@ -12,7 +12,6 @@ export const useStyles = () => {
       paddingLeft: "40px",
       paddingRight: "40px",
     }),
-
     content: css({
       maxWidth: "1180px",
       margin: "0 auto",
@@ -20,18 +19,15 @@ export const useStyles = () => {
       display: "grid",
       gap: "24px",
     }),
-
     header: css({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
     }),
-
     title: css({
       fontWeight: 600,
       letterSpacing: "-0.01em",
     }),
-
     dashboardGrid: css({
       display: "grid",
       gridTemplateColumns: "1.45fr 1fr",
@@ -52,34 +48,27 @@ export const useStyles = () => {
         `,
       },
     }),
-
     todoArea: css({
       gridArea: "todo",
       height: "100%",
     }),
-
     upcomingArea: css({
       gridArea: "upcoming",
     }),
-
     assignmentsArea: css({
       gridArea: "assignments",
     }),
-
     coursesArea: css({
       gridArea: "courses",
     }),
-
     section: css({
       display: "grid",
       gap: "12px",
       height: "100%",
     }),
-
     sectionTitle: css({
       fontWeight: 600,
     }),
-
     card: css({
       background: "var(--mui-palette-background-paper)",
       border: "1px solid var(--mui-palette-divider)",
@@ -87,7 +76,6 @@ export const useStyles = () => {
       overflow: "hidden",
       boxShadow: "0 8px 30px rgba(15, 23, 42, 0.06)",
     }),
-
     tablePaper: css({
       border: "1px solid var(--mui-palette-divider)",
       borderRadius: "18px",
@@ -95,33 +83,26 @@ export const useStyles = () => {
       boxShadow: "0 8px 30px rgba(15, 23, 42, 0.06)",
       background: "var(--mui-palette-background-paper)",
     }),
-
     tableHeadRow: css({
       backgroundColor: "var(--mui-palette-action-hover)",
     }),
-
     taskNameCell: css({
       fontWeight: 500,
     }),
-
     assignmentNameCell: css({
       fontWeight: 500,
     }),
-
     overdueRow: css({
       backgroundColor: "var(--sb-home-overdue-row-bg)",
       borderLeft: "3px solid var(--sb-home-overdue-row-border)",
     }),
-
     overdueDaysCell: css({
       color: "var(--sb-home-overdue-text)",
       fontWeight: 600,
     }),
-
     regularDaysCell: css({
       color: "var(--mui-palette-text-secondary)",
     }),
-
     chipBase: css({
       fontWeight: 500,
     }),

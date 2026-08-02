@@ -1,34 +1,26 @@
 import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { Assignment } from "../assignments/assignment.model";
-import { Degree } from "../degrees/degree.model";
+import { Course } from "../courses/courses.model";
 import { Exam } from "../exams/exam.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
-import { Semester } from "../semesters/semester.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
-import { CourseSyllabus } from "../syllabi/course-syllabus.model";
-import { Course } from "./courses.model";
-import { CoursesController } from "./courses.controller";
-import { CoursesService } from "./courses.service";
+import { GradesController } from "./grades.controller";
+import { GradesService } from "./grades.service";
 
 @Module({
-
   imports: [
     SequelizeModule.forFeature([
+      Assignment,
       Course,
-      Degree,
-      Semester,
+      Exam,
       SemesterCourse,
       Student,
       StudentSemesterCourse,
-      Assignment,
-      Exam,
-      CourseSyllabus,
     ]),
   ],
-  controllers: [CoursesController],
-  providers: [CoursesService],
-  exports: [CoursesService],
+  controllers: [GradesController],
+  providers: [GradesService],
 })
-export class CoursesModule {}
+export class GradesModule {}

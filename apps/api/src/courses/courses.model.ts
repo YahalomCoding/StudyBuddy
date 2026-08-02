@@ -1,3 +1,4 @@
+import type { NonAttribute } from "sequelize";
 import {
   BelongsTo,
   BelongsToMany,
@@ -8,8 +9,6 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
-import type { NonAttribute } from "sequelize";
-
 import { Degree } from "../degrees/degree.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Semester } from "../semesters/semester.model";
@@ -43,6 +42,9 @@ export class Course extends Model<Partial<Course>> {
     allowNull: false,
   })
   declare degreeId: string;
+
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare credits: number;
 
   @BelongsTo(() => Degree)
   declare degree: NonAttribute<Degree>;

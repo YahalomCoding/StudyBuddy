@@ -2,20 +2,20 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import type { Transaction } from "sequelize";
 import { Assignment } from "../assignments/assignment.model";
+import { AssignmentsService } from "../assignments/assignments.service";
 import { Course } from "../courses/courses.model";
 import { Degree } from "../degrees/degree.model";
 import { Exam } from "../exams/exam.model";
+import { ExamsService } from "../exams/exams.service";
 import { GeneralTask } from "../general-tasks/general-task.model";
+import { GeneralTasksService } from "../general-tasks/general-tasks.service";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Semester } from "../semesters/semester.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
-import { Student } from "../students/student.model";
-import { User } from "../users/user.model";
-import { GeneralTasksService } from "../general-tasks/general-tasks.service";
 import { StudentSemesterCoursesService } from "../student-semester-courses/student-semester-courses.service";
-import { AssignmentsService } from "../assignments/assignments.service";
-import { ExamsService } from "../exams/exams.service";
+import { Student } from "../students/student.model";
 import { UpcomingEventsTypesEnum } from "../types";
+import { User } from "../users/user.model";
 
 const DURATION_UNITS = ["minutes", "hours", "days"] as const;
 type DurationUnit = (typeof DURATION_UNITS)[number];
@@ -130,10 +130,10 @@ export class HomeService {
       const semester = await this.findOrCreateSemester(2026, 2, transaction);
 
       const courses = [
-        { title: "אלגברה לינארית", degreeTitle: "מדעי המחשב" },
-        { title: "מבני נתונים", degreeTitle: "הנדסת תוכנה" },
-        { title: "מסדי נתונים", degreeTitle: "מערכות מידע" },
-        { title: "סטטיסטיקה", degreeTitle: "מדעי הנתונים" },
+        { title: "אלגברה לינארית", degreeTitle: "מדעי המחשב", credits: 3 },
+        { title: "מבני נתונים", degreeTitle: "הנדסת תוכנה", credits: 4 },
+        { title: "מסדי נתונים", degreeTitle: "מערכות מידע", credits: 3 },
+        { title: "סטטיסטיקה", degreeTitle: "מדעי הנתונים", credits: 2 },
       ];
 
       const studentSemesterCourseByTitle = new Map<
@@ -151,6 +151,7 @@ export class HomeService {
         const course = await this.findOrCreateCourse(
           courseSeed.title,
           degree.id,
+          courseSeed.credits,
           transaction
         );
 
@@ -668,6 +669,7 @@ export class HomeService {
     const course = await this.findOrCreateCourse(
       normalizedCourseTitle,
       degree.id,
+      3,
       transaction
     );
 
@@ -687,6 +689,22 @@ export class HomeService {
   private async findOrCreateSeedStudent(
     transaction: Transaction
   ): Promise<Student> {
+    const preferredUser = await this.userModel.findOne({
+      where: { username: "demo-user" },
+      transaction,
+    });
+
+    if (preferredUser) {
+      const preferredStudent = await this.studentModel.findOne({
+        where: { userId: preferredUser.id },
+        transaction,
+      });
+
+      if (preferredStudent) {
+        return preferredStudent;
+      }
+    }
+
     const existingStudent = await this.studentModel.findOne({
       order: [["createdAt", "ASC"]],
       transaction,
@@ -697,9 +715,9 @@ export class HomeService {
     }
 
     const [user] = await this.userModel.findOrCreate({
-      where: { username: "demo-seed-user" },
+      where: { username: "demo-user" },
       defaults: {
-        username: "demo-seed-user",
+        username: "demo-user",
         password: "placeholder",
       },
       transaction,
@@ -755,6 +773,7 @@ export class HomeService {
   private async findOrCreateCourse(
     title: string,
     degreeId: string,
+    credits: number,
     transaction: Transaction
   ): Promise<Course> {
     const existingCourse = await this.courseModel.findOne({
@@ -763,6 +782,10 @@ export class HomeService {
     });
 
     if (existingCourse) {
+      if (existingCourse.credits !== credits) {
+        await existingCourse.update({ credits }, { transaction });
+      }
+
       return existingCourse;
     }
 
@@ -770,6 +793,7 @@ export class HomeService {
       {
         title,
         degreeId,
+        credits,
       },
       { transaction }
     );
