@@ -4,10 +4,7 @@ type SyllabusLecturer = SyllabusData["lecturers"][number];
 type SyllabusSubmissionMode =
   SyllabusData["assessments"][number]["submissionMode"];
 
-export type CourseDetailsAssessmentSource =
-  | "syllabus"
-  | "assignment"
-  | "exam";
+export type CourseDetailsAssessmentSource = "syllabus" | "assignment" | "exam";
 
 export type CourseDetailsAssessment = {
   id: string;

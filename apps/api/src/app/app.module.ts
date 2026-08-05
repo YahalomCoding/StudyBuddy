@@ -41,17 +41,16 @@ import { UsersModule } from "../users/users.module";
 class HttpExceptionFilter extends BaseExceptionFilter {
   private logger = new Logger(HttpExceptionFilter.name);
 
-  catch(exception: HttpException, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     if (exception instanceof ZodSerializationException) {
-      const serializationException = exception;
-      const zodError = serializationException.getZodError();
+      const zodError = exception.getZodError();
 
       if (zodError instanceof ZodError) {
         this.logger.error(`ZodSerializationException: ${zodError.message}`);
       }
     }
 
-    super.catch(exception, host);
+    super.catch(exception as HttpException, host);
   }
 }
 

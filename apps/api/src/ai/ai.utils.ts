@@ -55,10 +55,9 @@ export const getSystemPrompt = async (
   return CACHED_SYSTEM_PROMPTS[promptName];
 };
 
-
 export const getSystemPromptWithFallback = async (
   promptName: string,
-  fallbackPrompt: string,
+  fallbackPrompt: string
 ): Promise<{
   promptName: string;
   prompt: string;

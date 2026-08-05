@@ -68,6 +68,13 @@ export const SyllabusCourseSection = ({
   updateDraft,
 }: SyllabusCourseSectionProps) => {
   const styles = useStyles();
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from(
+    new Set([
+      draft.destination.yearNumber,
+      ...Array.from({ length: 8 }, (_, index) => currentYear - 1 + index),
+    ]),
+  ).sort((left, right) => left - right);
 
   const updateCourse = <
     Field extends keyof SyllabusPreview["syllabus"]["course"],
@@ -159,20 +166,28 @@ export const SyllabusCourseSection = ({
             </Select>
           </FormControl>
 
-          <TextField
-            label="שנת לימודים"
-            type="number"
-            value={draft.destination.yearNumber}
-            onChange={(event) =>
-              updateDraft((current) => ({
-                ...current,
-                destination: {
-                  ...current.destination,
-                  yearNumber: Number(event.target.value),
-                },
-              }))
-            }
-          />
+          <FormControl fullWidth>
+            <InputLabel>שנת לימודים</InputLabel>
+            <Select
+              label="שנת לימודים"
+              value={draft.destination.yearNumber}
+              onChange={(event) =>
+                updateDraft((current) => ({
+                  ...current,
+                  destination: {
+                    ...current.destination,
+                    yearNumber: Number(event.target.value),
+                  },
+                }))
+              }
+            >
+              {yearOptions.map((year) => (
+                <MenuItem key={year} value={year}>
+                  {year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControl fullWidth>
             <InputLabel>סמסטר</InputLabel>

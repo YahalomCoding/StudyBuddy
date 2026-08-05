@@ -308,6 +308,7 @@ export const Home = () => {
     () => buildAssignmentFields(assignmentCourseOptions),
     [assignmentCourseOptions]
   );
+  const canCreateAssignment = assignmentCourseOptions.length > 0;
 
   const assignmentEditFields = useMemo(
     () => assignmentFormFields.filter((field) => field.name !== "course"),
@@ -342,7 +343,7 @@ export const Home = () => {
   };
 
   const openAssignmentModal = () => {
-    if (assignmentCourseOptions.length === 0) {
+    if (!canCreateAssignment) {
       return;
     }
 
@@ -499,7 +500,7 @@ export const Home = () => {
           <Box display="flex" flexDirection="column" gap={2}>
             {/* To Do card */}
             <SectionCard
-              title="To Do"
+              title="משימות"
               icon={<CheckCircleIcon sx={{ color: "#22c55e", fontSize: 20 }} />}
             >
               {isInitialLoading && (
@@ -604,12 +605,20 @@ export const Home = () => {
                   >
                     {formatDueDate(row.dueDate)}
                   </Typography>
-                  <Box display="flex" justifyContent="center">
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <Checkbox
                       checked={row.done}
                       size="small"
                       disableRipple
-                      onChange={() => handleTodoToggle(row.id, row.done)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleTodoToggle(row.id, row.done);
+                      }}
                       sx={{ p: 0 }}
                     />
                   </Box>
@@ -680,7 +689,7 @@ export const Home = () => {
             </SectionCard>
 
             {/* Assignments card */}
-            <SectionCard title="Assignments" onNext={openAssignmentModal}>
+            <SectionCard title="מטלות" onNext={openAssignmentModal}>
               {/* Header */}
               <Box
                 sx={{
@@ -886,12 +895,22 @@ export const Home = () => {
                 display="flex"
                 alignItems="center"
                 gap={0.5}
-                sx={{ cursor: "pointer", color: "text.secondary", mt: 1 }}
+                sx={{
+                  cursor: canCreateAssignment ? "pointer" : "not-allowed",
+                  color: "text.secondary",
+                  opacity: canCreateAssignment ? 1 : 0.5,
+                  mt: 1,
+                }}
                 onClick={openAssignmentModal}
               >
                 <AddIcon fontSize="small" />
                 <Typography fontSize={13}>הוסף מטלה</Typography>
               </Box>
+              {!canCreateAssignment && (
+                <Typography color="text.secondary" fontSize={12} mt={0.5}>
+                  כדי להוסיף מטלה צריך קודם קורס אחד לפחות.
+                </Typography>
+              )}
             </SectionCard>
           </Box>
 

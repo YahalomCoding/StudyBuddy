@@ -133,9 +133,20 @@ export class AssignmentsService {
 
   async updateAssignment(
     id: string,
-    payload: UpdateAssignmentPayload
+    payload: UpdateAssignmentPayload,
+    studentId: string
   ): Promise<Assignment> {
-    const assignment = await this.assignmentModel.findByPk(id);
+    const assignment = await this.assignmentModel.findOne({
+      where: { id },
+      include: [
+        {
+          model: StudentSemesterCourse,
+          required: true,
+          where: { studentId },
+          attributes: ["id"],
+        },
+      ],
+    });
 
     if (!assignment) {
       throw new NotFoundException("Assignment not found");
@@ -168,8 +179,21 @@ export class AssignmentsService {
     return assignment;
   }
 
-  async deleteAssignment(id: string): Promise<{ success: true }> {
-    const assignment = await this.assignmentModel.findByPk(id);
+  async deleteAssignment(
+    id: string,
+    studentId: string
+  ): Promise<{ success: true }> {
+    const assignment = await this.assignmentModel.findOne({
+      where: { id },
+      include: [
+        {
+          model: StudentSemesterCourse,
+          required: true,
+          where: { studentId },
+          attributes: ["id"],
+        },
+      ],
+    });
 
     if (!assignment) {
       throw new NotFoundException("Assignment not found");

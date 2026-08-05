@@ -14,11 +14,7 @@ import { Readable } from "stream";
 import type { AuthRequest } from "../auth/auth.types";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { AiFeaturesService } from "./ai-features.service";
-import {
-  getSystemPrompt,
-  LANGFUSE_PROMPT_NAMES,
-  loadAiChat,
-} from "./ai.utils";
+import { getSystemPrompt, LANGFUSE_PROMPT_NAMES, loadAiChat } from "./ai.utils";
 import { createLangfuseMiddleware } from "./langfuse.middleware";
 import { ToolsService } from "./tools.service";
 
@@ -53,7 +49,7 @@ export class AIController {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     const { toServerSentEventsStream } = await import("@tanstack/ai");
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+
     const sseStream = toServerSentEventsStream(stream as never);
     const nodeStream = Readable.fromWeb(
       sseStream as Parameters<typeof Readable.fromWeb>[0]

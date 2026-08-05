@@ -12,10 +12,7 @@ import { Semester } from "../semesters/semester.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
 import { CourseSyllabus } from "../syllabi/course-syllabus.model";
-import type {
-  AssessmentKind,
-  SyllabusData,
-} from "../syllabi/syllabus.schemas";
+import type { AssessmentKind, SyllabusData } from "../syllabi/syllabus.schemas";
 
 type SyllabusAssessment = SyllabusData["assessments"][number];
 import { Course } from "./courses.model";
@@ -36,12 +33,12 @@ export class CoursesService {
     @InjectModel(Assignment)
     private readonly assignmentModel: typeof Assignment,
     @InjectModel(Exam)
-    private readonly examModel: typeof Exam,
+    private readonly examModel: typeof Exam
   ) {}
 
   async getCourseDetails(
     userId: string,
-    studentSemesterCourseId: string,
+    studentSemesterCourseId: string
   ): Promise<CourseDetailsResponse> {
     const student = await this.studentModel.findOne({
       where: { userId },
@@ -49,12 +46,12 @@ export class CoursesService {
 
     if (!student) {
       throw new BadRequestException(
-        "Complete onboarding before viewing course details",
+        "Complete onboarding before viewing course details"
       );
     }
 
-    const studentSemesterCourse =
-      await this.studentSemesterCourseModel.findOne({
+    const studentSemesterCourse = await this.studentSemesterCourseModel.findOne(
+      {
         where: {
           id: studentSemesterCourseId,
           studentId: student.id,
@@ -76,11 +73,12 @@ export class CoursesService {
             ],
           },
         ],
-      });
+      }
+    );
 
     if (!studentSemesterCourse) {
       throw new NotFoundException(
-        "Course was not found for the current student",
+        "Course was not found for the current student"
       );
     }
 
@@ -146,19 +144,14 @@ export class CoursesService {
       bibliography: syllabus?.bibliography ?? [],
       notes: syllabus?.notes ?? [],
 
-      assessments: this.buildAssessments(
-        syllabus,
-        assignments,
-        exams,
-      ),
+      assessments: this.buildAssessments(syllabus, assignments, exams),
 
       syllabus: {
         exists: Boolean(syllabusRecord),
         id: syllabusRecord?.id ?? null,
         sourceFileName: syllabusRecord?.sourceFileName ?? null,
         parser: syllabusRecord?.parser ?? null,
-        confirmedAt:
-          syllabusRecord?.confirmedAt?.toISOString() ?? null,
+        confirmedAt: syllabusRecord?.confirmedAt?.toISOString() ?? null,
       },
     };
   }
@@ -166,7 +159,7 @@ export class CoursesService {
   private buildAssessments(
     syllabus: SyllabusData | null,
     assignments: Assignment[],
-    exams: Exam[],
+    exams: Exam[]
   ): CourseDetailsAssessment[] {
     const syllabusAssessments = syllabus?.assessments ?? [];
     const usedAssignmentIds = new Set<string>();
@@ -174,11 +167,7 @@ export class CoursesService {
 
     const extractedItems = syllabusAssessments.map((assessment, index) => {
       if (assessment.kind === "exam") {
-        const exam = this.findMatchingExam(
-          assessment,
-          exams,
-          usedExamIds,
-        );
+        const exam = this.findMatchingExam(assessment, exams, usedExamIds);
 
         if (exam) {
           usedExamIds.add(exam.id);
@@ -188,14 +177,14 @@ export class CoursesService {
           assessment,
           index,
           exam ?? null,
-          null,
+          null
         );
       }
 
       const assignment = this.findMatchingAssignment(
         assessment,
         assignments,
-        usedAssignmentIds,
+        usedAssignmentIds
       );
 
       if (assignment) {
@@ -206,7 +195,7 @@ export class CoursesService {
         assessment,
         index,
         null,
-        assignment ?? null,
+        assignment ?? null
       );
     });
 
@@ -268,7 +257,7 @@ export class CoursesService {
     assessment: SyllabusAssessment,
     index: number,
     exam: Exam | null,
-    assignment: Assignment | null,
+    assignment: Assignment | null
   ): CourseDetailsAssessment {
     const databaseId = assignment?.id ?? exam?.id ?? null;
     const databaseDueDate = assignment?.deadline ?? exam?.date ?? null;
@@ -299,14 +288,14 @@ export class CoursesService {
   private findMatchingAssignment(
     assessment: SyllabusAssessment,
     assignments: Assignment[],
-    usedIds: Set<string>,
+    usedIds: Set<string>
   ): Assignment | undefined {
     const normalizedTitle = this.normalizeText(assessment.title);
 
     const exactTitleMatch = assignments.find(
       (assignment) =>
         !usedIds.has(assignment.id) &&
-        this.normalizeText(assignment.description) === normalizedTitle,
+        this.normalizeText(assignment.description) === normalizedTitle
     );
 
     if (exactTitleMatch) {
@@ -317,7 +306,7 @@ export class CoursesService {
       return assignments.find(
         (assignment) =>
           !usedIds.has(assignment.id) &&
-          this.toDateOnly(assignment.deadline) === assessment.dueDate,
+          this.toDateOnly(assignment.deadline) === assessment.dueDate
       );
     }
 
@@ -327,13 +316,13 @@ export class CoursesService {
   private findMatchingExam(
     assessment: SyllabusAssessment,
     exams: Exam[],
-    usedIds: Set<string>,
+    usedIds: Set<string>
   ): Exam | undefined {
     if (assessment.dueDate) {
       const dateMatch = exams.find(
         (exam) =>
           !usedIds.has(exam.id) &&
-          this.toDateOnly(exam.date) === assessment.dueDate,
+          this.toDateOnly(exam.date) === assessment.dueDate
       );
 
       if (dateMatch) {
@@ -345,19 +334,14 @@ export class CoursesService {
   }
 
   private normalizeText(value: string): string {
-    return value
-      .trim()
-      .toLocaleLowerCase("he")
-      .replace(/\s+/g, " ");
+    return value.trim().toLocaleLowerCase("he").replace(/\s+/g, " ");
   }
 
   private toDateOnly(value: Date): string {
     return value.toISOString().slice(0, 10);
   }
 
-  private assignmentTypeToKind(
-    type: Assignment["type"],
-  ): AssessmentKind {
+  private assignmentTypeToKind(type: Assignment["type"]): AssessmentKind {
     switch (type) {
       case "project":
         return "project";

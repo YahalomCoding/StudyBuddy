@@ -23,5 +23,5 @@ Rules:
 - Keep items realistic, course-specific, and near-term.
 - Keep subtasks concrete and executable.
 - estimatedTimeMinutes should be integers between 15 and 360.
-- No extra fields, markdown fences, or explanations.`
+- No extra fields, markdown fences, or explanations.`,
 } as const;

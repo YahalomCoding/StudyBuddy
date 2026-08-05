@@ -67,13 +67,16 @@ export type LangfuseGenerationHandle = {
 
 export type LangfuseTraceHandle = {
   startGeneration: (
-    options: LangfuseGenerationOptions,
+    options: LangfuseGenerationOptions
   ) => LangfuseGenerationHandle;
-  success: (output: unknown, metadata?: Record<string, unknown>) => Promise<void>;
+  success: (
+    output: unknown,
+    metadata?: Record<string, unknown>
+  ) => Promise<void>;
   warning: (
     output: unknown,
     statusMessage: string,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ) => Promise<void>;
   error: (error: unknown, metadata?: Record<string, unknown>) => Promise<void>;
 };
@@ -84,7 +87,7 @@ export type LangfuseTraceHandle = {
  * instrumentation.ts, matching the existing chat middleware setup.
  */
 export const startLangfuseTrace = (
-  options: LangfuseTraceOptions,
+  options: LangfuseTraceOptions
 ): LangfuseTraceHandle => {
   const rootSpan = tracer.startSpan(
     options.name,
@@ -97,14 +100,14 @@ export const startLangfuseTrace = (
           ? {
               [LangfuseOtelSpanAttributes.TRACE_INPUT]: safeJson(options.input),
               [LangfuseOtelSpanAttributes.OBSERVATION_INPUT]: safeJson(
-                options.input,
+                options.input
               ),
             }
           : {}),
         ...(options.metadata
           ? {
               [LangfuseOtelSpanAttributes.TRACE_METADATA]: safeJson(
-                options.metadata,
+                options.metadata
               ),
             }
           : {}),
@@ -121,7 +124,7 @@ export const startLangfuseTrace = (
           : {}),
       },
     },
-    ROOT_CONTEXT,
+    ROOT_CONTEXT
   );
 
   const rootContext: Context = trace.setSpan(ROOT_CONTEXT, rootSpan);
@@ -142,7 +145,7 @@ export const startLangfuseTrace = (
       level?: "WARNING" | "ERROR";
       statusMessage?: string;
       metadata?: Record<string, unknown>;
-    },
+    }
   ) => {
     if (ended) return;
     ended = true;
@@ -193,7 +196,7 @@ export const startLangfuseTrace = (
             [LangfuseOtelSpanAttributes.OBSERVATION_MODEL]:
               generationOptions.model,
             [LangfuseOtelSpanAttributes.OBSERVATION_INPUT]: safeJson(
-              generationOptions.input,
+              generationOptions.input
             ),
             ...(generationOptions.modelParameters
               ? {
@@ -218,7 +221,7 @@ export const startLangfuseTrace = (
             [genAi.REQUEST_MODEL]: generationOptions.model,
           },
         },
-        rootContext,
+        rootContext
       );
 
       let generationEnded = false;
@@ -248,7 +251,7 @@ export const startLangfuseTrace = (
               total: totalTokens,
             }),
             [LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT]: safeJson(
-              successOptions.output,
+              successOptions.output
             ),
           });
           generationSpan.end();
@@ -258,7 +261,8 @@ export const startLangfuseTrace = (
           if (generationEnded) return;
           generationEnded = true;
 
-          const message = error instanceof Error ? error.message : String(error);
+          const message =
+            error instanceof Error ? error.message : String(error);
           generationSpan.setStatus({
             code: SpanStatusCode.ERROR,
             message,
@@ -295,7 +299,7 @@ export const startLangfuseTrace = (
           level: "ERROR",
           statusMessage: message,
           metadata,
-        },
+        }
       );
     },
   };

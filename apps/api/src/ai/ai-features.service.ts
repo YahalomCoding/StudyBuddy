@@ -95,7 +95,7 @@ export class AiFeaturesService {
           userId: traceUserId,
           tags: ["ai-feature", "assignment-generation"],
           promptName: FEATURE_PROMPT_NAMES.assignmentGeneration,
-          systemPrompts: [AI_FEATURE_SYSTEM_PROMPTS.assignmentGeneration]
+          systemPrompts: [AI_FEATURE_SYSTEM_PROMPTS.assignmentGeneration],
         }),
       ],
     });
@@ -176,66 +176,79 @@ export class AiFeaturesService {
       throw new Error("Student not found");
     }
 
-    const [openTasks, openAssignments, exams, studentCourses] = await Promise.all([
-      this.generalTaskModel.findAll({
-        where: { studentId, done: false },
-        attributes: ["id", "description", "dueDate", "estimatedTimeValue", "estimatedTimeUnit"],
-        order: [["dueDate", "ASC"]],
-      }),
-      this.assignmentModel.findAll({
-        include: [
-          {
-            model: StudentSemesterCourse,
-            required: true,
-            attributes: ["id", "studentId"],
-            where: { studentId },
-            include: [
-              {
-                model: SemesterCourse,
-                required: true,
-                attributes: ["id"],
-                include: [{ model: Course, required: true, attributes: ["title"] }],
-              },
-            ],
-          },
-        ],
-        attributes: ["id", "description", "deadline", "status", "type"],
-        where: { status: ["not started", "active"] },
-        order: [["deadline", "ASC"]],
-      }),
-      this.examModel.findAll({
-        include: [
-          {
-            model: StudentSemesterCourse,
-            required: true,
-            attributes: ["studentId"],
-            where: { studentId },
-            include: [
-              {
-                model: SemesterCourse,
-                required: true,
-                attributes: ["id"],
-                include: [{ model: Course, required: true, attributes: ["title"] }],
-              },
-            ],
-          },
-        ],
-        attributes: ["id", "date", "type"],
-        order: [["date", "ASC"]],
-      }),
-      this.studentSemesterCourseModel.findAll({
-        where: { studentId },
-        attributes: ["id", "semesterCourseId"],
-        include: [
-          {
-            model: SemesterCourse,
-            required: true,
-            attributes: ["id"],
-            include: [{ model: Course, required: true, attributes: ["title"] }],
-          },
-        ],
-      }),
-    ]);
+    const [openTasks, openAssignments, exams, studentCourses] =
+      await Promise.all([
+        this.generalTaskModel.findAll({
+          where: { studentId, done: false },
+          attributes: [
+            "id",
+            "description",
+            "dueDate",
+            "estimatedTimeValue",
+            "estimatedTimeUnit",
+          ],
+          order: [["dueDate", "ASC"]],
+        }),
+        this.assignmentModel.findAll({
+          include: [
+            {
+              model: StudentSemesterCourse,
+              required: true,
+              attributes: ["id", "studentId"],
+              where: { studentId },
+              include: [
+                {
+                  model: SemesterCourse,
+                  required: true,
+                  attributes: ["id"],
+                  include: [
+                    { model: Course, required: true, attributes: ["title"] },
+                  ],
+                },
+              ],
+            },
+          ],
+          attributes: ["id", "description", "deadline", "status", "type"],
+          where: { status: ["not started", "active"] },
+          order: [["deadline", "ASC"]],
+        }),
+        this.examModel.findAll({
+          include: [
+            {
+              model: StudentSemesterCourse,
+              required: true,
+              attributes: ["studentId"],
+              where: { studentId },
+              include: [
+                {
+                  model: SemesterCourse,
+                  required: true,
+                  attributes: ["id"],
+                  include: [
+                    { model: Course, required: true, attributes: ["title"] },
+                  ],
+                },
+              ],
+            },
+          ],
+          attributes: ["id", "date", "type"],
+          order: [["date", "ASC"]],
+        }),
+        this.studentSemesterCourseModel.findAll({
+          where: { studentId },
+          attributes: ["id", "semesterCourseId"],
+          include: [
+            {
+              model: SemesterCourse,
+              required: true,
+              attributes: ["id"],
+              include: [
+                { model: Course, required: true, attributes: ["title"] },
+              ],
+            },
+          ],
+        }),
+      ]);
 
     const courseMap = new Map(
       studentCourses.map((courseLink) => [
@@ -283,7 +296,8 @@ export class AiFeaturesService {
         dueDate: assignment.deadline.toISOString(),
         status: assignment.status,
         type: assignment.type,
-        courseTitle: assignment.studentSemesterCourse.semesterCourse.course.title,
+        courseTitle:
+          assignment.studentSemesterCourse.semesterCourse.course.title,
       })),
       exams: exams.map((exam) => ({
         date: exam.date.toISOString(),
@@ -296,7 +310,9 @@ export class AiFeaturesService {
     };
   }
 
-  private buildStudyPlanPrompt(profile: Awaited<ReturnType<AiFeaturesService["getPlanningProfile"]>>) {
+  private buildStudyPlanPrompt(
+    profile: Awaited<ReturnType<AiFeaturesService["getPlanningProfile"]>>
+  ) {
     const payload = {
       kind: "study-plan",
       student: {
@@ -308,15 +324,19 @@ export class AiFeaturesService {
         focusTime: profile.student.focusTime,
         preferredStudyDuration: profile.student.preferredStudyDuration,
         strongTopics: this.compact(String(profile.student.strongTopics ?? "-")),
-        challengingTopics: this.compact(String(profile.student.challengingTopics ?? "-")),
+        challengingTopics: this.compact(
+          String(profile.student.challengingTopics ?? "-")
+        ),
         semesterFocusGoal: this.compact(profile.student.semesterFocusGoal),
       },
-      assignments: this.limitItems(profile.openAssignments, 6).map((assignment) => ({
-        dueDate: assignment.dueDate.slice(0, 10),
-        courseTitle: this.compact(assignment.courseTitle),
-        type: assignment.type,
-        title: this.compact(assignment.title),
-      })),
+      assignments: this.limitItems(profile.openAssignments, 6).map(
+        (assignment) => ({
+          dueDate: assignment.dueDate.slice(0, 10),
+          courseTitle: this.compact(assignment.courseTitle),
+          type: assignment.type,
+          title: this.compact(assignment.title),
+        })
+      ),
       tasks: this.limitItems(profile.openTasks, 8).map((task) => ({
         dueDate: task.dueDate.slice(0, 10),
         estimatedTime: `${task.estimatedTimeValue}${task.estimatedTimeUnit[0]}`,
@@ -341,7 +361,9 @@ export class AiFeaturesService {
     ].join("\n");
   }
 
-  private buildDeadlineInsightsPrompt(profile: Awaited<ReturnType<AiFeaturesService["getPlanningProfile"]>>) {
+  private buildDeadlineInsightsPrompt(
+    profile: Awaited<ReturnType<AiFeaturesService["getPlanningProfile"]>>
+  ) {
     const payload = {
       kind: "deadline-insights",
       student: {
@@ -356,12 +378,14 @@ export class AiFeaturesService {
         assignments: profile.openAssignments.length,
         exams: profile.exams.length,
       },
-      assignments: this.limitItems(profile.openAssignments, 8).map((assignment) => ({
-        dueDate: assignment.dueDate.slice(0, 10),
-        status: assignment.status,
-        courseTitle: this.compact(assignment.courseTitle),
-        title: this.compact(assignment.title),
-      })),
+      assignments: this.limitItems(profile.openAssignments, 8).map(
+        (assignment) => ({
+          dueDate: assignment.dueDate.slice(0, 10),
+          status: assignment.status,
+          courseTitle: this.compact(assignment.courseTitle),
+          title: this.compact(assignment.title),
+        })
+      ),
       exams: this.limitItems(profile.exams, 8).map((exam) => ({
         date: exam.date.slice(0, 10),
         courseTitle: this.compact(exam.courseTitle),
@@ -386,7 +410,9 @@ export class AiFeaturesService {
     ].join("\n");
   }
 
-  private buildAssignmentGenerationPrompt(profile: Awaited<ReturnType<AiFeaturesService["getPlanningProfile"]>>) {
+  private buildAssignmentGenerationPrompt(
+    profile: Awaited<ReturnType<AiFeaturesService["getPlanningProfile"]>>
+  ) {
     const payload = {
       kind: "assignment-generation",
       student: {
@@ -448,7 +474,9 @@ export class AiFeaturesService {
         ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         : parsedDueDate;
 
-      const normalizedType = this.normalizeAssignmentType(generatedAssignment.type);
+      const normalizedType = this.normalizeAssignmentType(
+        generatedAssignment.type
+      );
 
       const created = await this.assignmentModel.create({
         studentSemesterCourseId: course.studentSemesterCourseId,
@@ -464,7 +492,9 @@ export class AiFeaturesService {
 
     for (const generatedSubtask of generated.subtasks) {
       const linkedCourse = generatedSubtask.courseTitle
-        ? profile.courseMap.get(normalizeCourseKey(generatedSubtask.courseTitle))
+        ? profile.courseMap.get(
+            normalizeCourseKey(generatedSubtask.courseTitle)
+          )
         : undefined;
 
       const created = await this.generalTaskModel.create({
@@ -483,7 +513,8 @@ export class AiFeaturesService {
     return {
       createdAssignments: createdAssignments.length,
       createdSubtasks: createdSubtasks.length,
-      skippedAssignments: generated.assignments.length - createdAssignments.length,
+      skippedAssignments:
+        generated.assignments.length - createdAssignments.length,
       generatedCounts: {
         assignments: generated.assignments.length,
         subtasks: generated.subtasks.length,
@@ -495,7 +526,8 @@ export class AiFeaturesService {
     const normalizedType = type.toLowerCase();
 
     if (NORMALIZED_ASSIGNMENT_TYPES.has(normalizedType)) {
-      return normalizedType as "homework" | "practice" | "project" | "report" | "lab";
+      return normalizedType as
+        "homework" | "practice" | "project" | "report" | "lab";
     }
 
     return "homework";

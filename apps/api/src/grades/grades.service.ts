@@ -9,10 +9,7 @@ import { Semester } from "../semesters/semester.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
 import { CourseSyllabus } from "../syllabi/course-syllabus.model";
-import type {
-  AssessmentKind,
-  SyllabusData,
-} from "../syllabi/syllabus.schemas";
+import type { AssessmentKind, SyllabusData } from "../syllabi/syllabus.schemas";
 
 type SyllabusAssessment = SyllabusData["assessments"][number];
 
@@ -53,7 +50,7 @@ export class GradesService {
     @InjectModel(StudentSemesterCourse)
     private readonly studentSemesterCourseModel: typeof StudentSemesterCourse,
     @InjectModel(CourseSyllabus)
-    private readonly courseSyllabusModel: typeof CourseSyllabus,
+    private readonly courseSyllabusModel: typeof CourseSyllabus
   ) {}
 
   private normalizeGradeValue(value: number | null | undefined) {
@@ -73,7 +70,7 @@ export class GradesService {
   async updateStudentCourseGrades(
     studentId: string,
     courseId: string,
-    payload: UpdateCourseGradesPayload,
+    payload: UpdateCourseGradesPayload
   ) {
     const studentSemesterCourse = await this.studentSemesterCourseModel.findOne(
       {
@@ -92,7 +89,7 @@ export class GradesService {
             ],
           },
         ],
-      },
+      }
     );
 
     if (!studentSemesterCourse) {
@@ -104,7 +101,7 @@ export class GradesService {
         studentSemesterCourse.id,
         payload.examId,
         payload.examGrade,
-        payload.assessmentDueDate,
+        payload.assessmentDueDate
       );
     }
 
@@ -115,7 +112,7 @@ export class GradesService {
         payload.assignmentGrade,
         payload.assessmentTitle,
         payload.assessmentDueDate,
-        payload.assessmentKind,
+        payload.assessmentKind
       );
     }
 
@@ -175,7 +172,7 @@ export class GradesService {
       });
 
     const studentSemesterCourseIds = studentSemesterCourses.map(
-      (item) => item.id,
+      (item) => item.id
     );
     const syllabusRecords = studentSemesterCourseIds.length
       ? await this.courseSyllabusModel.findAll({
@@ -190,7 +187,7 @@ export class GradesService {
       syllabusRecords.map((record) => [
         record.studentSemesterCourseId,
         record.parsedData,
-      ]),
+      ])
     );
 
     return studentSemesterCourses
@@ -206,14 +203,14 @@ export class GradesService {
         const assessments = this.buildAssessmentRows(
           syllabus,
           studentSemesterCourse.assignments ?? [],
-          studentSemesterCourse.exams ?? [],
+          studentSemesterCourse.exams ?? []
         );
         const calculation = this.calculateCourseGrade(assessments);
         const examAssessments = assessments.filter(
-          (assessment) => assessment.gradeType === "exam",
+          (assessment) => assessment.gradeType === "exam"
         );
         const assignmentAssessments = assessments.filter(
-          (assessment) => assessment.gradeType === "assignment",
+          (assessment) => assessment.gradeType === "assignment"
         );
         const semester = studentSemesterCourse.semesterCourse?.semester;
 
@@ -232,11 +229,15 @@ export class GradesService {
           completedWeightPercent: calculation.completedWeightPercent,
           examId:
             examAssessments.find((assessment) => assessment.grade !== null)
-              ?.databaseId ?? examAssessments[0]?.databaseId ?? null,
+              ?.databaseId ??
+            examAssessments[0]?.databaseId ??
+            null,
           assignmentId:
             assignmentAssessments.find(
-              (assessment) => assessment.grade !== null,
-            )?.databaseId ?? assignmentAssessments[0]?.databaseId ?? null,
+              (assessment) => assessment.grade !== null
+            )?.databaseId ??
+            assignmentAssessments[0]?.databaseId ??
+            null,
           assessments,
         };
       })
@@ -247,7 +248,7 @@ export class GradesService {
     studentSemesterCourseId: string,
     examId: string | null | undefined,
     grade: number | null,
-    assessmentDueDate?: string | null,
+    assessmentDueDate?: string | null
   ) {
     const normalizedGrade = this.normalizeGradeValue(grade);
     let exam: Exam | null = null;
@@ -285,7 +286,7 @@ export class GradesService {
     grade: number | null,
     assessmentTitle?: string | null,
     assessmentDueDate?: string | null,
-    assessmentKind?: AssessmentKind | null,
+    assessmentKind?: AssessmentKind | null
   ) {
     const normalizedGrade = this.normalizeGradeValue(grade);
     const description = assessmentTitle?.trim() || "Grade entry";
@@ -324,7 +325,7 @@ export class GradesService {
   private buildAssessmentRows(
     syllabus: SyllabusData | null,
     assignments: Assignment[],
-    exams: Exam[],
+    exams: Exam[]
   ): GradeAssessmentItem[] {
     const usedAssignmentIds = new Set<string>();
     const usedExamIds = new Set<string>();
@@ -332,26 +333,17 @@ export class GradesService {
     const syllabusRows = (syllabus?.assessments ?? []).map(
       (assessment, index): GradeAssessmentItem => {
         if (assessment.kind === "exam") {
-          const exam = this.findMatchingExam(
-            assessment,
-            exams,
-            usedExamIds,
-          );
+          const exam = this.findMatchingExam(assessment, exams, usedExamIds);
 
           if (exam) usedExamIds.add(exam.id);
 
-          return this.toAssessmentRow(
-            assessment,
-            index,
-            exam ?? null,
-            null,
-          );
+          return this.toAssessmentRow(assessment, index, exam ?? null, null);
         }
 
         const assignment = this.findMatchingAssignment(
           assessment,
           assignments,
-          usedAssignmentIds,
+          usedAssignmentIds
         );
 
         if (assignment) usedAssignmentIds.add(assignment.id);
@@ -360,9 +352,9 @@ export class GradesService {
           assessment,
           index,
           null,
-          assignment ?? null,
+          assignment ?? null
         );
-      },
+      }
     );
 
     const extraAssignments = assignments
@@ -405,7 +397,7 @@ export class GradesService {
         if (!left.dueDate) return 1;
         if (!right.dueDate) return -1;
         return left.dueDate.localeCompare(right.dueDate);
-      },
+      }
     );
   }
 
@@ -413,7 +405,7 @@ export class GradesService {
     assessment: SyllabusAssessment,
     index: number,
     exam: Exam | null,
-    assignment: Assignment | null,
+    assignment: Assignment | null
   ): GradeAssessmentItem {
     const grade = assignment?.grade ?? exam?.grade ?? null;
     const weightPercent = assessment.weightPercent;
@@ -442,31 +434,29 @@ export class GradesService {
   private calculateCourseGrade(assessments: GradeAssessmentItem[]) {
     const weightedAssessments = assessments.filter(
       (assessment) =>
-        assessment.weightPercent !== null && assessment.weightPercent > 0,
+        assessment.weightPercent !== null && assessment.weightPercent > 0
     );
     const gradedWeightedAssessments = weightedAssessments.filter(
-      (assessment) => assessment.grade !== null,
+      (assessment) => assessment.grade !== null
     );
     const totalWeightPercent = weightedAssessments.reduce(
       (sum, assessment) => sum + (assessment.weightPercent ?? 0),
-      0,
+      0
     );
     const completedWeightPercent = gradedWeightedAssessments.reduce(
       (sum, assessment) => sum + (assessment.weightPercent ?? 0),
-      0,
+      0
     );
     const weightedNumerator = gradedWeightedAssessments.reduce(
       (sum, assessment) =>
-        sum +
-        (assessment.grade ?? 0) * (assessment.weightPercent ?? 0),
-      0,
+        sum + (assessment.grade ?? 0) * (assessment.weightPercent ?? 0),
+      0
     );
 
     if (totalWeightPercent > 0) {
       return {
         totalWeightPercent: this.roundGrade(totalWeightPercent) ?? 0,
-        completedWeightPercent:
-          this.roundGrade(completedWeightPercent) ?? 0,
+        completedWeightPercent: this.roundGrade(completedWeightPercent) ?? 0,
         currentGrade:
           completedWeightPercent > 0
             ? this.roundGrade(weightedNumerator / completedWeightPercent)
@@ -479,7 +469,7 @@ export class GradesService {
     }
 
     const gradedAssessments = assessments.filter(
-      (assessment) => assessment.grade !== null,
+      (assessment) => assessment.grade !== null
     );
     const average = this.averageGrades(gradedAssessments);
 
@@ -488,7 +478,8 @@ export class GradesService {
       completedWeightPercent: 0,
       currentGrade: average,
       finalGrade:
-        assessments.length > 0 && gradedAssessments.length === assessments.length
+        assessments.length > 0 &&
+        gradedAssessments.length === assessments.length
           ? average
           : null,
     };
@@ -502,20 +493,20 @@ export class GradesService {
     if (grades.length === 0) return null;
 
     return this.roundGrade(
-      grades.reduce((sum, grade) => sum + grade, 0) / grades.length,
+      grades.reduce((sum, grade) => sum + grade, 0) / grades.length
     );
   }
 
   private findMatchingAssignment(
     assessment: SyllabusAssessment,
     assignments: Assignment[],
-    usedIds: Set<string>,
+    usedIds: Set<string>
   ) {
     const normalizedTitle = this.normalizeText(assessment.title);
     const titleMatch = assignments.find(
       (assignment) =>
         !usedIds.has(assignment.id) &&
-        this.normalizeText(assignment.description) === normalizedTitle,
+        this.normalizeText(assignment.description) === normalizedTitle
     );
 
     if (titleMatch) return titleMatch;
@@ -524,7 +515,7 @@ export class GradesService {
       return assignments.find(
         (assignment) =>
           !usedIds.has(assignment.id) &&
-          this.toDateOnly(assignment.deadline) === assessment.dueDate,
+          this.toDateOnly(assignment.deadline) === assessment.dueDate
       );
     }
 
@@ -534,13 +525,13 @@ export class GradesService {
   private findMatchingExam(
     assessment: SyllabusAssessment,
     exams: Exam[],
-    usedIds: Set<string>,
+    usedIds: Set<string>
   ) {
     if (assessment.dueDate) {
       const dateMatch = exams.find(
         (exam) =>
           !usedIds.has(exam.id) &&
-          this.toDateOnly(exam.date) === assessment.dueDate,
+          this.toDateOnly(exam.date) === assessment.dueDate
       );
 
       if (dateMatch) return dateMatch;
@@ -567,9 +558,7 @@ export class GradesService {
     return value === null ? null : Math.round(value * 10) / 10;
   }
 
-  private mapAssessmentKind(
-    kind: AssessmentKind,
-  ): Assignment["type"] {
+  private mapAssessmentKind(kind: AssessmentKind): Assignment["type"] {
     switch (kind) {
       case "project":
       case "presentation":

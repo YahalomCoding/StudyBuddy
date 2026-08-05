@@ -122,88 +122,98 @@ export class ToolsService implements OnModuleInit {
   }
 
   private getStudentCoursesTool(context: ChatToolsContext) {
-    return this.toolDefinitions.getStudentCoursesServerDef.server(async (input) => {
-      const parsedInput = this.toolDefinitions.getStudentCoursesInputSchema.parse(input);
-      const limit = this.resolveLimit(parsedInput.limit);
-      const studentCourses = await this.studentSemesterCourseModel.findAll({
-        where: { studentId: context.studentId },
-        attributes: ["id", "semesterCourseId"],
-        include: [
-          {
-            model: SemesterCourse,
-            required: true,
-            attributes: ["id", "courseId"],
-            include: [{ model: Course, required: true, attributes: ["id", "title"] }],
-          },
-        ],
-        order: [["createdAt", "ASC"]],
-        limit,
-      });
+    return this.toolDefinitions.getStudentCoursesServerDef.server(
+      async (input) => {
+        const parsedInput =
+          this.toolDefinitions.getStudentCoursesInputSchema.parse(input);
+        const limit = this.resolveLimit(parsedInput.limit);
+        const studentCourses = await this.studentSemesterCourseModel.findAll({
+          where: { studentId: context.studentId },
+          attributes: ["id", "semesterCourseId"],
+          include: [
+            {
+              model: SemesterCourse,
+              required: true,
+              attributes: ["id", "courseId"],
+              include: [
+                { model: Course, required: true, attributes: ["id", "title"] },
+              ],
+            },
+          ],
+          order: [["createdAt", "ASC"]],
+          limit,
+        });
 
-      const courses = studentCourses.map((studentCourse) => ({
-        studentSemesterCourseId: studentCourse.id,
-        semesterCourseId: studentCourse.semesterCourse.id,
-        courseId: studentCourse.semesterCourse.course.id,
-        title: studentCourse.semesterCourse.course.title,
-      }));
+        const courses = studentCourses.map((studentCourse) => ({
+          studentSemesterCourseId: studentCourse.id,
+          semesterCourseId: studentCourse.semesterCourse.id,
+          courseId: studentCourse.semesterCourse.course.id,
+          title: studentCourse.semesterCourse.course.title,
+        }));
 
-      return this.encodeToolPayload({
-        count: courses.length,
-        courses,
-      });
-    });
+        return this.encodeToolPayload({
+          count: courses.length,
+          courses,
+        });
+      }
+    );
   }
 
   private getStudentTasksTool(context: ChatToolsContext) {
-    return this.toolDefinitions.getStudentTasksServerDef.server(async (input) => {
-      const parsedInput = this.toolDefinitions.getStudentTasksInputSchema.parse(input);
-      const limit = this.resolveLimit(parsedInput.limit);
-      const taskStatus = parsedInput.status ?? "open";
-      const where: Record<string, unknown> = { studentId: context.studentId };
+    return this.toolDefinitions.getStudentTasksServerDef.server(
+      async (input) => {
+        const parsedInput =
+          this.toolDefinitions.getStudentTasksInputSchema.parse(input);
+        const limit = this.resolveLimit(parsedInput.limit);
+        const taskStatus = parsedInput.status ?? "open";
+        const where: Record<string, unknown> = { studentId: context.studentId };
 
-      if (taskStatus === "open") {
-        where.done = false;
+        if (taskStatus === "open") {
+          where.done = false;
+        }
+
+        if (taskStatus === "done") {
+          where.done = true;
+        }
+
+        const tasks = await this.generalTaskModel.findAll({
+          where,
+          attributes: [
+            "id",
+            "description",
+            "dueDate",
+            "done",
+            "estimatedTimeValue",
+            "estimatedTimeUnit",
+          ],
+          include: [
+            {
+              model: SemesterCourse,
+              required: false,
+              attributes: ["id", "courseId"],
+              include: [
+                { model: Course, required: false, attributes: ["id", "title"] },
+              ],
+            },
+          ],
+          order: [["dueDate", "ASC"]],
+          limit,
+        });
+
+        return this.encodeToolPayload({
+          count: tasks.length,
+          tasks: tasks.map((task) => ({
+            id: task.id,
+            description: task.description,
+            dueDate: task.dueDate.toISOString(),
+            done: task.done,
+            estimatedTimeValue: task.estimatedTimeValue,
+            estimatedTimeUnit: task.estimatedTimeUnit,
+            courseTitle: task.semesterCourse?.course?.title ?? null,
+          })),
+        });
       }
-
-      if (taskStatus === "done") {
-        where.done = true;
-      }
-
-      const tasks = await this.generalTaskModel.findAll({
-        where,
-        attributes: [
-          "id",
-          "description",
-          "dueDate",
-          "done",
-          "estimatedTimeValue",
-          "estimatedTimeUnit",
-        ],
-        include: [
-          {
-            model: SemesterCourse,
-            required: false,
-            attributes: ["id", "courseId"],
-            include: [{ model: Course, required: false, attributes: ["id", "title"] }],
-          },
-        ],
-        order: [["dueDate", "ASC"]],
-        limit,
-      });
-
-      return this.encodeToolPayload({
-        count: tasks.length,
-        tasks: tasks.map((task) => ({
-          id: task.id,
-          description: task.description,
-          dueDate: task.dueDate.toISOString(),
-          done: task.done,
-          estimatedTimeValue: task.estimatedTimeValue,
-          estimatedTimeUnit: task.estimatedTimeUnit,
-          courseTitle: task.semesterCourse?.course?.title ?? null,
-        })),
-      });
-    });
+    );
   }
 
   private getStudentAssignmentsTool(context: ChatToolsContext) {
@@ -225,7 +235,14 @@ export class ToolsService implements OnModuleInit {
 
         const assignments = await this.assignmentModel.findAll({
           where,
-          attributes: ["id", "description", "deadline", "status", "type", "grade"],
+          attributes: [
+            "id",
+            "description",
+            "deadline",
+            "status",
+            "type",
+            "grade",
+          ],
           include: [
             {
               model: StudentSemesterCourse,
@@ -261,7 +278,8 @@ export class ToolsService implements OnModuleInit {
             status: assignment.status,
             type: assignment.type,
             grade: assignment.grade,
-            courseTitle: assignment.studentSemesterCourse.semesterCourse.course.title,
+            courseTitle:
+              assignment.studentSemesterCourse.semesterCourse.course.title,
           })),
         });
       }
@@ -269,169 +287,182 @@ export class ToolsService implements OnModuleInit {
   }
 
   private getStudentExamsTool(context: ChatToolsContext) {
-    return this.toolDefinitions.getStudentExamsServerDef.server(async (input) => {
-      const now = new Date();
-      const parsedInput = this.toolDefinitions.getStudentExamsInputSchema.parse(input);
-      const limit = this.resolveLimit(parsedInput.limit);
-      const upcomingOnly = parsedInput.upcomingOnly ?? true;
-      const where: Record<string, unknown> = {};
-      const dateFilter: Record<symbol, Date> = {};
+    return this.toolDefinitions.getStudentExamsServerDef.server(
+      async (input) => {
+        const now = new Date();
+        const parsedInput =
+          this.toolDefinitions.getStudentExamsInputSchema.parse(input);
+        const limit = this.resolveLimit(parsedInput.limit);
+        const upcomingOnly = parsedInput.upcomingOnly ?? true;
+        const where: Record<string, unknown> = {};
+        const dateFilter: Record<symbol, Date> = {};
 
-      if (upcomingOnly) {
-        dateFilter[Op.gte] = now;
-      }
-
-      if (parsedInput.fromDate) {
-        const fromDate = new Date(parsedInput.fromDate);
-        if (!Number.isNaN(fromDate.getTime())) {
-          dateFilter[Op.gte] = fromDate;
+        if (upcomingOnly) {
+          dateFilter[Op.gte] = now;
         }
-      }
 
-      if (parsedInput.toDate) {
-        const toDate = new Date(parsedInput.toDate);
-        if (!Number.isNaN(toDate.getTime())) {
-          dateFilter[Op.lte] = toDate;
+        if (parsedInput.fromDate) {
+          const fromDate = new Date(parsedInput.fromDate);
+          if (!Number.isNaN(fromDate.getTime())) {
+            dateFilter[Op.gte] = fromDate;
+          }
         }
+
+        if (parsedInput.toDate) {
+          const toDate = new Date(parsedInput.toDate);
+          if (!Number.isNaN(toDate.getTime())) {
+            dateFilter[Op.lte] = toDate;
+          }
+        }
+
+        if (
+          Object.keys(dateFilter).length > 0 ||
+          Object.getOwnPropertySymbols(dateFilter).length > 0
+        ) {
+          where.date = dateFilter;
+        }
+
+        const exams = await this.examModel.findAll({
+          where,
+          attributes: ["id", "date", "type", "grade"],
+          include: [
+            {
+              model: StudentSemesterCourse,
+              required: true,
+              attributes: ["id", "studentId"],
+              where: { studentId: context.studentId },
+              include: [
+                {
+                  model: SemesterCourse,
+                  required: true,
+                  attributes: ["id", "courseId"],
+                  include: [
+                    {
+                      model: Course,
+                      required: true,
+                      attributes: ["id", "title"],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+          order: [["date", "ASC"]],
+          limit,
+        });
+
+        return this.encodeToolPayload({
+          count: exams.length,
+          exams: exams.map((exam) => ({
+            id: exam.id,
+            date: exam.date.toISOString(),
+            type: exam.type,
+            grade: exam.grade,
+            courseTitle: exam.studentSemesterCourse.semesterCourse.course.title,
+          })),
+        });
       }
-
-      if (Object.keys(dateFilter).length > 0 || Object.getOwnPropertySymbols(dateFilter).length > 0) {
-        where.date = dateFilter;
-      }
-
-      const exams = await this.examModel.findAll({
-        where,
-        attributes: ["id", "date", "type", "grade"],
-        include: [
-          {
-            model: StudentSemesterCourse,
-            required: true,
-            attributes: ["id", "studentId"],
-            where: { studentId: context.studentId },
-            include: [
-              {
-                model: SemesterCourse,
-                required: true,
-                attributes: ["id", "courseId"],
-                include: [
-                  {
-                    model: Course,
-                    required: true,
-                    attributes: ["id", "title"],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-        order: [["date", "ASC"]],
-        limit,
-      });
-
-      return this.encodeToolPayload({
-        count: exams.length,
-        exams: exams.map((exam) => ({
-          id: exam.id,
-          date: exam.date.toISOString(),
-          type: exam.type,
-          grade: exam.grade,
-          courseTitle: exam.studentSemesterCourse.semesterCourse.course.title,
-        })),
-      });
-    });
+    );
   }
 
   private getStudentAcademicOverviewTool(context: ChatToolsContext) {
     return this.toolDefinitions.getStudentAcademicOverviewServerDef.server(
       async () => {
-        const [courses, openTasks, openAssignments, upcomingExams, nextTask, nextAssignment, nextExam] =
-          await Promise.all([
-            this.studentSemesterCourseModel.count({
-              where: { studentId: context.studentId },
-            }),
-            this.generalTaskModel.count({
-              where: { studentId: context.studentId, done: false },
-            }),
-            this.assignmentModel.count({
-              where: { status: ["not started", "active"] },
-              include: [
-                {
-                  model: StudentSemesterCourse,
-                  required: true,
-                  where: { studentId: context.studentId },
-                },
-              ],
-            }),
-            this.examModel.count({
-              where: { date: { [Op.gte]: new Date() } },
-              include: [
-                {
-                  model: StudentSemesterCourse,
-                  required: true,
-                  where: { studentId: context.studentId },
-                },
-              ],
-            }),
-            this.generalTaskModel.findOne({
-              where: { studentId: context.studentId, done: false },
-              attributes: ["id", "description", "dueDate"],
-              order: [["dueDate", "ASC"]],
-            }),
-            this.assignmentModel.findOne({
-              where: { status: ["not started", "active"] },
-              attributes: ["id", "description", "deadline"],
-              include: [
-                {
-                  model: StudentSemesterCourse,
-                  required: true,
-                  attributes: ["id", "studentId"],
-                  where: { studentId: context.studentId },
-                  include: [
-                    {
-                      model: SemesterCourse,
-                      required: true,
-                      attributes: ["id", "courseId"],
-                      include: [
-                        {
-                          model: Course,
-                          required: true,
-                          attributes: ["id", "title"],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-              order: [["deadline", "ASC"]],
-            }),
-            this.examModel.findOne({
-              where: { date: { [Op.gte]: new Date() } },
-              attributes: ["id", "date", "type"],
-              include: [
-                {
-                  model: StudentSemesterCourse,
-                  required: true,
-                  attributes: ["id", "studentId"],
-                  where: { studentId: context.studentId },
-                  include: [
-                    {
-                      model: SemesterCourse,
-                      required: true,
-                      attributes: ["id", "courseId"],
-                      include: [
-                        {
-                          model: Course,
-                          required: true,
-                          attributes: ["id", "title"],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-              order: [["date", "ASC"]],
-            }),
-          ]);
+        const [
+          courses,
+          openTasks,
+          openAssignments,
+          upcomingExams,
+          nextTask,
+          nextAssignment,
+          nextExam,
+        ] = await Promise.all([
+          this.studentSemesterCourseModel.count({
+            where: { studentId: context.studentId },
+          }),
+          this.generalTaskModel.count({
+            where: { studentId: context.studentId, done: false },
+          }),
+          this.assignmentModel.count({
+            where: { status: ["not started", "active"] },
+            include: [
+              {
+                model: StudentSemesterCourse,
+                required: true,
+                where: { studentId: context.studentId },
+              },
+            ],
+          }),
+          this.examModel.count({
+            where: { date: { [Op.gte]: new Date() } },
+            include: [
+              {
+                model: StudentSemesterCourse,
+                required: true,
+                where: { studentId: context.studentId },
+              },
+            ],
+          }),
+          this.generalTaskModel.findOne({
+            where: { studentId: context.studentId, done: false },
+            attributes: ["id", "description", "dueDate"],
+            order: [["dueDate", "ASC"]],
+          }),
+          this.assignmentModel.findOne({
+            where: { status: ["not started", "active"] },
+            attributes: ["id", "description", "deadline"],
+            include: [
+              {
+                model: StudentSemesterCourse,
+                required: true,
+                attributes: ["id", "studentId"],
+                where: { studentId: context.studentId },
+                include: [
+                  {
+                    model: SemesterCourse,
+                    required: true,
+                    attributes: ["id", "courseId"],
+                    include: [
+                      {
+                        model: Course,
+                        required: true,
+                        attributes: ["id", "title"],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+            order: [["deadline", "ASC"]],
+          }),
+          this.examModel.findOne({
+            where: { date: { [Op.gte]: new Date() } },
+            attributes: ["id", "date", "type"],
+            include: [
+              {
+                model: StudentSemesterCourse,
+                required: true,
+                attributes: ["id", "studentId"],
+                where: { studentId: context.studentId },
+                include: [
+                  {
+                    model: SemesterCourse,
+                    required: true,
+                    attributes: ["id", "courseId"],
+                    include: [
+                      {
+                        model: Course,
+                        required: true,
+                        attributes: ["id", "title"],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+            order: [["date", "ASC"]],
+          }),
+        ]);
 
         return this.encodeToolPayload({
           counts: {
@@ -454,7 +485,8 @@ export class ToolsService implements OnModuleInit {
                   description: nextAssignment.description,
                   deadline: nextAssignment.deadline.toISOString(),
                   courseTitle:
-                    nextAssignment.studentSemesterCourse.semesterCourse.course.title,
+                    nextAssignment.studentSemesterCourse.semesterCourse.course
+                      .title,
                 }
               : null,
             exam: nextExam
@@ -462,7 +494,8 @@ export class ToolsService implements OnModuleInit {
                   id: nextExam.id,
                   date: nextExam.date.toISOString(),
                   type: nextExam.type,
-                  courseTitle: nextExam.studentSemesterCourse.semesterCourse.course.title,
+                  courseTitle:
+                    nextExam.studentSemesterCourse.semesterCourse.course.title,
                 }
               : null,
           },

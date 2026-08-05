@@ -31,7 +31,7 @@ export class SyllabusPdfService {
 
         if (normalizedText.length < 80) {
           throw new BadRequestException(
-            "Almost no readable text was found. This PDF may be scanned or image-only.",
+            "Almost no readable text was found. This PDF may be scanned or image-only."
           );
         }
 
@@ -41,7 +41,12 @@ export class SyllabusPdfService {
           wasTruncated: normalizedText.length > MAX_EXTRACTED_CHARACTERS,
         };
       } finally {
-        await document.destroy();
+        const maybeDestroy = (
+          document as { destroy?: () => Promise<void> | void }
+        ).destroy;
+        if (typeof maybeDestroy === "function") {
+          await maybeDestroy.call(document);
+        }
       }
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -49,7 +54,7 @@ export class SyllabusPdfService {
       }
 
       throw new BadRequestException(
-        "The PDF could not be read. Please try exporting it again as a text-based PDF.",
+        "The PDF could not be read. Please try exporting it again as a text-based PDF."
       );
     }
   }

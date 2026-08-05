@@ -23,7 +23,7 @@ export class SyllabiController {
   @UseInterceptors(
     FileInterceptor("file", {
       limits: { fileSize: 10 * 1024 * 1024 },
-    }),
+    })
   )
   preview(@Req() request: AuthRequest, @UploadedFile() file?: UploadedPdfFile) {
     if (!file) {

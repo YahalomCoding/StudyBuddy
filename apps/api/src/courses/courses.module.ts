@@ -13,7 +13,6 @@ import { CoursesController } from "./courses.controller";
 import { CoursesService } from "./courses.service";
 
 @Module({
-
   imports: [
     SequelizeModule.forFeature([
       Course,

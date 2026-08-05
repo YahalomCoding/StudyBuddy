@@ -31,12 +31,6 @@ const EVENT_FIELDS: FormField[] = [
     name: "eventDate",
     label: "תאריך המבחן",
   },
-  {
-    type: "text",
-    name: "semesterLabel",
-    label: "סמסטר",
-    placeholder: "סמסטר א'",
-  },
 ];
 
 const formatEventDate = (value: string) => {
@@ -55,6 +49,7 @@ type UpcomingEventsProps = {
 export const UpcomingEvents = ({
   selectedCourseTitle = null,
 }: UpcomingEventsProps) => {
+  const currentYear = new Date().getFullYear();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
@@ -96,10 +91,34 @@ export const UpcomingEvents = ({
         label: "שם הקורס",
         options: courseOptions,
       },
+      {
+        type: "select",
+        name: "semesterNumber",
+        label: "סמסטר",
+        options: [
+          { label: "סמסטר א׳", value: "1" },
+          { label: "סמסטר ב׳", value: "2" },
+          { label: "סמסטר קיץ", value: "3" },
+        ],
+      },
+      {
+        type: "select",
+        name: "yearNumber",
+        label: "שנת לימודים",
+        options: Array.from({ length: 8 }, (_, index) => {
+          const year = String(currentYear - 1 + index);
+
+          return {
+            label: year,
+            value: year,
+          };
+        }),
+      },
       ...EVENT_FIELDS,
     ],
-    [courseOptions]
+    [courseOptions, currentYear]
   );
+  const canCreateEvent = courseOptions.length > 0;
 
   const createEventMutation = useMutation({
     mutationFn: createUpcomingEvent,
@@ -135,11 +154,14 @@ export const UpcomingEvents = ({
   };
 
   const handleOpenModal = () => {
-    if (courseOptions.length === 0) {
+    if (!canCreateEvent) {
       return;
     }
 
-    setModalValues({});
+    setModalValues({
+      semesterNumber: "1",
+      yearNumber: String(currentYear),
+    });
     setModalOpen(true);
   };
 
@@ -149,12 +171,15 @@ export const UpcomingEvents = ({
   };
 
   const handleSaveEvent = (values: FormValues) => {
+    const semesterNumber = values.semesterNumber ?? "1";
+    const yearNumber = values.yearNumber ?? String(currentYear);
+
     createEventMutation.mutate({
       courseTitle: values.courseTitle ?? "",
       description: values.description ?? "",
       eventDate: values.eventDate ?? "",
       kind: "exam",
-      semesterLabel: values.semesterLabel ?? "",
+      semesterLabel: `סמסטר ${semesterNumber} ${yearNumber}`,
     });
     handleCloseModal();
   };
@@ -303,8 +328,9 @@ export const UpcomingEvents = ({
           alignItems="center"
           gap={0.5}
           sx={{
-            cursor: "pointer",
+            cursor: canCreateEvent ? "pointer" : "not-allowed",
             color: "text.secondary",
+            opacity: canCreateEvent ? 1 : 0.5,
             mt: 1,
             justifyContent: "flex-start",
           }}
@@ -313,6 +339,11 @@ export const UpcomingEvents = ({
           <Typography fontSize={13}>הוסף אירוע</Typography>
           <AddIcon fontSize="small" />
         </Box>
+        {!canCreateEvent && (
+          <Typography color="text.secondary" fontSize={12} mt={0.5}>
+            כדי להוסיף אירוע צריך קודם קורס אחד לפחות.
+          </Typography>
+        )}
       </Paper>
 
       <GenericFormModal

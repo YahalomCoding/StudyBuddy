@@ -7,11 +7,13 @@ import {
   Patch,
   Post,
   Req,
+  UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import type { AuthRequest } from "../auth/auth.types";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import {
   AssignmentsService,
@@ -47,15 +49,30 @@ export class AssignmentsController {
   }
 
   @Patch(":id")
+  @UseGuards(JwtAuthGuard)
   async updateAssignment(
+    @Req() req: AuthRequest,
     @Param("id") id: string,
     @Body() body: UpdateAssignmentPayload
   ) {
-    return this.assignmentsService.updateAssignment(id, body);
+    const studentId = req.user.studentId;
+
+    if (!studentId) {
+      throw new UnauthorizedException("Student profile was not created yet");
+    }
+
+    return this.assignmentsService.updateAssignment(id, body, studentId);
   }
 
   @Delete(":id")
-  deleteAssignment(@Param("id") id: string) {
-    return this.assignmentsService.deleteAssignment(id);
+  @UseGuards(JwtAuthGuard)
+  deleteAssignment(@Req() req: AuthRequest, @Param("id") id: string) {
+    const studentId = req.user.studentId;
+
+    if (!studentId) {
+      throw new UnauthorizedException("Student profile was not created yet");
+    }
+
+    return this.assignmentsService.deleteAssignment(id, studentId);
   }
 }

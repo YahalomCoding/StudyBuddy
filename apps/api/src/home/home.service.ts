@@ -606,15 +606,26 @@ export class HomeService {
       return { yearNumber: currentYear, semesterNumber: 1 };
     }
 
-    const yearMatch = value.match(/(20\d{2})/);
-    const semesterMatch = value.match(/([12אב])/);
+    const normalized = value.toLowerCase();
+    const yearMatch = normalized.match(/\b(20\d{2})\b/);
 
     const yearNumber = yearMatch ? Number(yearMatch[1]) : currentYear;
+
+    // Strip year before semester parsing to avoid reading the leading 2 in 20xx as semester 2.
+    const withoutYear = normalized.replace(/\b20\d{2}\b/g, " ");
+
     let semesterNumber = 1;
 
-    if (semesterMatch) {
-      const parsedValue = semesterMatch[1];
-      semesterNumber = parsedValue === "2" || parsedValue === "ב" ? 2 : 1;
+    if (/\b(3|summer|sum|spring)\b|סמסטר\s*[גג׳']|קיץ/u.test(withoutYear)) {
+      semesterNumber = 3;
+    } else if (
+      /\b(2|b|second)\b|סמסטר\s*[בב׳']|\bסמסטר\s*2\b/u.test(withoutYear)
+    ) {
+      semesterNumber = 2;
+    } else if (
+      /\b(1|a|first)\b|סמסטר\s*[אא׳']|\bסמסטר\s*1\b/u.test(withoutYear)
+    ) {
+      semesterNumber = 1;
     }
 
     return { yearNumber, semesterNumber };

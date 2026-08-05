@@ -10,15 +10,15 @@ import StuddyBuddyAvatar from "../../assets/images/studybuddyAvatar.png";
 import { useAuth } from "../../contexts/AuthContext";
 
 const NAV_ITEMS = [
-  { label: "Home", icon: HomeRoundedIcon, path: "/home" },
-  { label: "Assignments", icon: AssignmentOutlinedIcon, path: "/assignments" },
-  { label: "Grades", icon: GridViewOutlinedIcon, path: "/grades" },
-  { label: "Calendar", icon: CalendarMonthOutlinedIcon, path: "/calendar" },
-  { label: "Import syllabus", icon: UploadFileOutlinedIcon, path: "/syllabus" },
+  { label: "בית", icon: HomeRoundedIcon, path: "/home" },
+  { label: "מטלות", icon: AssignmentOutlinedIcon, path: "/assignments" },
+  { label: "ציונים", icon: GridViewOutlinedIcon, path: "/grades" },
+  { label: "לוח שנה", icon: CalendarMonthOutlinedIcon, path: "/calendar" },
+  { label: "ייבוא סילבוס", icon: UploadFileOutlinedIcon, path: "/syllabus" },
 ];
 
 const BOTTOM_ITEMS = [
-  { label: "Settings", icon: SettingsOutlinedIcon, path: "/settings" },
+  { label: "הגדרות", icon: SettingsOutlinedIcon, path: "/settings" },
 ];
 
 interface NavItemProps {
@@ -74,7 +74,12 @@ const NavItem = ({ label, icon: Icon, active, onClick }: NavItemProps) => (
   </Box>
 );
 
-export const Sidebar = () => {
+type SidebarProps = {
+  mobile?: boolean;
+  onNavigate?: () => void;
+};
+
+export const Sidebar = ({ mobile = false, onNavigate }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -86,17 +91,17 @@ export const Sidebar = () => {
   return (
     <Box
       sx={{
-        width: 200,
-        minWidth: 200,
-        height: "100vh",
+        width: mobile ? 260 : 200,
+        minWidth: mobile ? 260 : 200,
+        height: mobile ? "100%" : "100vh",
         display: "flex",
         flexDirection: "column",
         bgcolor: "background.paper",
-        borderRight: "1px solid",
+        borderRight: mobile ? "none" : "1px solid",
         borderColor: "divider",
         py: 2,
-        position: "sticky",
-        top: 0,
+        position: mobile ? "static" : "sticky",
+        top: mobile ? "auto" : 0,
       }}
     >
       {/* Logo */}
@@ -142,7 +147,10 @@ export const Sidebar = () => {
             label={item.label}
             icon={item.icon}
             active={location.pathname.startsWith(item.path)}
-            onClick={() => navigate(item.path)}
+            onClick={() => {
+              navigate(item.path);
+              onNavigate?.();
+            }}
           />
         ))}
       </Box>
@@ -155,7 +163,10 @@ export const Sidebar = () => {
             label={item.label}
             icon={item.icon}
             active={location.pathname.startsWith(item.path)}
-            onClick={() => navigate(item.path)}
+            onClick={() => {
+              navigate(item.path);
+              onNavigate?.();
+            }}
           />
         ))}
       </Box>
