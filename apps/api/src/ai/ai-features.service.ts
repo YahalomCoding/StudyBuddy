@@ -30,6 +30,8 @@ const FEATURE_PROMPT_NAMES = {
   assignmentGeneration: "studybuddy-ai-feature-assignment-generation",
 } as const;
 
+const FEATURE_REASONING_EFFORT: "low" | "none" = "none";
+
 const normalizeCourseKey = (value: string) =>
   value.toLowerCase().replace(/\s+/g, " ").trim();
 
@@ -87,6 +89,12 @@ export class AiFeaturesService {
     const modelResult = await chat({
       adapter: aiTextProviderAdapter,
       stream: false,
+      modelOptions: {
+        includeReasoning: true,
+        reasoning: {
+          effort: FEATURE_REASONING_EFFORT,
+        },
+      },
       systemPrompts: [AI_FEATURE_SYSTEM_PROMPTS.assignmentGeneration],
       messages: [{ role: "user", content: prompt }],
       outputSchema: assignmentGenerationResultSchema,
@@ -129,6 +137,12 @@ export class AiFeaturesService {
     return chat({
       adapter: aiTextProviderAdapter,
       stream: true,
+      modelOptions: {
+        includeReasoning: true,
+        reasoning: {
+          effort: FEATURE_REASONING_EFFORT,
+        },
+      },
       systemPrompts: [systemPrompt],
       messages: [{ role: "user", content: userPrompt }],
       middleware: [

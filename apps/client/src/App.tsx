@@ -25,7 +25,6 @@ import { CalendarPage } from "./pages/Calendar/Calendar";
 import { GradesPage } from "./pages/Grades";
 import { Home } from "./pages/Home";
 import { OnBoarding } from "./pages/OnBoarding";
-import { SettingsPage } from "./pages/Settings/SettingsPage";
 
 const AppLayout = () => {
   const theme = useTheme();
@@ -103,7 +102,6 @@ function App() {
               <Route path="/syllabus" element={<SyllabusImport />} />
               <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/grades" element={<GradesPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
         </Routes>

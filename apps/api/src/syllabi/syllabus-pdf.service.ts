@@ -46,6 +46,8 @@ export class SyllabusPdfService {
         ).destroy;
         if (typeof maybeDestroy === "function") {
           await maybeDestroy.call(document);
+        } else {
+          document.loadingTask.destroy();
         }
       }
     } catch (error) {

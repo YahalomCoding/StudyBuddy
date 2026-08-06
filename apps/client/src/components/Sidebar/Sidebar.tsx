@@ -2,7 +2,6 @@ import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import { Avatar, Box, Typography } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -15,10 +14,6 @@ const NAV_ITEMS = [
   { label: "ציונים", icon: GridViewOutlinedIcon, path: "/grades" },
   { label: "לוח שנה", icon: CalendarMonthOutlinedIcon, path: "/calendar" },
   { label: "ייבוא סילבוס", icon: UploadFileOutlinedIcon, path: "/syllabus" },
-];
-
-const BOTTOM_ITEMS = [
-  { label: "הגדרות", icon: SettingsOutlinedIcon, path: "/settings" },
 ];
 
 interface NavItemProps {
@@ -142,22 +137,6 @@ export const Sidebar = ({ mobile = false, onNavigate }: SidebarProps) => {
       {/* Main nav */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, flex: 1 }}>
         {NAV_ITEMS.map((item) => (
-          <NavItem
-            key={item.path}
-            label={item.label}
-            icon={item.icon}
-            active={location.pathname.startsWith(item.path)}
-            onClick={() => {
-              navigate(item.path);
-              onNavigate?.();
-            }}
-          />
-        ))}
-      </Box>
-
-      {/* Bottom items */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 2 }}>
-        {BOTTOM_ITEMS.map((item) => (
           <NavItem
             key={item.path}
             label={item.label}

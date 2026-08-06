@@ -50,7 +50,7 @@ class HttpExceptionFilter extends BaseExceptionFilter {
       }
     }
 
-    super.catch(exception as HttpException, host);
+    super.catch(exception, host);
   }
 }
 

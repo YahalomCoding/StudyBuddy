@@ -202,7 +202,7 @@ export class SyllabiService {
 
       let createdAssignments = 0;
       let createdExams = 0;
-      const skippedCalendarItems = 0;
+      let skippedCalendarItems = 0;
 
       for (const assessment of payload.syllabus.assessments) {
         const normalizedTitle = assessment.title.trim();
