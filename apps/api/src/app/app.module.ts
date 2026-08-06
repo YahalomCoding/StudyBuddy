@@ -34,6 +34,7 @@ import { SemestersModule } from "../semesters/semesters.module";
 import { StudentDegreesModule } from "../student-degrees/student-degrees.module";
 import { StudentSemesterCoursesModule } from "../student-semester-courses/student-semester-courses.module";
 import { StudentsModule } from "../students/students.module";
+import { SyllabiModule } from "../syllabi/syllabi.module";
 import { UsersModule } from "../users/users.module";
 
 @Catch(HttpException)
@@ -82,6 +83,7 @@ class HttpExceptionFilter extends BaseExceptionFilter {
     HomeModule,
     GradesModule,
     QuestionnaireModule,
+    SyllabiModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

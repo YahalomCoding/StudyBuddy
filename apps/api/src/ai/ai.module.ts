@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { Assignment } from "../assignments/assignment.model";
-import { Course } from "../courses/course.model";
+import { Course } from "../courses/courses.model";
 import { Exam } from "../exams/exam.model";
 import { GeneralTask } from "../general-tasks/general-task.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";

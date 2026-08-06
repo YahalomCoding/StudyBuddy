@@ -3,7 +3,7 @@ import { InjectModel } from "@nestjs/sequelize";
 import type { Transaction } from "sequelize";
 import { Assignment } from "../assignments/assignment.model";
 import { AssignmentsService } from "../assignments/assignments.service";
-import { Course } from "../courses/course.model";
+import { Course } from "../courses/courses.model";
 import { Degree } from "../degrees/degree.model";
 import { Exam } from "../exams/exam.model";
 import { ExamsService } from "../exams/exams.service";

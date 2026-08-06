@@ -8,7 +8,7 @@ import {
   Table,
 } from "sequelize-typescript";
 import type { NonAttribute } from "sequelize";
-import { Course } from "../courses/course.model";
+import { Course } from "../courses/courses.model";
 import { StudentDegree } from "../student-degrees/student-degree.model";
 import { Student } from "../students/student.model";
 

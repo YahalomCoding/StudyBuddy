@@ -7,7 +7,7 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
-import { Course } from "../courses/course.model";
+import { Course } from "../courses/courses.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 
 @Table

@@ -3,7 +3,7 @@ import { InjectModel } from "@nestjs/sequelize";
 import { Exam } from "./exam.model";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 import { Student } from "../students/student.model";
-import { Course } from "../courses/course.model";
+import { Course } from "../courses/courses.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Semester } from "../semesters/semester.model";
 import { UpcomingEventsTypesEnum } from "../types";

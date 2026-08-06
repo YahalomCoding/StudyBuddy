@@ -33,6 +33,7 @@ import {
 } from "../../api/home";
 import { ChatBotBubble } from "../../components/Chatbot";
 import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
+import { CourseDetailsModal } from "../../components/CourseDetailsModal";
 import {
   GenericFormModal,
   type FormValues,
@@ -144,6 +145,14 @@ export const Home = () => {
   const [selectedCourseTitle, setSelectedCourseTitle] = useState<string | null>(
     null
   );
+  const [courseDetailsOpen, setCourseDetailsOpen] = useState(false);
+  const [courseDetailsCourseTitle, setCourseDetailsCourseTitle] = useState<
+    string | null
+  >(null);
+  const [
+    courseDetailsStudentSemesterCourseId,
+    setCourseDetailsStudentSemesterCourseId,
+  ] = useState<string | null>(null);
 
   const { mutate: updateTask } = useMutation({
     meta: { disableLoadingDefault: true },
@@ -365,6 +374,27 @@ export const Home = () => {
     });
   };
 
+  const handleCourseSelect = (courseTitle: string | null) => {
+    setSelectedCourseTitle(courseTitle);
+  };
+
+  const handleCourseOpen = (
+    courseTitle: string,
+    studentSemesterCourseId: string
+  ) => {
+    setCourseDetailsCourseTitle(courseTitle);
+    setCourseDetailsStudentSemesterCourseId(
+      studentSemesterCourseId
+    );
+    setCourseDetailsOpen(true);
+  };
+
+  const handleCourseDetailsClose = () => {
+    setCourseDetailsOpen(false);
+    setCourseDetailsCourseTitle(null);
+    setCourseDetailsStudentSemesterCourseId(null);
+  };
+
   const handleModalSave = (values: FormValues) => {
     if (!modal) return;
 
@@ -437,7 +467,7 @@ export const Home = () => {
           gap: 1,
         }}
       >
-        <Typography fontWeight={500}>Home</Typography>
+        <Typography fontWeight={500}>בית </Typography>
       </Box>
 
       <Box sx={{ p: 3, maxWidth: 1100, mx: "auto" }}>
@@ -870,7 +900,8 @@ export const Home = () => {
             <UpcomingEvents selectedCourseTitle={selectedCourseTitle} />
             <CoursesSummary
               selectedCourseTitle={selectedCourseTitle}
-              onCourseSelect={setSelectedCourseTitle}
+              onCourseSelect={handleCourseSelect}
+              onCourseOpen={handleCourseOpen}
             />
           </Box>
         </Box>
@@ -902,6 +933,15 @@ export const Home = () => {
           cancelLabel="ביטול"
         />
       )}
+
+      <CourseDetailsModal
+        open={courseDetailsOpen}
+        studentSemesterCourseId={
+          courseDetailsStudentSemesterCourseId
+        }
+        courseTitle={courseDetailsCourseTitle}
+        onClose={handleCourseDetailsClose}
+      />
     </Box>
   );
 };

@@ -12,18 +12,23 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default("nvidia/nemotron-3-nano-30b-a3b:free"),
+
+  SYLLABUS_AI_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(180_000),
+
   DB_HOST: z.string(),
-  DB_PORT: z
-    .string()
-    .default("5432")
-    .transform((port) => parseInt(port)),
+  DB_PORT: z.coerce.number().int().positive().default(5432),
   DB_USERNAME: z.string(),
   DB_PASSWORD: z.string(),
   DB_DATABASE: z.string(),
+
   JWT_SECRET: z.string().optional(),
   JWT_EXPIRES_IN: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
-  // Langfuse tracing & prompt management
+
   LANGFUSE_PUBLIC_KEY: z.string().optional(),
   LANGFUSE_SECRET_KEY: z.string().optional(),
   LANGFUSE_BASE_URL: z.url().optional().default("https://cloud.langfuse.com"),

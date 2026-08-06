@@ -2,12 +2,33 @@ import { css } from "@emotion/css";
 
 export const useStyles = () => ({
   page: css({
-    padding: "32px 16px 48px",
-    backgroundColor: "var(--mui-palette-background-default)",
     minHeight: "100vh",
+    backgroundColor: "var(--mui-palette-background-default)",
+  }),
+
+  topBar: css({
+    minHeight: "53px",
+    padding: "12px 24px",
+    borderBottom: "1px solid var(--mui-palette-divider)",
+    display: "flex",
+    alignItems: "center",
+    direction: "rtl",
+    backgroundColor: "var(--mui-palette-background-paper)",
+  }),
+
+  topBarTitle: css({
+    fontWeight: 500,
+    fontSize: "1rem",
+    color: "var(--mui-palette-text-primary)",
   }),
 
   pageContent: css({
+    width: "100%",
+    maxWidth: "1100px",
+    boxSizing: "border-box",
+    margin: "0 auto",
+    padding: "24px",
+    direction: "rtl",
     display: "grid",
     gap: "24px",
   }),
@@ -18,7 +39,8 @@ export const useStyles = () => ({
   }),
 
   title: css({
-    fontWeight: 700,
+    fontWeight: 600,
+    letterSpacing: "-0.01em",
   }),
 
   subtitle: css({
@@ -33,7 +55,7 @@ export const useStyles = () => ({
 
   boardGrid: css({
     display: "grid",
-    gap: "20px",
+    gap: "16px",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     "@media (max-width: 900px)": {
       gridTemplateColumns: "1fr",
@@ -43,7 +65,7 @@ export const useStyles = () => ({
   column: css({
     minHeight: "420px",
     border: "1px solid var(--mui-palette-divider)",
-    borderRadius: "24px",
+    borderRadius: "12px",
     padding: "16px",
     backgroundColor: "var(--mui-palette-background-paper)",
   }),
@@ -54,7 +76,7 @@ export const useStyles = () => ({
   }),
 
   columnTitle: css({
-    fontWeight: 700,
+    fontWeight: 600,
   }),
 
   columnBody: css({
@@ -64,7 +86,7 @@ export const useStyles = () => ({
 
   emptyState: css({
     border: "1px dashed var(--mui-palette-divider)",
-    borderRadius: "16px",
+    borderRadius: "12px",
     padding: "32px 16px",
     textAlign: "center",
     color: "var(--mui-palette-text-secondary)",
@@ -73,11 +95,13 @@ export const useStyles = () => ({
   assignmentCard: css({
     cursor: "grab",
     border: "1px solid var(--mui-palette-divider)",
+    borderRadius: "12px",
     boxShadow: "none",
     backgroundColor: "var(--mui-palette-background-paper)",
-    transition: "transform 0.2s ease",
+    transition: "transform 0.18s ease, border-color 0.18s ease",
     "&:hover": {
       transform: "translateY(-2px)",
+      borderColor: "rgba(34, 197, 94, 0.45)",
     },
   }),
 
@@ -92,7 +116,7 @@ export const useStyles = () => ({
   }),
 
   assignmentTitle: css({
-    fontWeight: 700,
+    fontWeight: 600,
   }),
 
   assignmentCourse: css({
@@ -124,10 +148,9 @@ export const useStyles = () => ({
   }),
 
   typeChip: css({
-    fontWeight: 700,
-    backgroundColor: "#f8d7e3",
-    color: "#8b3f5d",
-    border: "1px solid #efc2d4",
+    fontWeight: 600,
+    backgroundColor: "rgba(59, 130, 246, 0.10)",
+    color: "#2563eb",
     borderRadius: 999,
     paddingLeft: "6px",
     paddingRight: "6px",

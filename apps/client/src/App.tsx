@@ -6,6 +6,7 @@ import {
   Route,
   Routes,
 } from "react-router-dom";
+import { SyllabusImport } from "./pages/SyllabusImport";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { AssignmentsPage } from "./pages/Assignments";
@@ -14,6 +15,7 @@ import { CalendarPage } from "./pages/Calendar/Calendar";
 import { GradesPage } from "./pages/Grades";
 import { Home } from "./pages/Home";
 import { OnBoarding } from "./pages/OnBoarding";
+
 
 const AppLayout = () => (
   <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -36,6 +38,8 @@ function App() {
             <Route path="/onboarding" element={<OnBoarding />} />
             <Route element={<AppLayout />}>
               <Route path="/home" element={<Home />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/syllabus" element={<SyllabusImport />} />
               <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/grades" element={<GradesPage />} />
               <Route path="/Calendar" element={<CalendarPage />} />
