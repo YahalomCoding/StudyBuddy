@@ -352,6 +352,7 @@ export class AiFeaturesService {
     const toonData = encodeToon(payload, { indent: 1, keyFolding: "safe" });
 
     return [
+      `Today is: ${new Date().toISOString()}`,
       "Task: Produce concise markdown study plan for next 7 days.",
       "Input format: TOON.",
       "",
@@ -401,6 +402,7 @@ export class AiFeaturesService {
     const toonData = encodeToon(payload, { indent: 1, keyFolding: "safe" });
 
     return [
+      `Today is: ${new Date().toISOString()}`,
       "Task: Produce concise markdown deadline-risk insights for next 7 days.",
       "Input format: TOON.",
       "",
@@ -442,6 +444,7 @@ export class AiFeaturesService {
     const toonData = encodeToon(payload, { indent: 1, keyFolding: "safe" });
 
     return [
+      `Today is: ${new Date().toISOString()}`,
       "Task: Generate assignment/subtask JSON for next 1-2 weeks.",
       "Input format: TOON.",
       "",
@@ -527,7 +530,11 @@ export class AiFeaturesService {
 
     if (NORMALIZED_ASSIGNMENT_TYPES.has(normalizedType)) {
       return normalizedType as
-        "homework" | "practice" | "project" | "report" | "lab";
+        | "homework"
+        | "practice"
+        | "project"
+        | "report"
+        | "lab";
     }
 
     return "homework";
