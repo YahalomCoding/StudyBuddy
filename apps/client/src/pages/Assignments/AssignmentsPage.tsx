@@ -1,7 +1,9 @@
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
   alpha,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -11,12 +13,15 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  MenuItem,
+  Select,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -116,6 +121,14 @@ export const AssignmentsPage = () => {
   );
   const [selectedAssignment, setSelectedAssignment] =
     useState<HomeDashboardAssignment | null>(null);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [editingAssignment, setEditingAssignment] =
+    useState<HomeDashboardAssignment | null>(null);
+  const [editValues, setEditValues] = useState<{
+    title: string;
+    dueDate: string;
+    type: HomeDashboardAssignment["type"];
+  } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: homeDashboardQueryKey,
@@ -164,6 +177,21 @@ export const AssignmentsPage = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const editAssignmentMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Parameters<typeof updateAssignment>[1];
+    }) => updateAssignment(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setEditingAssignment(null);
+      setEditValues(null);
     },
   });
 
@@ -268,9 +296,39 @@ export const AssignmentsPage = () => {
                             }
                             onDragEnd={() => setDraggedAssignmentId(null)}
                             onClick={() => setSelectedAssignment(assignment)}
+                            onMouseEnter={() => setHoveredCardId(assignment.id)}
+                            onMouseLeave={() =>
+                              setHoveredCardId((p) =>
+                                p === assignment.id ? null : p
+                              )
+                            }
                             className={classes.assignmentCard}
-                            sx={{ cursor: "pointer" }}
+                            sx={{ cursor: "pointer", position: "relative" }}
                           >
+                            {hoveredCardId === assignment.id && (
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: "absolute",
+                                  top: 6,
+                                  left: 6,
+                                  zIndex: 1,
+                                  bgcolor: "background.paper",
+                                  boxShadow: 1,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingAssignment(assignment);
+                                  setEditValues({
+                                    title: assignment.title,
+                                    dueDate: assignment.dueDate.slice(0, 10),
+                                    type: assignment.type,
+                                  });
+                                }}
+                              >
+                                <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            )}
                             <CardContent className={classes.cardContent}>
                               <Stack
                                 spacing={1.2}
@@ -430,6 +488,135 @@ export const AssignmentsPage = () => {
                 ))}
               </TableBody>
             </Table>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(editingAssignment)}
+        onClose={() => {
+          setEditingAssignment(null);
+          setEditValues(null);
+        }}
+        fullWidth
+        maxWidth="xs"
+        dir="rtl"
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle
+          component="div"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            pb: 1,
+          }}
+        >
+          <Typography fontWeight={600} fontSize={16}>
+            עריכת מטלה
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={() => {
+              setEditingAssignment(null);
+              setEditValues(null);
+            }}
+          >
+            <CloseRoundedIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 0 }}>
+          {editValues && (
+            <Stack spacing={2} mt={1}>
+              <Box>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  שם המטלה
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={editValues.title}
+                  onChange={(e) =>
+                    setEditValues((v) =>
+                      v ? { ...v, title: e.target.value } : v
+                    )
+                  }
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+                />
+              </Box>
+              <Box>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  תאריך יעד
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="date"
+                  value={editValues.dueDate}
+                  onChange={(e) =>
+                    setEditValues((v) =>
+                      v ? { ...v, dueDate: e.target.value } : v
+                    )
+                  }
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+                />
+              </Box>
+              <Box>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  סוג
+                </Typography>
+                <Select
+                  fullWidth
+                  size="small"
+                  value={editValues.type}
+                  onChange={(e) =>
+                    setEditValues((v) =>
+                      v ? { ...v, type: e.target.value as typeof v.type } : v
+                    )
+                  }
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <MenuItem value="assignment">מטלה</MenuItem>
+                  <MenuItem value="homework">שיעורי בית</MenuItem>
+                  <MenuItem value="project">פרויקט</MenuItem>
+                  <MenuItem value="lab">סדנאי</MenuItem>
+                  <MenuItem value="report">דוח</MenuItem>
+                  <MenuItem value="practice">תרגול</MenuItem>
+                </Select>
+              </Box>
+              <Box display="flex" gap={1} justifyContent="flex-end">
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setEditingAssignment(null);
+                    setEditValues(null);
+                  }}
+                >
+                  ביטול
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disabled={
+                    editAssignmentMutation.isPending || !editValues.title.trim()
+                  }
+                  onClick={() =>
+                    editAssignmentMutation.mutate({
+                      id: editingAssignment!.id,
+                      payload: {
+                        title: editValues.title.trim(),
+                        dueDate: editValues.dueDate,
+                        type: editValues.type,
+                      },
+                    })
+                  }
+                  sx={{ bgcolor: "#22c55e", "&:hover": { bgcolor: "#16a34a" } }}
+                >
+                  שמור
+                </Button>
+              </Box>
+            </Stack>
           )}
         </DialogContent>
       </Dialog>
