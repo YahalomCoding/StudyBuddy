@@ -35,9 +35,11 @@ export const ContentSection = ({
   title,
   icon,
   children,
+  action,
 }: {
   title: string;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) => (
   <Paper
@@ -50,11 +52,19 @@ export const ContentSection = ({
       bgcolor: "background.paper",
     }}
   >
-    <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-      {icon}
-      <Typography fontSize={15} fontWeight={600}>
-        {title}
-      </Typography>
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="space-between"
+      mb={1.5}
+    >
+      <Box display="flex" alignItems="center" gap={1}>
+        {icon}
+        <Typography fontSize={15} fontWeight={600}>
+          {title}
+        </Typography>
+      </Box>
+      {action}
     </Box>
     {children}
   </Paper>

@@ -1,3 +1,4 @@
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
@@ -6,6 +7,7 @@ import {
   Button,
   Chip,
   Divider,
+  IconButton,
   MenuItem,
   Select,
   Stack,
@@ -46,6 +48,16 @@ export const CourseInfoTab = ({
     <ContentSection
       title="מידע כללי"
       icon={<InfoOutlinedIcon sx={{ fontSize: 19, color: "#22c55e" }} />}
+      action={
+        <IconButton
+          size="small"
+          onClick={() => setIsEditing(!isEditing)}
+          sx={{ color: isEditing ? "#22c55e" : "text.secondary", p: 0.4 }}
+          aria-label="ערוך פרטי קורס"
+        >
+          <EditOutlinedIcon sx={{ fontSize: 17 }} />
+        </IconButton>
+      }
     >
       {isEditing ? (
         <Box display="flex" flexDirection="column" gap={2}>

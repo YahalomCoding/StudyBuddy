@@ -1,7 +1,6 @@
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import BookOutlinedIcon from "@mui/icons-material/BookOutlined";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import {
@@ -257,19 +256,6 @@ export const CourseDetailsModal = ({
           </Box>
 
           <Box display="flex" alignItems="center" gap={0.5}>
-            {data && (
-              <IconButton
-                size="small"
-                aria-label="ערוך פרטי קורס"
-                onClick={() => setIsEditing((v) => !v)}
-                sx={{
-                  mt: -0.5,
-                  color: isEditing ? "#22c55e" : "text.secondary",
-                }}
-              >
-                <EditOutlinedIcon fontSize="small" />
-              </IconButton>
-            )}
             <IconButton
               size="small"
               aria-label="סגור"
