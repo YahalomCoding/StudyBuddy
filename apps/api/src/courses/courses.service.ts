@@ -13,13 +13,13 @@ import { StudentSemesterCourse } from "../student-semester-courses/student-semes
 import { Student } from "../students/student.model";
 import { CourseSyllabus } from "../syllabi/course-syllabus.model";
 import type { AssessmentKind, SyllabusData } from "../syllabi/syllabus.schemas";
-
-type SyllabusAssessment = SyllabusData["assessments"][number];
-import { Course } from "./courses.model";
 import type {
   CourseDetailsAssessment,
   CourseDetailsResponse,
 } from "./course-details.types";
+import { Course } from "./courses.model";
+
+type SyllabusAssessment = SyllabusData["assessments"][number];
 
 @Injectable()
 export class CoursesService {
@@ -112,7 +112,7 @@ export class CoursesService {
       title: syllabus?.course.title?.trim() || course.title,
       englishTitle: syllabus?.course.englishTitle ?? null,
       code: syllabus?.course.code ?? null,
-      credits: syllabus?.course.credits ?? null,
+      credits: syllabus?.course.credits ?? course.credits ?? null,
       weeklyHours: syllabus?.course.weeklyHours ?? null,
 
       academicYearLabel:
