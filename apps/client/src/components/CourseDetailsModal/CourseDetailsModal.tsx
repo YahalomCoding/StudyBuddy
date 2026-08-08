@@ -25,7 +25,11 @@ import {
   getCourseDetails,
   updateCourseDetails,
 } from "../../api/courses";
-import { createHomeAssignment, homeDashboardQueryKey } from "../../api/home";
+import {
+  createHomeAssignment,
+  homeDashboardQueryKey,
+  updateAssignment,
+} from "../../api/home";
 import { CourseAssessmentsTab } from "./CourseAssessmentsTab";
 import { CourseInfoTab } from "./CourseInfoTab";
 import { CourseSyllabusTab } from "./CourseSyllabusTab";
@@ -44,6 +48,14 @@ type NewAssignment = {
   type: "assignment" | "homework" | "project" | "lab" | "report" | "practice";
 };
 
+type EditingAssessment = {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: "not started" | "active" | "done";
+  type: "assignment" | "homework" | "project" | "lab" | "report" | "practice";
+} | null;
+
 export const CourseDetailsModal = ({
   open,
   onClose,
@@ -53,6 +65,8 @@ export const CourseDetailsModal = ({
   const [activeTab, setActiveTab] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingAssignment, setIsAddingAssignment] = useState(false);
+  const [editingAssessment, setEditingAssessment] =
+    useState<EditingAssessment>(null);
   const [newAssignment, setNewAssignment] = useState<NewAssignment>({
     title: "",
     dueDate: "",
@@ -84,10 +98,15 @@ export const CourseDetailsModal = ({
   }, [data, isEditing]);
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { title?: string; credits?: number; semesterNumber?: number }) =>
-      updateCourseDetails(studentSemesterCourseId!, payload),
+    mutationFn: (payload: {
+      title?: string;
+      credits?: number;
+      semesterNumber?: number;
+    }) => updateCourseDetails(studentSemesterCourseId!, payload),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: courseDetailsQueryKey(studentSemesterCourseId) });
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
       await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
       setIsEditing(false);
     },
@@ -96,10 +115,35 @@ export const CourseDetailsModal = ({
   const addAssignmentMutation = useMutation({
     mutationFn: createHomeAssignment,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: courseDetailsQueryKey(studentSemesterCourseId) });
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
       await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
       setIsAddingAssignment(false);
       setNewAssignment({ title: "", dueDate: "", type: "assignment" });
+    },
+  });
+
+  const updateAssignmentMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        title?: string;
+        dueDate?: string;
+        status?: "not started" | "active" | "done";
+        type?:
+          "assignment" | "homework" | "practice" | "project" | "report" | "lab";
+      };
+    }) => updateAssignment(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setEditingAssessment(null);
     },
   });
 
@@ -127,6 +171,7 @@ export const CourseDetailsModal = ({
     setActiveTab(0);
     setIsEditing(false);
     setIsAddingAssignment(false);
+    setEditingAssessment(null);
     setNewAssignment({ title: "", dueDate: "", type: "assignment" });
     onClose();
   };
@@ -151,14 +196,32 @@ export const CourseDetailsModal = ({
         },
       }}
     >
-      <DialogTitle component="div" sx={{ p: 0, borderBottom: "1px solid", borderColor: "divider" }}>
-        <Box sx={{ px: 2.5, py: 2, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2 }}>
+      <DialogTitle
+        component="div"
+        sx={{ p: 0, borderBottom: "1px solid", borderColor: "divider" }}
+      >
+        <Box
+          sx={{
+            px: 2.5,
+            py: 2,
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 2,
+          }}
+        >
           <Box display="flex" alignItems="center" gap={1.5} minWidth={0}>
             <Box
               sx={{
-                width: 42, height: 42, borderRadius: 2.5,
-                bgcolor: "action.hover", color: "#22c55e",
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                width: 42,
+                height: 42,
+                borderRadius: 2.5,
+                bgcolor: "action.hover",
+                color: "#22c55e",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
               }}
             >
               <BookOutlinedIcon />
@@ -166,15 +229,23 @@ export const CourseDetailsModal = ({
 
             <Box minWidth={0}>
               <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                <Typography fontWeight={600} fontSize={17} noWrap>{displayedTitle}</Typography>
+                <Typography fontWeight={600} fontSize={17} noWrap>
+                  {displayedTitle}
+                </Typography>
                 {data ? (
                   <Chip
                     size="small"
                     label={data.syllabus.exists ? "מידע מסילבוס" : "ללא סילבוס"}
                     sx={{
-                      height: 21, fontSize: 10, fontWeight: 500,
-                      bgcolor: data.syllabus.exists ? "var(--sb-chip-status-done-bg)" : "var(--sb-chip-status-default-bg)",
-                      color: data.syllabus.exists ? "var(--sb-chip-status-done-text)" : "var(--sb-chip-status-default-text)",
+                      height: 21,
+                      fontSize: 10,
+                      fontWeight: 500,
+                      bgcolor: data.syllabus.exists
+                        ? "var(--sb-chip-status-done-bg)"
+                        : "var(--sb-chip-status-default-bg)",
+                      color: data.syllabus.exists
+                        ? "var(--sb-chip-status-done-text)"
+                        : "var(--sb-chip-status-default-text)",
                     }}
                   />
                 ) : null}
@@ -191,12 +262,20 @@ export const CourseDetailsModal = ({
                 size="small"
                 aria-label="ערוך פרטי קורס"
                 onClick={() => setIsEditing((v) => !v)}
-                sx={{ mt: -0.5, color: isEditing ? "#22c55e" : "text.secondary" }}
+                sx={{
+                  mt: -0.5,
+                  color: isEditing ? "#22c55e" : "text.secondary",
+                }}
               >
                 <EditOutlinedIcon fontSize="small" />
               </IconButton>
             )}
-            <IconButton size="small" aria-label="סגור" onClick={handleClose} sx={{ mt: -0.5 }}>
+            <IconButton
+              size="small"
+              aria-label="סגור"
+              onClick={handleClose}
+              sx={{ mt: -0.5 }}
+            >
               <CloseRoundedIcon fontSize="small" />
             </IconButton>
           </Box>
@@ -213,24 +292,64 @@ export const CourseDetailsModal = ({
             "& .Mui-selected": { color: "#16a34a !important" },
           }}
         >
-          <Tab icon={<InfoOutlinedIcon fontSize="small" />} iconPosition="start" label="פרטי הקורס" />
-          <Tab icon={<AssignmentOutlinedIcon fontSize="small" />} iconPosition="start" label="מטלות ומבחנים" />
-          <Tab icon={<SchoolOutlinedIcon fontSize="small" />} iconPosition="start" label="תוכן הסילבוס" />
+          <Tab
+            icon={<InfoOutlinedIcon fontSize="small" />}
+            iconPosition="start"
+            label="פרטי הקורס"
+          />
+          <Tab
+            icon={<AssignmentOutlinedIcon fontSize="small" />}
+            iconPosition="start"
+            label="מטלות ומבחנים"
+          />
+          <Tab
+            icon={<SchoolOutlinedIcon fontSize="small" />}
+            iconPosition="start"
+            label="תוכן הסילבוס"
+          />
         </Tabs>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 2.5, bgcolor: "background.default", minHeight: { xs: 520, md: 560 } }}>
+      <DialogContent
+        sx={{
+          p: 2.5,
+          bgcolor: "background.default",
+          minHeight: { xs: 520, md: 560 },
+        }}
+      >
         {!studentSemesterCourseId ? (
-          <Alert severity="error">לא נמצא מזהה הקורס של הסטודנט. יש לפתוח את החלון מתוך רשימת הקורסים.</Alert>
+          <Alert severity="error">
+            לא נמצא מזהה הקורס של הסטודנט. יש לפתוח את החלון מתוך רשימת הקורסים.
+          </Alert>
         ) : isLoading ? (
-          <Box minHeight={420} display="flex" flexDirection="column" alignItems="center" justifyContent="center" gap={1.5}>
+          <Box
+            minHeight={420}
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            gap={1.5}
+          >
             <CircularProgress size={32} />
-            <Typography color="text.secondary" fontSize={13}>טוען את פרטי הקורס...</Typography>
+            <Typography color="text.secondary" fontSize={13}>
+              טוען את פרטי הקורס...
+            </Typography>
           </Box>
         ) : isError || !data ? (
-          <Box minHeight={420} display="flex" flexDirection="column" alignItems="center" justifyContent="center" gap={2}>
-            <Alert severity="error" sx={{ width: "100%" }}>לא הצלחנו לטעון את פרטי הקורס.</Alert>
-            <Button variant="outlined" onClick={() => refetch()}>נסה שוב</Button>
+          <Box
+            minHeight={420}
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            gap={2}
+          >
+            <Alert severity="error" sx={{ width: "100%" }}>
+              לא הצלחנו לטעון את פרטי הקורס.
+            </Alert>
+            <Button variant="outlined" onClick={() => refetch()}>
+              נסה שוב
+            </Button>
           </Box>
         ) : (
           <>
@@ -255,6 +374,9 @@ export const CourseDetailsModal = ({
                 setNewAssignment={setNewAssignment}
                 addAssignmentMutation={addAssignmentMutation}
                 handleSaveAssignment={handleSaveAssignment}
+                editingAssessment={editingAssessment}
+                setEditingAssessment={setEditingAssessment}
+                updateAssignmentMutation={updateAssignmentMutation}
               />
             </TabPanel>
 
