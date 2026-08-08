@@ -5,6 +5,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
+import { CourseSemesterOption } from "@studybuddy/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
@@ -93,26 +94,13 @@ export const UpcomingEvents = ({
       },
       {
         type: "select",
-        name: "semesterNumber",
+        name: "semesterLabel",
         label: "סמסטר",
         options: [
-          { label: "סמסטר א׳", value: "1" },
-          { label: "סמסטר ב׳", value: "2" },
-          { label: "סמסטר קיץ", value: "3" },
+          { label: "א", value: CourseSemesterOption.A },
+          { label: "ב", value: CourseSemesterOption.B },
+          { label: "קיץ", value: CourseSemesterOption.Summer },
         ],
-      },
-      {
-        type: "select",
-        name: "yearNumber",
-        label: "שנת לימודים",
-        options: Array.from({ length: 8 }, (_, index) => {
-          const year = String(currentYear - 1 + index);
-
-          return {
-            label: year,
-            value: year,
-          };
-        }),
       },
       ...EVENT_FIELDS,
     ],
@@ -159,8 +147,7 @@ export const UpcomingEvents = ({
     }
 
     setModalValues({
-      semesterNumber: "1",
-      yearNumber: String(currentYear),
+      semesterLabel: CourseSemesterOption.A,
     });
     setModalOpen(true);
   };
@@ -171,15 +158,14 @@ export const UpcomingEvents = ({
   };
 
   const handleSaveEvent = (values: FormValues) => {
-    const semesterNumber = values.semesterNumber ?? "1";
-    const yearNumber = values.yearNumber ?? String(currentYear);
-
     createEventMutation.mutate({
       courseTitle: values.courseTitle ?? "",
       description: values.description ?? "",
       eventDate: values.eventDate ?? "",
       kind: "exam",
-      semesterLabel: `סמסטר ${semesterNumber} ${yearNumber}`,
+      semesterLabel:
+        (values.semesterLabel as CourseSemesterOption | undefined) ??
+        CourseSemesterOption.A,
     });
     handleCloseModal();
   };

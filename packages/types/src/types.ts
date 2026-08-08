@@ -8,12 +8,7 @@ export interface DurationValue {
 export type ItemStatus = "not started" | "active" | "done";
 
 export type AssignmentType =
-  | "assignment"
-  | "homework"
-  | "practice"
-  | "project"
-  | "report"
-  | "lab";
+  "assignment" | "homework" | "practice" | "project" | "report" | "lab";
 
 export interface TodoItem {
   id: string;
@@ -37,3 +32,9 @@ export type RelativeDueDate =
   | { kind: "today" }
   | { kind: "due_in"; days: number }
   | { kind: "overdue"; days: number };
+
+export enum CourseSemesterOption {
+  A = "A",
+  B = "B",
+  Summer = "Summer",
+}

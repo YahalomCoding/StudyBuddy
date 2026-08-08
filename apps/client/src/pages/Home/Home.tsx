@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  CourseSemesterOption,
   type AssignmentItem,
   type AssignmentType,
   type ItemStatus,
@@ -149,7 +150,7 @@ export const Home = () => {
   const [courseModalOpen, setCourseModalOpen] = useState(false);
   const [courseModalValues, setCourseModalValues] = useState<FormValues>({
     courseTitle: "",
-    semesterLabel: "",
+    semesterLabel: CourseSemesterOption.A,
   });
   const [courseDetailsOpen, setCourseDetailsOpen] = useState(false);
   const [courseDetailsCourseTitle, setCourseDetailsCourseTitle] = useState<
@@ -258,7 +259,10 @@ export const Home = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
       setCourseModalOpen(false);
-      setCourseModalValues({ courseTitle: "", semesterLabel: "" });
+      setCourseModalValues({
+        courseTitle: "",
+        semesterLabel: CourseSemesterOption.A,
+      });
     },
   });
 
@@ -395,14 +399,21 @@ export const Home = () => {
   };
 
   const openCourseModal = () => {
-    setCourseModalValues({ courseTitle: "", semesterLabel: "" });
+    setCourseModalValues({
+      courseTitle: "",
+      semesterLabel: CourseSemesterOption.A,
+    });
     setCourseModalOpen(true);
   };
 
   const handleCourseModalSave = (values: FormValues) => {
+    const selectedSemester = values.semesterLabel?.trim();
+
     createCourseMutation.mutate({
       courseTitle: values.courseTitle?.trim() ?? "",
-      semesterLabel: values.semesterLabel?.trim() ?? "",
+      semesterLabel: selectedSemester
+        ? (selectedSemester as CourseSemesterOption)
+        : undefined,
     });
   };
 
@@ -983,7 +994,10 @@ export const Home = () => {
         open={courseModalOpen}
         onClose={() => {
           setCourseModalOpen(false);
-          setCourseModalValues({ courseTitle: "", semesterLabel: "" });
+          setCourseModalValues({
+            courseTitle: "",
+            semesterLabel: CourseSemesterOption.A,
+          });
         }}
         title="הוסף קורס"
         fields={[
@@ -994,10 +1008,14 @@ export const Home = () => {
             placeholder: "למשל: מתמטיקה",
           },
           {
-            type: "text",
+            type: "select",
             name: "semesterLabel",
             label: "סמסטר",
-            placeholder: "למשל: סמסטר א' 2025",
+            options: [
+              { label: "א", value: CourseSemesterOption.A },
+              { label: "ב", value: CourseSemesterOption.B },
+              { label: "קיץ", value: CourseSemesterOption.Summer },
+            ],
           },
         ]}
         values={courseModalValues}

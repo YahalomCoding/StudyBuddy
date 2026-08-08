@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import type { CourseSemesterOption } from "@studybuddy/types";
 import type { Transaction } from "sequelize";
 import { Assignment } from "../assignments/assignment.model";
 import { AssignmentsService } from "../assignments/assignments.service";
@@ -31,6 +32,12 @@ const ASSIGNMENT_TYPES = [
   "lab",
 ] as const;
 type AssignmentType = (typeof ASSIGNMENT_TYPES)[number];
+
+const SEMESTER_TYPE_TO_NUMBER: Record<CourseSemesterOption, number> = {
+  A: 1,
+  B: 2,
+  Summer: 3,
+};
 
 type DashboardResponse = {
   todos: {
@@ -85,12 +92,12 @@ export type CreateUpcomingEventPayload = {
   courseTitle: string;
   description: string;
   eventDate: string;
-  semesterLabel?: string;
+  semesterLabel?: CourseSemesterOption;
 };
 
 export type CreateCourseSummaryPayload = {
   courseTitle: string;
-  semesterLabel?: string;
+  semesterLabel?: CourseSemesterOption;
 };
 
 @Injectable()
@@ -336,7 +343,7 @@ export class HomeService {
     return "homework";
   }
 
-  private parseSemesterLabel(value: string | undefined): {
+  private parseSemesterLabel(value: CourseSemesterOption | undefined): {
     yearNumber: number;
     semesterNumber: number;
   } {
@@ -346,35 +353,15 @@ export class HomeService {
       return { yearNumber: currentYear, semesterNumber: 1 };
     }
 
-    const normalized = value.toLowerCase();
-    const yearMatch = normalized.match(/\b(20\d{2})\b/);
+    const semesterNumber = SEMESTER_TYPE_TO_NUMBER[value] ?? 1;
 
-    const yearNumber = yearMatch ? Number(yearMatch[1]) : currentYear;
-
-    // Strip year before semester parsing to avoid reading the leading 2 in 20xx as semester 2.
-    const withoutYear = normalized.replace(/\b20\d{2}\b/g, " ");
-
-    let semesterNumber = 1;
-
-    if (/\b(3|summer|sum|spring)\b|סמסטר\s*[גג׳']|קיץ/u.test(withoutYear)) {
-      semesterNumber = 3;
-    } else if (
-      /\b(2|b|second)\b|סמסטר\s*[בב׳']|\bסמסטר\s*2\b/u.test(withoutYear)
-    ) {
-      semesterNumber = 2;
-    } else if (
-      /\b(1|a|first)\b|סמסטר\s*[אא׳']|\bסמסטר\s*1\b/u.test(withoutYear)
-    ) {
-      semesterNumber = 1;
-    }
-
-    return { yearNumber, semesterNumber };
+    return { yearNumber: currentYear, semesterNumber };
   }
 
   private async findOrCreateStudentSemesterCourseForCourseTitle(
     studentId: string,
     courseTitle: string,
-    semesterLabel: string | undefined,
+    semesterLabel: CourseSemesterOption | undefined,
     transaction: Transaction
   ): Promise<StudentSemesterCourse> {
     const normalizedCourseTitle = (courseTitle || "קורס חדש").trim();
