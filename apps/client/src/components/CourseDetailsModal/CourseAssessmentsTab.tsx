@@ -369,7 +369,10 @@ export const CourseAssessmentsTab = ({
                   if (editingAssessment.kind === "exam") {
                     updateExamMutation.mutate({
                       id: editingAssessment.id,
-                      payload: { date: editingAssessment.dueDate || undefined },
+                      payload: {
+                        date: editingAssessment.dueDate || undefined,
+                        type: editingAssessment.title === "מועד ב'" ? 2 : 1,
+                      },
                     });
                   } else {
                     updateAssignmentMutation.mutate({
