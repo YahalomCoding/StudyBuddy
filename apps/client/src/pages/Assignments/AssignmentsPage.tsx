@@ -1,3 +1,4 @@
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import {
   alpha,
   Box,
@@ -5,8 +6,17 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Divider,
+  IconButton,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -104,6 +114,8 @@ export const AssignmentsPage = () => {
   const [draggedAssignmentId, setDraggedAssignmentId] = useState<string | null>(
     null
   );
+  const [selectedAssignment, setSelectedAssignment] =
+    useState<HomeDashboardAssignment | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: homeDashboardQueryKey,
@@ -160,6 +172,14 @@ export const AssignmentsPage = () => {
     [data?.assignments]
   );
 
+  const todos = useMemo(() => data?.todos ?? [], [data?.todos]);
+
+  const relatedTodos = useMemo(() => {
+    if (!selectedAssignment) return [];
+    const keyword = selectedAssignment.title.toLowerCase();
+    return todos.filter((t) => t.title.toLowerCase().includes(keyword));
+  }, [selectedAssignment, todos]);
+
   const groupedAssignments = useMemo(() => {
     return COLUMN_CONFIG.reduce(
       (acc, column) => {
@@ -193,133 +213,226 @@ export const AssignmentsPage = () => {
   };
 
   return (
-    <Box className={classes.page}>
-      <Box className={classes.topBar}>
-        <Typography className={classes.topBarTitle}>מטלות</Typography>
-      </Box>
-
-      <Stack spacing={3} className={classes.pageContent}>
-        <Box className={classes.header}>
-          <Typography variant="h4" className={classes.title}>
-            לוח מטלות
-          </Typography>
-          <Typography variant="body1" className={classes.subtitle}>
-            גרור כרטיסים בין העמודות כדי לעדכן את הסטטוס באופן מיידי.
-          </Typography>
+    <>
+      <Box className={classes.page}>
+        <Box className={classes.topBar}>
+          <Typography className={classes.topBarTitle}>מטלות</Typography>
         </Box>
 
-        {isLoading ? (
-          <Box className={classes.loaderBox}>
-            <CircularProgress />
+        <Stack spacing={3} className={classes.pageContent}>
+          <Box className={classes.header}>
+            <Typography variant="h4" className={classes.title}>
+              לוח מטלות
+            </Typography>
+            <Typography variant="body1" className={classes.subtitle}>
+              גרור כרטיסים בין העמודות כדי לעדכן את הסטטוס באופן מיידי.
+            </Typography>
           </Box>
-        ) : (
-          <Box className={classes.boardGrid}>
-            {COLUMN_CONFIG.map((column) => (
-              <Box
-                key={column.id}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={() => handleDrop(column.id)}
-                className={classes.column}
-                style={{
-                  backgroundColor: alpha(column.color, 0.08),
-                  borderColor: alpha(column.color, 0.28),
-                }}
-              >
-                <Stack spacing={1.5}>
-                  <Box className={classes.columnHeader}>
-                    <Typography variant="h6" className={classes.columnTitle}>
-                      {column.title}
-                    </Typography>
-                  </Box>
-                  <Divider />
-                  <Stack spacing={1.5} className={classes.columnBody}>
-                    {groupedAssignments[column.id].length === 0 ? (
-                      <Box className={classes.emptyState}>אין מטלות עדיין.</Box>
-                    ) : (
-                      groupedAssignments[column.id].map((assignment) => (
-                        <Card
-                          key={assignment.id}
-                          draggable
-                          onDragStart={() =>
-                            setDraggedAssignmentId(assignment.id)
-                          }
-                          onDragEnd={() => setDraggedAssignmentId(null)}
-                          className={classes.assignmentCard}
-                        >
-                          <CardContent className={classes.cardContent}>
-                            <Stack spacing={1.2} className={classes.cardInner}>
-                              <Typography
-                                variant="subtitle1"
-                                className={classes.assignmentTitle}
+
+          {isLoading ? (
+            <Box className={classes.loaderBox}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box className={classes.boardGrid}>
+              {COLUMN_CONFIG.map((column) => (
+                <Box
+                  key={column.id}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => handleDrop(column.id)}
+                  className={classes.column}
+                  style={{
+                    backgroundColor: alpha(column.color, 0.08),
+                    borderColor: alpha(column.color, 0.28),
+                  }}
+                >
+                  <Stack spacing={1.5}>
+                    <Box className={classes.columnHeader}>
+                      <Typography variant="h6" className={classes.columnTitle}>
+                        {column.title}
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <Stack spacing={1.5} className={classes.columnBody}>
+                      {groupedAssignments[column.id].length === 0 ? (
+                        <Box className={classes.emptyState}>
+                          אין מטלות עדיין.
+                        </Box>
+                      ) : (
+                        groupedAssignments[column.id].map((assignment) => (
+                          <Card
+                            key={assignment.id}
+                            draggable
+                            onDragStart={() =>
+                              setDraggedAssignmentId(assignment.id)
+                            }
+                            onDragEnd={() => setDraggedAssignmentId(null)}
+                            onClick={() => setSelectedAssignment(assignment)}
+                            className={classes.assignmentCard}
+                            sx={{ cursor: "pointer" }}
+                          >
+                            <CardContent className={classes.cardContent}>
+                              <Stack
+                                spacing={1.2}
+                                className={classes.cardInner}
                               >
-                                {assignment.title}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                className={classes.assignmentCourse}
-                              >
-                                {assignment.course}
-                              </Typography>
-                              <Stack className={classes.chipRow}>
-                                <Chip
-                                  className={classes.typeChip}
-                                  label={typeToDisplayName(assignment.type)}
-                                  size="small"
-                                  variant="filled"
-                                />
-                                <Chip
-                                  className={classes.statusChip}
-                                  label={statusToDisplayName(assignment.status)}
-                                  size="small"
-                                  color={
-                                    assignment.status === "done"
-                                      ? "success"
-                                      : assignment.status === "active"
-                                        ? "primary"
-                                        : "default"
-                                  }
-                                />
-                              </Stack>
-                              <Stack className={classes.metaRow}>
                                 <Typography
-                                  variant="caption"
-                                  className={classes.dueDateText}
+                                  variant="subtitle1"
+                                  className={classes.assignmentTitle}
                                 >
-                                  תאריך יעד: {formatDueDate(assignment.dueDate)}
+                                  {assignment.title}
                                 </Typography>
                                 <Typography
-                                  variant="caption"
-                                  className={classes.daysLabel}
-                                  color={
-                                    assignment.status === "done"
-                                      ? "success.main"
-                                      : getDaysLeftLabel(
-                                            assignment.dueDate,
-                                            assignment.status
-                                          ).includes("באיחור")
-                                        ? "error.main"
-                                        : "primary.main"
-                                  }
-                                  fontWeight={700}
+                                  variant="body2"
+                                  className={classes.assignmentCourse}
                                 >
-                                  {getDaysLeftLabel(
-                                    assignment.dueDate,
-                                    assignment.status
-                                  )}
+                                  {assignment.course}
                                 </Typography>
+                                <Stack className={classes.chipRow}>
+                                  <Chip
+                                    className={classes.typeChip}
+                                    label={typeToDisplayName(assignment.type)}
+                                    size="small"
+                                    variant="filled"
+                                  />
+                                  <Chip
+                                    className={classes.statusChip}
+                                    label={statusToDisplayName(
+                                      assignment.status
+                                    )}
+                                    size="small"
+                                    color={
+                                      assignment.status === "done"
+                                        ? "success"
+                                        : assignment.status === "active"
+                                          ? "primary"
+                                          : "default"
+                                    }
+                                  />
+                                </Stack>
+                                <Stack className={classes.metaRow}>
+                                  <Typography
+                                    variant="caption"
+                                    className={classes.dueDateText}
+                                  >
+                                    תאריך יעד:{" "}
+                                    {formatDueDate(assignment.dueDate)}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    className={classes.daysLabel}
+                                    color={
+                                      assignment.status === "done"
+                                        ? "success.main"
+                                        : getDaysLeftLabel(
+                                              assignment.dueDate,
+                                              assignment.status
+                                            ).includes("באיחור")
+                                          ? "error.main"
+                                          : "primary.main"
+                                    }
+                                    fontWeight={700}
+                                  >
+                                    {getDaysLeftLabel(
+                                      assignment.dueDate,
+                                      assignment.status
+                                    )}
+                                  </Typography>
+                                </Stack>
                               </Stack>
-                            </Stack>
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </Stack>
                   </Stack>
-                </Stack>
-              </Box>
-            ))}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Stack>
+      </Box>
+
+      <Dialog
+        open={Boolean(selectedAssignment)}
+        onClose={() => setSelectedAssignment(null)}
+        fullWidth
+        maxWidth="sm"
+        dir="rtl"
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle
+          component="div"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            pb: 1,
+          }}
+        >
+          <Box>
+            <Typography fontWeight={600} fontSize={16}>
+              {selectedAssignment?.title}
+            </Typography>
+            <Typography fontSize={13} color="text.secondary">
+              {selectedAssignment?.course}
+            </Typography>
           </Box>
-        )}
-      </Stack>
-    </Box>
+          <IconButton size="small" onClick={() => setSelectedAssignment(null)}>
+            <CloseRoundedIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 0 }}>
+          {relatedTodos.length === 0 ? (
+            <Typography
+              color="text.secondary"
+              fontSize={13}
+              py={2}
+              textAlign="center"
+            >
+              לא נמצאו משימות הקשורות למטלה זו.
+            </Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>שם המשימה</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>תאריך יעד</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>זמן משוער</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>בוצע</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {relatedTodos.map((todo) => (
+                  <TableRow key={todo.id} hover>
+                    <TableCell
+                      sx={{
+                        textDecoration: todo.done ? "line-through" : "none",
+                        color: todo.done ? "text.secondary" : "text.primary",
+                      }}
+                    >
+                      {todo.title}
+                    </TableCell>
+                    <TableCell>
+                      {formatDueDate(new Date(todo.dueDate))}
+                    </TableCell>
+                    <TableCell>
+                      {todo.estimatedTime.value}{" "}
+                      {todo.estimatedTime.unit === "minutes"
+                        ? "דק'"
+                        : todo.estimatedTime.unit === "hours"
+                          ? "שע'"
+                          : "ימים"}
+                    </TableCell>
+                    <TableCell>{todo.done ? "✓" : "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
