@@ -1,83 +1,15 @@
-import AddIcon from "@mui/icons-material/Add";
-import AddTaskIcon from "@mui/icons-material/AddTask";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import {
-  Box,
-  Checkbox,
-  Chip,
-  IconButton,
-  Paper,
-  Typography,
-} from "@mui/material";
-import {
-  type AssignmentItem,
-  type AssignmentType,
-  type ItemStatus,
-  type TodoItem,
-} from "@studybuddy/types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import {
-  createCourseSummary,
-  createGeneralTask,
-  createHomeAssignment,
-  deleteCourseSummaryItem,
-  deleteGeneralTask,
-  deleteHomeAssignment,
-  getHomeDashboard,
-  homeDashboardQueryKey,
-  updateAssignment,
-  updateGeneralTask,
-} from "../../api/home";
+import { Box, Chip, IconButton, Paper, Typography } from "@mui/material";
 import { ChatBotBubble } from "../../components/Chatbot";
-import { CourseDetailsModal } from "../../components/CourseDetailsModal";
 import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
-import {
-  GenericFormModal,
-  type FormValues,
-} from "../../components/GenericFormModal/GenericFormModal";
 import { HomeAiFeatures } from "../../components/HomeAiFeatures/HomeAiFeatures";
 import { UpcomingEvents } from "../../components/UpcomingEvents";
-import {
-  buildAssignmentFields,
-  getHomeModalTitle,
-  TASK_FIELDS,
-  type HomeModalType,
-} from "./formConfig";
-import {
-  applyOptimisticAssignmentUpdate,
-  applyOptimisticTodoDoneUpdate,
-  applyOptimisticTodoEstimatedTimeUpdate,
-  rollbackOptimisticDashboardUpdate,
-  rollbackOptimisticTodoDoneUpdate,
-} from "./functions";
-import { statusChipClass, typeChipClass } from "./style";
-import {
-  ASSIGNMENT_STATUSES,
-  ASSIGNMENT_TYPES,
-  assignmentTypeToDisplayName,
-  formatDueDate,
-  formatDuration,
-  getNextValue,
-  getRelativeDueDate,
-  isOverdue,
-  relativeDueDateToDisplayName,
-  statusToDisplayName,
-} from "./utils";
-
-// ─── Modal state type ──────────────────────────────────────────────────────────
-
-type ModalState = {
-  type: HomeModalType;
-  values: FormValues;
-  editId?: string; // present → edit mode
-};
-
-// ─── Card wrapper ──────────────────────────────────────────────────────────────
+import { AssignmentList } from "./AssignmentList";
+import { HomeModals } from "./HomeModals";
+import { TodoList } from "./TodoList";
+import { useHomeState } from "./useHomeState";
 
 const SectionCard = ({
   title,
@@ -128,370 +60,52 @@ const SectionCard = ({
 );
 
 export const Home = () => {
-  const queryClient = useQueryClient();
-  const { data, isLoading, isError, isFetched } = useQuery({
-    queryKey: homeDashboardQueryKey,
-    queryFn: getHomeDashboard,
-  });
-  const isInitialLoading = isLoading && !isFetched;
-
-  const [modal, setModal] = useState<ModalState | null>(null);
-  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState<
-    string | null
-  >(null);
-  const [hoveredTodoId, setHoveredTodoId] = useState<string | null>(null);
-  const [hoveredAssignmentId, setHoveredAssignmentId] = useState<string | null>(
-    null
-  );
-  const [selectedCourseTitle, setSelectedCourseTitle] = useState<string | null>(
-    null
-  );
-  const [courseModalOpen, setCourseModalOpen] = useState(false);
-  const [courseModalValues, setCourseModalValues] = useState<FormValues>({
-    courseTitle: "",
-    semesterLabel: "1",
-  });
-  const [courseDetailsOpen, setCourseDetailsOpen] = useState(false);
-  const [courseDetailsCourseTitle, setCourseDetailsCourseTitle] = useState<
-    string | null
-  >(null);
-  const [
+  const {
+    isInitialLoading,
+    isError,
+    modal,
+    setModal,
+    selectedTodoId,
+    setSelectedTodoId,
+    selectedAssignmentId,
+    setSelectedAssignmentId,
+    hoveredTodoId,
+    setHoveredTodoId,
+    hoveredAssignmentId,
+    setHoveredAssignmentId,
+    selectedCourseTitle,
+    setSelectedCourseTitle,
+    courseModalOpen,
+    courseModalValues,
+    courseDetailsOpen,
+    courseDetailsCourseTitle,
     courseDetailsStudentSemesterCourseId,
-    setCourseDetailsStudentSemesterCourseId,
-  ] = useState<string | null>(null);
-
-  const { mutate: updateTask } = useMutation({
-    meta: { disableLoadingDefault: true },
-    mutationFn: ({ id, done }: { id: string; done: boolean }) =>
-      updateGeneralTask(id, { done }),
-    onMutate: ({ id, done }) =>
-      applyOptimisticTodoDoneUpdate(queryClient, id, done),
-    onError: (_error, _variables, context) => {
-      rollbackOptimisticTodoDoneUpdate(queryClient, context?.previousDashboard);
-    },
-  });
-
-  const updateAssignmentMutation = useMutation({
-    meta: { disableLoadingDefault: true },
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: {
-        title?: string;
-        dueDate?: string;
-        status?: ItemStatus;
-        type?: AssignmentType;
-      };
-    }) => updateAssignment(id, payload),
-    onMutate: ({ id, payload }) =>
-      applyOptimisticAssignmentUpdate(queryClient, id, payload),
-    onError: (_error, _variables, context) => {
-      rollbackOptimisticDashboardUpdate(
-        queryClient,
-        context?.previousDashboard
-      );
-    },
-  });
-
-  const updateTodoEstimatedTimeMutation = useMutation({
-    meta: { disableLoadingDefault: true },
-    mutationFn: ({
-      id,
-      estimatedTimeValue,
-      estimatedTimeUnit,
-    }: {
-      id: string;
-      estimatedTimeValue: number;
-      estimatedTimeUnit: "minutes" | "hours" | "days";
-    }) => updateGeneralTask(id, { estimatedTimeValue, estimatedTimeUnit }),
-    onMutate: ({ id, estimatedTimeValue, estimatedTimeUnit }) =>
-      applyOptimisticTodoEstimatedTimeUpdate(
-        queryClient,
-        id,
-        estimatedTimeValue,
-        estimatedTimeUnit
-      ),
-    onError: (_error, _variables, context) => {
-      rollbackOptimisticDashboardUpdate(
-        queryClient,
-        context?.previousDashboard
-      );
-    },
-  });
-
-  const updateTodoDetailsMutation = useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: {
-        title?: string;
-        dueDate?: string;
-        estimatedTimeValue?: number;
-        estimatedTimeUnit?: "minutes" | "hours" | "days";
-      };
-    }) => updateGeneralTask(id, payload),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
-    },
-  });
-
-  const createTaskMutation = useMutation({
-    mutationFn: createGeneralTask,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
-    },
-  });
-
-  const createAssignmentMutation = useMutation({
-    mutationFn: createHomeAssignment,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
-    },
-  });
-
-  const createCourseMutation = useMutation({
-    mutationFn: createCourseSummary,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
-      setCourseModalOpen(false);
-      setCourseModalValues({
-        courseTitle: "",
-        semesterLabel: "1",
-      });
-    },
-  });
-
-  const deleteTaskMutation = useMutation({
-    mutationFn: deleteGeneralTask,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
-      setSelectedTodoId(null);
-      setHoveredTodoId(null);
-    },
-  });
-
-  const deleteAssignmentMutation = useMutation({
-    mutationFn: deleteHomeAssignment,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
-      setSelectedAssignmentId(null);
-      setHoveredAssignmentId(null);
-    },
-  });
-
-  const deleteCourseMutation = useMutation({
-    mutationFn: deleteCourseSummaryItem,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
-      setSelectedCourseTitle(null);
-    },
-  });
-
-  // ── Rows ──────────────────────────────────────────────────────────────────────
-
-  const todoRows: TodoItem[] = useMemo(
-    () =>
-      (data?.todos ?? []).map((item) => ({
-        ...item,
-        dueDate: new Date(item.dueDate),
-      })),
-    [data?.todos]
-  );
-
-  const assignmentRows: AssignmentItem[] = useMemo(
-    () =>
-      (data?.assignments ?? []).map((item) => ({
-        ...item,
-        dueDate: new Date(item.dueDate),
-      })),
-    [data?.assignments]
-  );
-
-  const filteredAssignmentRows = useMemo(() => {
-    if (!selectedCourseTitle) {
-      return assignmentRows;
-    }
-
-    return assignmentRows.filter((row) => row.course === selectedCourseTitle);
-  }, [assignmentRows, selectedCourseTitle]);
-
-  const assignmentCourseOptions = useMemo(() => {
-    const uniqueCourseTitles = Array.from(
-      new Set((data?.coursesSummary ?? []).map((course) => course.courseTitle))
-    ).filter(Boolean);
-
-    return uniqueCourseTitles.map((courseTitle) => ({
-      label: courseTitle,
-      value: courseTitle,
-    }));
-  }, [data?.coursesSummary]);
-
-  const assignmentFormFields = useMemo(
-    () => buildAssignmentFields(assignmentCourseOptions),
-    [assignmentCourseOptions]
-  );
-  const canCreateAssignment = assignmentCourseOptions.length > 0;
-
-  const assignmentEditFields = useMemo(
-    () => assignmentFormFields.filter((field) => field.name !== "course"),
-    [assignmentFormFields]
-  );
-
-  const handleTodoToggle = (id: string, currentDone: boolean) => {
-    updateTask({ id, done: !currentDone });
-  };
-
-  const handleAssignmentStatusCycle = (row: AssignmentItem) => {
-    updateAssignmentMutation.mutate({
-      id: row.id,
-      payload: { status: getNextValue(ASSIGNMENT_STATUSES, row.status) },
-    });
-  };
-
-  const handleAssignmentTypeCycle = (row: AssignmentItem) => {
-    updateAssignmentMutation.mutate({
-      id: row.id,
-      payload: { type: getNextValue(ASSIGNMENT_TYPES, row.type) },
-    });
-  };
-
-  const handleAddTodoFromAssignment = (row: AssignmentItem) => {
-    createTaskMutation.mutate({
-      title: `מטלה: ${row.title}`,
-      dueDate: row.dueDate.toISOString(),
-      estimatedTimeValue: 30,
-      estimatedTimeUnit: "minutes",
-    });
-  };
-
-  const openAssignmentModal = () => {
-    if (!canCreateAssignment) {
-      return;
-    }
-
-    setModal({ type: "assignment", values: {} });
-  };
-
-  const openTaskEditModal = (row: TodoItem) => {
-    setModal({
-      type: "task",
-      editId: row.id,
-      values: {
-        title: row.title,
-        dueDate: row.dueDate.toISOString().slice(0, 10),
-        estimatedTime: String(row.estimatedTime.value),
-      },
-    });
-  };
-
-  const openAssignmentEditModal = (row: AssignmentItem) => {
-    setModal({
-      type: "assignment",
-      editId: row.id,
-      values: {
-        title: row.title,
-        dueDate: row.dueDate.toISOString().slice(0, 10),
-        status: row.status,
-        type: row.type,
-      },
-    });
-  };
-
-  const handleCourseSelect = (courseTitle: string | null) => {
-    setSelectedCourseTitle(courseTitle);
-  };
-
-  const openCourseModal = () => {
-    setCourseModalValues({
-      courseTitle: "",
-      semesterLabel: "1",
-    });
-    setCourseModalOpen(true);
-  };
-
-  const handleCourseModalSave = (values: FormValues) => {
-    const credits = parseFloat(values.credits ?? "");
-    createCourseMutation.mutate({
-      courseTitle: values.courseTitle?.trim() ?? "",
-      semesterNumber: parseInt(values.semesterLabel ?? "1", 10),
-      credits: isNaN(credits) ? undefined : credits,
-    });
-  };
-
-  const handleCourseOpen = (
-    courseTitle: string,
-    studentSemesterCourseId: string
-  ) => {
-    setCourseDetailsCourseTitle(courseTitle);
-    setCourseDetailsStudentSemesterCourseId(studentSemesterCourseId);
-    setCourseDetailsOpen(true);
-  };
-
-  const handleCourseDetailsClose = () => {
-    setCourseDetailsOpen(false);
-    setCourseDetailsCourseTitle(null);
-    setCourseDetailsStudentSemesterCourseId(null);
-  };
-
-  const handleModalSave = (values: FormValues) => {
-    if (!modal) return;
-
-    if (modal.type === "task") {
-      const estimatedMinutes = parseInt(values.estimatedTime ?? "30", 10);
-
-      if (modal.editId) {
-        updateTodoDetailsMutation.mutate({
-          id: modal.editId,
-          payload: {
-            title: values.title ?? "משימה",
-            dueDate: values.dueDate ?? new Date().toISOString(),
-            estimatedTimeValue: Math.max(1, estimatedMinutes),
-            estimatedTimeUnit: "minutes",
-          },
-        });
-        setModal(null);
-        return;
-      }
-
-      createTaskMutation.mutate({
-        title: values.title ?? "משימה",
-        dueDate: values.dueDate ?? new Date().toISOString(),
-        estimatedTimeValue: Math.max(1, estimatedMinutes),
-        estimatedTimeUnit: "minutes",
-      });
-    }
-
-    if (modal.type === "assignment") {
-      if (modal.editId) {
-        updateAssignmentMutation.mutate({
-          id: modal.editId,
-          payload: {
-            title: values.title ?? "מטלה",
-            dueDate: values.dueDate ?? new Date().toISOString(),
-            status: (values.status as ItemStatus) ?? "not started",
-            type: (values.type as AssignmentType) ?? "assignment",
-          },
-        });
-        setModal(null);
-        return;
-      }
-
-      createAssignmentMutation.mutate({
-        course: values.course ?? "",
-        title: values.title ?? "מטלה",
-        dueDate: values.dueDate ?? new Date().toISOString(),
-        status: "not started",
-        type: (values.type as AssignmentType) ?? "assignment",
-      });
-    }
-
-    setModal(null);
-  };
+    todoRows,
+    filteredAssignmentRows,
+    assignmentFormFields,
+    assignmentEditFields,
+    canCreateAssignment,
+    createTaskMutation,
+    deleteTaskMutation,
+    deleteAssignmentMutation,
+    updateTodoEstimatedTimeMutation,
+    handleTodoToggle,
+    handleAssignmentStatusCycle,
+    handleAssignmentTypeCycle,
+    handleAddTodoFromAssignment,
+    openAssignmentModal,
+    openTaskEditModal,
+    openAssignmentEditModal,
+    openCourseModal,
+    handleCourseModalSave,
+    handleCourseOpen,
+    handleCourseDetailsClose,
+    handleModalSave,
+    deleteCourse,
+    onCloseCourseModal,
+    onChangeCourseModal,
+    onChangeModal,
+  } = useHomeState();
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", p: 0 }}>
@@ -527,7 +141,6 @@ export const Home = () => {
 
         <HomeAiFeatures />
 
-        {/* ── Two-column grid ────────────────────────────────────── */}
         <Box
           sx={{
             display: "grid",
@@ -538,513 +151,88 @@ export const Home = () => {
             gap: 2,
           }}
         >
-          {/* LEFT column */}
           <Box display="flex" flexDirection="column" gap={2}>
-            {/* To Do card */}
             <SectionCard
               title="משימות"
               icon={<CheckCircleIcon sx={{ color: "#22c55e", fontSize: 20 }} />}
             >
-              {isInitialLoading && (
-                <Typography color="text.secondary" fontSize={13}>
-                  טוען...
-                </Typography>
-              )}
-              {isError && (
-                <Typography color="error" fontSize={13}>
-                  לא הצלחנו לטעון משימות כרגע
-                </Typography>
-              )}
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto auto auto auto",
-                  gap: 1,
-                  pb: 0.5,
-                  mb: 0.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  שם משימה
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  תאריך יעד
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  בוצע
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  זמן משוער
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  פעולות
-                </Typography>
-              </Box>
-
-              {todoRows.map((row) => (
-                <Box
-                  key={row.id}
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto auto auto auto",
-                    gap: 1,
-                    alignItems: "center",
-                    py: 0.8,
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
-                    cursor: "pointer",
-                    transition: "background-color 0.18s ease",
-                    ...(selectedTodoId === row.id && {
-                      bgcolor: "action.selected",
-                    }),
-                    ...(hoveredTodoId === row.id && {
-                      bgcolor: "action.hover",
-                    }),
-                    "&:last-of-type": { borderBottom: "none" },
-                  }}
-                  onMouseEnter={() => setHoveredTodoId(row.id)}
-                  onMouseLeave={() =>
-                    setHoveredTodoId((prev) => (prev === row.id ? null : prev))
-                  }
-                  onClick={() => setSelectedTodoId(row.id)}
-                >
-                  <Typography
-                    fontSize={13}
-                    sx={{
-                      textDecoration: row.done ? "line-through" : "none",
-                      color: row.done ? "text.secondary" : "text.primary",
-                      textAlign: "right",
-                    }}
-                  >
-                    {row.title}
-                  </Typography>
-                  <Typography
-                    fontSize={13}
-                    color="text.secondary"
-                    textAlign="right"
-                  >
-                    {formatDueDate(row.dueDate)}
-                  </Typography>
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    onMouseDown={(event) => event.stopPropagation()}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <Checkbox
-                      checked={row.done}
-                      size="small"
-                      disableRipple
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleTodoToggle(row.id, row.done);
-                      }}
-                      sx={{ p: 0 }}
-                    />
-                  </Box>
-                  <Typography
-                    fontSize={13}
-                    color="primary"
-                    fontWeight={500}
-                    textAlign="right"
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => {
-                      const nextEstimatedTimeValue =
-                        row.estimatedTime.value >= 120
-                          ? 15
-                          : row.estimatedTime.value + 15;
-                      updateTodoEstimatedTimeMutation.mutate({
-                        id: row.id,
-                        estimatedTimeValue: nextEstimatedTimeValue,
-                        estimatedTimeUnit: row.estimatedTime.unit,
-                      });
-                    }}
-                  >
-                    {formatDuration(row.estimatedTime)}
-                  </Typography>
-                  <Box display="flex" justifyContent="center" gap={0.3}>
-                    {(selectedTodoId === row.id ||
-                      hoveredTodoId === row.id) && (
-                      <>
-                        <IconButton
-                          size="small"
-                          aria-label="ערוך משימה"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openTaskEditModal(row);
-                          }}
-                          sx={{ p: 0.4 }}
-                        >
-                          <EditOutlinedIcon sx={{ fontSize: 17 }} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          aria-label="מחק משימה"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            deleteTaskMutation.mutate(row.id);
-                          }}
-                          disabled={deleteTaskMutation.isPending}
-                          sx={{ p: 0.4 }}
-                        >
-                          <DeleteOutlineIcon sx={{ fontSize: 17 }} />
-                        </IconButton>
-                      </>
-                    )}
-                  </Box>
-                </Box>
-              ))}
-
-              {/* Add Task row */}
-              <Box
-                display="flex"
-                alignItems="center"
-                gap={0.5}
-                sx={{ cursor: "pointer", color: "text.secondary", mt: 1 }}
-                onClick={() => setModal({ type: "task", values: {} })}
-              >
-                <AddIcon fontSize="small" />
-                <Typography fontSize={13}>הוסף משימה</Typography>
-              </Box>
+              <TodoList
+                todoRows={todoRows}
+                isInitialLoading={isInitialLoading}
+                isError={isError}
+                selectedTodoId={selectedTodoId}
+                hoveredTodoId={hoveredTodoId}
+                setSelectedTodoId={setSelectedTodoId}
+                setHoveredTodoId={setHoveredTodoId}
+                onToggle={handleTodoToggle}
+                onEstimatedTimeUpdate={(id, value, unit) =>
+                  updateTodoEstimatedTimeMutation.mutate({
+                    id,
+                    estimatedTimeValue: value,
+                    estimatedTimeUnit: unit,
+                  })
+                }
+                onEdit={openTaskEditModal}
+                onDelete={(id) => deleteTaskMutation.mutate(id)}
+                onAddTask={() => setModal({ type: "task", values: {} })}
+                deleteTaskMutation={deleteTaskMutation}
+              />
             </SectionCard>
 
-            {/* Assignments card */}
             <SectionCard title="מטלות" onNext={openAssignmentModal}>
-              {/* Header */}
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "auto auto 1fr auto auto auto auto auto",
-                  gap: 1,
-                  pb: 0.5,
-                  mb: 0.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  סטטוס
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  קורס
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  שם מטלה
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  תאריך יעד
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  סוג
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="right"
-                >
-                  ימים שנותרו
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  לטודו
-                </Typography>
-                <Typography
-                  fontSize={12}
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  פעולות
-                </Typography>
-              </Box>
-
-              {isInitialLoading && (
-                <Typography color="text.secondary" fontSize={13}>
-                  טוען...
-                </Typography>
-              )}
-              {isError && (
-                <Typography color="error" fontSize={13}>
-                  לא הצלחנו לטעון מטלות כרגע
-                </Typography>
-              )}
-
-              {filteredAssignmentRows.map((row) => {
-                const relativeDueDate = getRelativeDueDate(
-                  row.dueDate,
-                  row.status
-                );
-                return (
-                  <Box
-                    key={row.id}
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "auto auto 1fr auto auto auto auto auto",
-                      gap: 1,
-                      alignItems: "center",
-                      py: 0.8,
-                      borderBottom: "1px solid",
-                      borderColor: "divider",
-                      cursor: "pointer",
-                      transition: "background-color 0.18s ease",
-                      ...(selectedAssignmentId === row.id && {
-                        bgcolor: "action.selected",
-                      }),
-                      ...(hoveredAssignmentId === row.id && {
-                        bgcolor: "action.hover",
-                      }),
-                      "&:last-of-type": { borderBottom: "none" },
-                      ...(isOverdue(relativeDueDate) && {
-                        bgcolor: "var(--sb-home-overdue-row-bg)",
-                        borderColor: "var(--sb-home-overdue-row-border)",
-                      }),
-                    }}
-                    onMouseEnter={() => setHoveredAssignmentId(row.id)}
-                    onMouseLeave={() =>
-                      setHoveredAssignmentId((prev) =>
-                        prev === row.id ? null : prev
-                      )
-                    }
-                    onClick={() => setSelectedAssignmentId(row.id)}
-                  >
-                    <Chip
-                      label={statusToDisplayName(row.status)}
-                      size="small"
-                      className={statusChipClass(row.status)}
-                      onClick={() => handleAssignmentStatusCycle(row)}
-                      sx={{ fontSize: 11, height: 22 }}
-                    />
-                    <Typography fontSize={12} color="text.secondary" noWrap>
-                      {row.course}
-                    </Typography>
-                    <Typography fontSize={13} noWrap textAlign="right">
-                      {row.title}
-                    </Typography>
-                    <Typography fontSize={12} color="text.secondary" noWrap>
-                      {formatDueDate(row.dueDate)}
-                    </Typography>
-                    <Chip
-                      label={assignmentTypeToDisplayName(row.type)}
-                      size="small"
-                      className={typeChipClass(row.type)}
-                      onClick={() => handleAssignmentTypeCycle(row)}
-                      sx={{ fontSize: 11, height: 22 }}
-                    />
-                    <Typography
-                      fontSize={12}
-                      fontWeight={500}
-                      textAlign="right"
-                      sx={{
-                        color: isOverdue(relativeDueDate)
-                          ? "var(--sb-home-overdue-text)"
-                          : "text.secondary",
-                      }}
-                    >
-                      {relativeDueDateToDisplayName(relativeDueDate)}
-                    </Typography>
-                    <Box display="flex" justifyContent="center">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleAddTodoFromAssignment(row)}
-                        disabled={createTaskMutation.isPending}
-                        aria-label="הוסף לטודו"
-                        sx={{ p: 0.4 }}
-                      >
-                        <AddTaskIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </Box>
-                    <Box display="flex" justifyContent="center" gap={0.3}>
-                      {(selectedAssignmentId === row.id ||
-                        hoveredAssignmentId === row.id) && (
-                        <>
-                          <IconButton
-                            size="small"
-                            aria-label="ערוך מטלה"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openAssignmentEditModal(row);
-                            }}
-                            sx={{ p: 0.4 }}
-                          >
-                            <EditOutlinedIcon sx={{ fontSize: 17 }} />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            aria-label="מחק מטלה"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              deleteAssignmentMutation.mutate(row.id);
-                            }}
-                            disabled={deleteAssignmentMutation.isPending}
-                            sx={{ p: 0.4 }}
-                          >
-                            <DeleteOutlineIcon sx={{ fontSize: 17 }} />
-                          </IconButton>
-                        </>
-                      )}
-                    </Box>
-                  </Box>
-                );
-              })}
-
-              {/* Add Assignment row */}
-              <Box
-                display="flex"
-                alignItems="center"
-                gap={0.5}
-                sx={{
-                  cursor: canCreateAssignment ? "pointer" : "not-allowed",
-                  color: "text.secondary",
-                  opacity: canCreateAssignment ? 1 : 0.5,
-                  mt: 1,
-                }}
-                onClick={openAssignmentModal}
-              >
-                <AddIcon fontSize="small" />
-                <Typography fontSize={13}>הוסף מטלה</Typography>
-              </Box>
-              {!canCreateAssignment && (
-                <Typography color="text.secondary" fontSize={12} mt={0.5}>
-                  כדי להוסיף מטלה צריך קודם קורס אחד לפחות.
-                </Typography>
-              )}
+              <AssignmentList
+                rows={filteredAssignmentRows}
+                isInitialLoading={isInitialLoading}
+                isError={isError}
+                selectedId={selectedAssignmentId}
+                hoveredId={hoveredAssignmentId}
+                canCreateAssignment={canCreateAssignment}
+                setSelectedId={setSelectedAssignmentId}
+                setHoveredId={setHoveredAssignmentId}
+                createTaskMutationPending={createTaskMutation.isPending}
+                deleteAssignmentMutation={deleteAssignmentMutation}
+                onStatusCycle={handleAssignmentStatusCycle}
+                onTypeCycle={handleAssignmentTypeCycle}
+                onAddTodo={handleAddTodoFromAssignment}
+                onEdit={openAssignmentEditModal}
+                onDelete={(id) => deleteAssignmentMutation.mutate(id)}
+                onOpenModal={openAssignmentModal}
+              />
             </SectionCard>
           </Box>
 
-          {/* RIGHT column */}
           <Box display="flex" flexDirection="column" gap={2}>
             <UpcomingEvents selectedCourseTitle={selectedCourseTitle} />
             <CoursesSummary
               selectedCourseTitle={selectedCourseTitle}
-              onCourseSelect={handleCourseSelect}
+              onCourseSelect={setSelectedCourseTitle}
               onCourseOpen={handleCourseOpen}
               onAddCourse={openCourseModal}
-              onDeleteCourse={(id) => deleteCourseMutation.mutate(id)}
+              onDeleteCourse={deleteCourse}
             />
           </Box>
         </Box>
       </Box>
 
-      {/* ── Generic Modal ────────────────────────────────────────── */}
-      {modal && (
-        <GenericFormModal
-          open
-          onClose={() => setModal(null)}
-          title={getHomeModalTitle(modal)}
-          fields={
-            modal.type === "task"
-              ? TASK_FIELDS
-              : modal.editId
-                ? assignmentEditFields
-                : assignmentFormFields
-          }
-          values={modal.values}
-          onChange={(name: string, value: string) =>
-            setModal((prev) =>
-              prev
-                ? { ...prev, values: { ...prev.values, [name]: value } }
-                : null
-            )
-          }
-          onSave={handleModalSave}
-          saveLabel="שמור"
-          cancelLabel="ביטול"
-        />
-      )}
-
-      <GenericFormModal
-        open={courseModalOpen}
-        onClose={() => {
-          setCourseModalOpen(false);
-          setCourseModalValues({
-            courseTitle: "",
-            semesterLabel: "1",
-          });
-        }}
-        title="הוסף קורס"
-        fields={[
-          {
-            type: "text",
-            name: "courseTitle",
-            label: "שם הקורס",
-            placeholder: "למשל: מתמטיקה",
-          },
-          {
-            type: "number",
-            name: "credits",
-            label: "נקודות זכות",
-            placeholder: "למשל: 3",
-          },
-          {
-            type: "select",
-            name: "semesterLabel",
-            label: "סמסטר",
-            options: [
-              { label: "א", value: "1" },
-              { label: "ב", value: "2" },
-              { label: "קיץ", value: "3" },
-            ],
-          },
-        ]}
-        values={courseModalValues}
-        onChange={(name: string, value: string) =>
-          setCourseModalValues((prev) => ({ ...prev, [name]: value }))
+      <HomeModals
+        modal={modal}
+        onCloseModal={() => setModal(null)}
+        onChangeModal={onChangeModal}
+        onSaveModal={handleModalSave}
+        assignmentFields={
+          modal?.editId ? assignmentEditFields : assignmentFormFields
         }
-        onSave={handleCourseModalSave}
-        saveLabel="הוסף"
-        cancelLabel="ביטול"
-      />
-
-      <CourseDetailsModal
-        open={courseDetailsOpen}
-        studentSemesterCourseId={courseDetailsStudentSemesterCourseId}
-        courseTitle={courseDetailsCourseTitle}
-        onClose={handleCourseDetailsClose}
+        courseModalOpen={courseModalOpen}
+        courseModalValues={courseModalValues}
+        onCloseCourseModal={onCloseCourseModal}
+        onChangeCourseModal={onChangeCourseModal}
+        onSaveCourseModal={handleCourseModalSave}
+        courseDetailsOpen={courseDetailsOpen}
+        courseDetailsStudentSemesterCourseId={
+          courseDetailsStudentSemesterCourseId
+        }
+        courseDetailsCourseTitle={courseDetailsCourseTitle}
+        onCloseCourseDetails={handleCourseDetailsClose}
       />
     </Box>
   );
