@@ -1,3 +1,4 @@
+import { formatSemesterLabel } from "../../utils/semesterLabel";
 import {
   assignments,
   courses,
@@ -36,16 +37,11 @@ const getCourseContextByStudentSemesterCourseId = (
     return null;
   }
 
-  const semesterLabel =
-    semester.semesterNumber === 1
-      ? "א"
-      : semester.semesterNumber === 2
-        ? "ב"
-        : "קיץ";
+  const semesterLabel = formatSemesterLabel(semester.semesterNumber);
 
   return {
     courseTitle: course.title,
-    semesterLabel: `סמסטר ${semesterLabel}`,
+    semesterLabel: semesterLabel ? `סמסטר ${semesterLabel}` : null,
   };
 };
 
