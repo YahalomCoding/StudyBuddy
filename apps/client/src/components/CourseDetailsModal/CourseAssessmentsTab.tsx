@@ -298,8 +298,8 @@ export const CourseAssessmentsTab = ({
                     }
                     sx={{ borderRadius: 1.5 }}
                   >
-                    <MenuItem value="מועד א'">מועד א'</MenuItem>
-                    <MenuItem value="מועד ב'">מועד ב'</MenuItem>
+                    <MenuItem value="מועד א׳">מועד א׳</MenuItem>
+                    <MenuItem value="מועד ב׳">מועד ב׳</MenuItem>
                   </Select>
                 </Box>
               ) : (
@@ -371,7 +371,7 @@ export const CourseAssessmentsTab = ({
                       id: editingAssessment.id,
                       payload: {
                         date: editingAssessment.dueDate || undefined,
-                        type: editingAssessment.title === "מועד ב'" ? 2 : 1,
+                        type: editingAssessment.title === "מועד ב׳" ? 2 : 1,
                       },
                     });
                   } else {
