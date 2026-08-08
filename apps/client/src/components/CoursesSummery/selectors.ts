@@ -1,4 +1,4 @@
-import { formatSemesterLabel } from "../../utils/semesterLabel";
+import { formatSemesterLabel } from "../../utils/labels";
 import {
   assignments,
   courses,
