@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { formatSemesterLabel } from "@studybuddy/utils";
 import { Course } from "../courses/courses.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Semester } from "../semesters/semester.model";
@@ -49,7 +50,7 @@ export class StudentSemesterCoursesService {
         id: studentSemesterCourseId,
         studentSemesterCourseId,
         courseTitle,
-        semesterLabel: `סמסטר ${semesterNumber === 1 ? "א" : semesterNumber === 2 ? "ב" : "קיץ"}`,
+        semesterLabel: `סמסטר ${formatSemesterLabel(semesterNumber) ?? semesterNumber}`,
         courseId,
       })
     );
