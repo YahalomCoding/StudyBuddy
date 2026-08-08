@@ -263,6 +263,21 @@ export class HomeService {
     });
   }
 
+  async deleteCourseSummaryItem(
+    studentSemesterCourseId: string,
+    studentId: string
+  ) {
+    const record = await this.studentSemesterCourseModel.findOne({
+      where: { id: studentSemesterCourseId, studentId },
+    });
+
+    if (!record) {
+      throw new Error("Course not found");
+    }
+
+    await record.destroy();
+  }
+
   async createCourseSummaryItem(
     payload: CreateCourseSummaryPayload,
     studentId: string

@@ -25,6 +25,7 @@ import {
   createCourseSummary,
   createGeneralTask,
   createHomeAssignment,
+  deleteCourseSummaryItem,
   deleteGeneralTask,
   deleteHomeAssignment,
   getHomeDashboard,
@@ -280,6 +281,14 @@ export const Home = () => {
       await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
       setSelectedAssignmentId(null);
       setHoveredAssignmentId(null);
+    },
+  });
+
+  const deleteCourseMutation = useMutation({
+    mutationFn: deleteCourseSummaryItem,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setSelectedCourseTitle(null);
     },
   });
 
@@ -955,6 +964,7 @@ export const Home = () => {
               onCourseSelect={handleCourseSelect}
               onCourseOpen={handleCourseOpen}
               onAddCourse={openCourseModal}
+              onDeleteCourse={(id) => deleteCourseMutation.mutate(id)}
             />
           </Box>
         </Box>

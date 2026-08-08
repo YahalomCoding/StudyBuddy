@@ -1,6 +1,7 @@
 import AddIcon from "@mui/icons-material/Add";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import { Box, IconButton, Paper, Tooltip, Typography } from "@mui/material";
@@ -15,6 +16,7 @@ type CoursesSummaryProps = {
   onCourseSelect: (courseTitle: string | null) => void;
   onCourseOpen: (courseTitle: string, studentSemesterCourseId: string) => void;
   onAddCourse: () => void;
+  onDeleteCourse: (studentSemesterCourseId: string) => void;
 };
 
 export const CoursesSummary = ({
@@ -22,6 +24,7 @@ export const CoursesSummary = ({
   onCourseSelect,
   onCourseOpen,
   onAddCourse,
+  onDeleteCourse,
 }: CoursesSummaryProps) => {
   const [page, setPage] = useState(1);
   const [hoveredCourseId, setHoveredCourseId] = useState<string | null>(null);
@@ -223,6 +226,30 @@ export const CoursesSummary = ({
               </Box>
 
               <Box display="flex" alignItems="center" gap={0.5} flexShrink={0}>
+                {isHovered && (
+                  <Tooltip title="מחק קורס">
+                    <IconButton
+                      size="small"
+                      aria-label={`מחק קורס ${item.courseTitle}`}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteCourse(item.studentSemesterCourseId);
+                      }}
+                      sx={{
+                        p: 0.45,
+                        color: "error.main",
+                        opacity: isHovered ? 1 : 0,
+                        transition:
+                          "opacity 0.16s ease, background-color 0.16s ease",
+                        "&:hover": { bgcolor: "rgba(239,68,68,0.08)" },
+                      }}
+                    >
+                      <DeleteOutlineIcon sx={{ fontSize: 17 }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+
                 <Box
                   sx={{
                     width: 30,
