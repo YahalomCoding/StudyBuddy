@@ -28,15 +28,24 @@ const getCourseContextByStudentSemesterCourseId = (
   }
 
   const course = courses.find((item) => item.id === semesterCourse.courseId);
-  const semester = semesters.find((item) => item.id === semesterCourse.semesterId);
+  const semester = semesters.find(
+    (item) => item.id === semesterCourse.semesterId
+  );
 
   if (!course || !semester) {
     return null;
   }
 
+  const semesterLabel =
+    semester.semesterNumber === 1
+      ? "א"
+      : semester.semesterNumber === 2
+        ? "ב"
+        : "קיץ";
+
   return {
     courseTitle: course.title,
-    semesterLabel: `סמסטר ${semester.semesterNumber} / ${semester.yearNumber}`,
+    semesterLabel: `סמסטר ${semesterLabel}`,
   };
 };
 
