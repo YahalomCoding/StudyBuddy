@@ -1,6 +1,7 @@
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import BookOutlinedIcon from "@mui/icons-material/BookOutlined";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
@@ -16,19 +17,24 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Tab,
   Tabs,
+  TextField,
   Typography,
 } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   courseDetailsQueryKey,
   getCourseDetails,
+  updateCourseDetails,
   type CourseDetailsAssessment,
 } from "../../api/courses";
+import { homeDashboardQueryKey } from "../../api/home";
 
 type CourseDetailsModalProps = {
   open: boolean;
@@ -98,7 +104,7 @@ const ContentSection = ({
 );
 
 const valueOrDash = (
-  value: string | number | null | undefined,
+  value: string | number | null | undefined
 ): string | number => {
   if (value === null || value === undefined || value === "") {
     return "לא צוין";
@@ -121,9 +127,7 @@ const formatDate = (value: string | null): string => {
   return date.toLocaleDateString("he-IL");
 };
 
-const statusLabel = (
-  status: CourseDetailsAssessment["status"],
-): string => {
+const statusLabel = (status: CourseDetailsAssessment["status"]): string => {
   switch (status) {
     case "done":
       return "בוצע";
@@ -136,25 +140,19 @@ const statusLabel = (
   }
 };
 
-const submissionModeLabel = (
-  assessment: CourseDetailsAssessment,
-): string => {
+const submissionModeLabel = (assessment: CourseDetailsAssessment): string => {
   if (assessment.submissionMode === "individual") {
     return "אישי";
   }
 
   if (assessment.submissionMode === "group") {
-    return assessment.groupSize
-      ? `${assessment.groupSize} סטודנטים`
-      : "קבוצתי";
+    return assessment.groupSize ? `${assessment.groupSize} סטודנטים` : "קבוצתי";
   }
 
   return "לא צוין";
 };
 
-const statusChipSx = (
-  status: CourseDetailsAssessment["status"],
-) => {
+const statusChipSx = (status: CourseDetailsAssessment["status"]) => {
   if (status === "done") {
     return {
       bgcolor: "var(--sb-chip-status-done-bg)",
@@ -182,21 +180,59 @@ export const CourseDetailsModal = ({
   courseTitle,
 }: CourseDetailsModalProps) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValues, setEditValues] = useState<{
+    title: string;
+    credits: string;
+    semesterNumber: string;
+  }>({ title: "", credits: "", semesterNumber: "1" });
 
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: courseDetailsQueryKey(studentSemesterCourseId),
     queryFn: () => getCourseDetails(studentSemesterCourseId!),
     enabled: open && Boolean(studentSemesterCourseId),
     staleTime: 5 * 60 * 1000,
   });
 
+  useEffect(() => {
+    if (data && !isEditing) {
+      setEditValues({
+        title: data.title,
+        credits: data.credits != null ? String(data.credits) : "",
+        semesterNumber: String(data.semesterNumber),
+      });
+    }
+  }, [data, isEditing]);
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: {
+      title?: string;
+      credits?: number;
+      semesterNumber?: number;
+    }) => updateCourseDetails(studentSemesterCourseId!, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setIsEditing(false);
+    },
+  });
+
+  const handleSaveEdit = () => {
+    const credits = parseFloat(editValues.credits);
+    updateMutation.mutate({
+      title: editValues.title.trim() || undefined,
+      credits: isNaN(credits) ? undefined : credits,
+      semesterNumber: parseInt(editValues.semesterNumber, 10),
+    });
+  };
+
   const handleClose = () => {
     setActiveTab(0);
+    setIsEditing(false);
     onClose();
   };
 
@@ -264,11 +300,7 @@ export const CourseDetailsModal = ({
                 {data ? (
                   <Chip
                     size="small"
-                    label={
-                      data.syllabus.exists
-                        ? "מידע מסילבוס"
-                        : "ללא סילבוס"
-                    }
+                    label={data.syllabus.exists ? "מידע מסילבוס" : "ללא סילבוס"}
                     sx={{
                       height: 21,
                       fontSize: 10,
@@ -285,21 +317,35 @@ export const CourseDetailsModal = ({
               </Box>
 
               <Typography color="text.secondary" fontSize={13} noWrap>
-                {data?.englishTitle ||
-                  data?.degreeTitle ||
-                  "טוען פרטי קורס..."}
+                {data?.englishTitle || data?.degreeTitle || "טוען פרטי קורס..."}
               </Typography>
             </Box>
           </Box>
 
-          <IconButton
-            size="small"
-            aria-label="סגור"
-            onClick={handleClose}
-            sx={{ mt: -0.5 }}
-          >
-            <CloseRoundedIcon fontSize="small" />
-          </IconButton>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            {data && (
+              <IconButton
+                size="small"
+                aria-label="ערוך פרטי קורס"
+                onClick={() => setIsEditing((v) => !v)}
+                sx={{
+                  mt: -0.5,
+                  color: isEditing ? "#22c55e" : "text.secondary",
+                }}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+            )}
+
+            <IconButton
+              size="small"
+              aria-label="סגור"
+              onClick={handleClose}
+              sx={{ mt: -0.5 }}
+            >
+              <CloseRoundedIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </Box>
 
         <Tabs
@@ -348,8 +394,7 @@ export const CourseDetailsModal = ({
       >
         {!studentSemesterCourseId ? (
           <Alert severity="error">
-            לא נמצא מזהה הקורס של הסטודנט. יש לפתוח את החלון מתוך רשימת
-            הקורסים.
+            לא נמצא מזהה הקורס של הסטודנט. יש לפתוח את החלון מתוך רשימת הקורסים.
           </Alert>
         ) : isLoading ? (
           <Box
@@ -388,46 +433,147 @@ export const CourseDetailsModal = ({
                 <ContentSection
                   title="מידע כללי"
                   icon={
-                    <InfoOutlinedIcon
-                      sx={{ fontSize: 19, color: "#22c55e" }}
-                    />
+                    <InfoOutlinedIcon sx={{ fontSize: 19, color: "#22c55e" }} />
                   }
                 >
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: {
-                        xs: "1fr 1fr",
-                        md: "repeat(4, minmax(0, 1fr))",
-                      },
-                      gap: 2,
-                    }}
-                  >
-                    <InfoField
-                      label="קוד קורס"
-                      value={valueOrDash(data.code)}
-                    />
-                    <InfoField
-                      label="נקודות זכות"
-                      value={
-                        data.credits === null
-                          ? "לא צוין"
-                          : `${data.credits} נ״ז`
-                      }
-                    />
-                    <InfoField
-                      label="שעות שבועיות"
-                      value={
-                        data.weeklyHours === null
-                          ? "לא צוין"
-                          : `${data.weeklyHours} ש״ס`
-                      }
-                    />
-                    <InfoField
-                      label="שנה וסמסטר"
-                      value={`${data.academicYearLabel} · סמסטר ${data.semesterLabel}`}
-                    />
-                  </Box>
+                  {isEditing ? (
+                    <Box display="flex" flexDirection="column" gap={2}>
+                      <Box>
+                        <Typography
+                          fontSize={12}
+                          color="text.secondary"
+                          mb={0.5}
+                        >
+                          שם הקורס
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          value={editValues.title}
+                          onChange={(e) =>
+                            setEditValues((v) => ({
+                              ...v,
+                              title: e.target.value,
+                            }))
+                          }
+                          sx={{
+                            "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
+                          }}
+                        />
+                      </Box>
+
+                      <Box display="flex" gap={2}>
+                        <Box flex={1}>
+                          <Typography
+                            fontSize={12}
+                            color="text.secondary"
+                            mb={0.5}
+                          >
+                            נקודות זכות
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            type="number"
+                            inputProps={{ min: 0, step: 0.5 }}
+                            value={editValues.credits}
+                            onChange={(e) =>
+                              setEditValues((v) => ({
+                                ...v,
+                                credits: e.target.value,
+                              }))
+                            }
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
+                            }}
+                          />
+                        </Box>
+
+                        <Box flex={1}>
+                          <Typography
+                            fontSize={12}
+                            color="text.secondary"
+                            mb={0.5}
+                          >
+                            סמסטר
+                          </Typography>
+                          <Select
+                            fullWidth
+                            size="small"
+                            value={editValues.semesterNumber}
+                            onChange={(e) =>
+                              setEditValues((v) => ({
+                                ...v,
+                                semesterNumber: String(e.target.value),
+                              }))
+                            }
+                            sx={{ borderRadius: 1.5 }}
+                          >
+                            <MenuItem value="1">א</MenuItem>
+                            <MenuItem value="2">ב</MenuItem>
+                            <MenuItem value="3">קיץ</MenuItem>
+                          </Select>
+                        </Box>
+                      </Box>
+
+                      <Box display="flex" gap={1} justifyContent="flex-end">
+                        <Button
+                          size="small"
+                          onClick={() => setIsEditing(false)}
+                        >
+                          ביטול
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={handleSaveEdit}
+                          disabled={updateMutation.isPending}
+                          sx={{
+                            bgcolor: "#22c55e",
+                            "&:hover": { bgcolor: "#16a34a" },
+                          }}
+                        >
+                          שמור
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                          xs: "1fr 1fr",
+                          md: "repeat(4, minmax(0, 1fr))",
+                        },
+                        gap: 2,
+                      }}
+                    >
+                      <InfoField
+                        label="קוד קורס"
+                        value={valueOrDash(data.code)}
+                      />
+                      <InfoField
+                        label="נקודות זכות"
+                        value={
+                          data.credits === null
+                            ? "לא צוין"
+                            : `${data.credits} נ״ז`
+                        }
+                      />
+                      <InfoField
+                        label="שעות שבועיות"
+                        value={
+                          data.weeklyHours === null
+                            ? "לא צוין"
+                            : `${data.weeklyHours} ש״ס`
+                        }
+                      />
+                      <InfoField
+                        label="שנה וסמסטר"
+                        value={`${data.academicYearLabel} · סמסטר ${data.semesterLabel}`}
+                      />
+                    </Box>
+                  )}
 
                   <Divider sx={{ my: 2 }} />
 
@@ -444,11 +590,7 @@ export const CourseDetailsModal = ({
                     />
                     <InfoField
                       label="פקולטה / מסלול"
-                      value={
-                        data.faculty ||
-                        data.degreeTitle ||
-                        "לא צוין"
-                      }
+                      value={data.faculty || data.degreeTitle || "לא צוין"}
                     />
                   </Box>
                 </ContentSection>
@@ -476,10 +618,7 @@ export const CourseDetailsModal = ({
                             flexDirection: { xs: "column", sm: "row" },
                             justifyContent: "space-between",
                             gap: 1.5,
-                            pb:
-                              index === data.lecturers.length - 1
-                                ? 0
-                                : 1.25,
+                            pb: index === data.lecturers.length - 1 ? 0 : 1.25,
                             borderBottom:
                               index === data.lecturers.length - 1
                                 ? "none"
@@ -515,11 +654,7 @@ export const CourseDetailsModal = ({
                             ) : null}
                           </Box>
 
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            flexWrap="wrap"
-                          >
+                          <Stack direction="row" spacing={0.75} flexWrap="wrap">
                             {lecturer.officeHours ? (
                               <Chip
                                 size="small"
@@ -601,23 +736,18 @@ export const CourseDetailsModal = ({
                         minWidth: 730,
                       }}
                     >
-                      {[
-                        "שם",
-                        "סוג",
-                        "משקל",
-                        "תאריך",
-                        "הגשה",
-                        "סטטוס",
-                      ].map((label) => (
-                        <Typography
-                          key={label}
-                          fontSize={12}
-                          color="text.secondary"
-                          fontWeight={500}
-                        >
-                          {label}
-                        </Typography>
-                      ))}
+                      {["שם", "סוג", "משקל", "תאריך", "הגשה", "סטטוס"].map(
+                        (label) => (
+                          <Typography
+                            key={label}
+                            fontSize={12}
+                            color="text.secondary"
+                            fontWeight={500}
+                          >
+                            {label}
+                          </Typography>
+                        )
+                      )}
                     </Box>
 
                     {data.assessments.map((assessment) => (
@@ -643,11 +773,7 @@ export const CourseDetailsModal = ({
                         }}
                       >
                         <Box minWidth={0}>
-                          <Typography
-                            fontSize={13}
-                            fontWeight={500}
-                            noWrap
-                          >
+                          <Typography fontSize={13} fontWeight={500} noWrap>
                             {assessment.title}
                           </Typography>
                           {assessment.notes ? (
@@ -666,10 +792,8 @@ export const CourseDetailsModal = ({
                           label={assessment.typeLabel}
                           sx={{
                             width: "fit-content",
-                            bgcolor:
-                              "var(--sb-chip-type-default-bg)",
-                            color:
-                              "var(--sb-chip-type-default-text)",
+                            bgcolor: "var(--sb-chip-type-default-bg)",
+                            color: "var(--sb-chip-type-default-text)",
                             fontWeight: 500,
                             fontSize: 11,
                             height: 22,
@@ -682,17 +806,11 @@ export const CourseDetailsModal = ({
                             : `${assessment.weightPercent}%`}
                         </Typography>
 
-                        <Typography
-                          fontSize={12}
-                          color="text.secondary"
-                        >
+                        <Typography fontSize={12} color="text.secondary">
                           {formatDate(assessment.dueDate)}
                         </Typography>
 
-                        <Typography
-                          fontSize={12}
-                          color="text.secondary"
-                        >
+                        <Typography fontSize={12} color="text.secondary">
                           {submissionModeLabel(assessment)}
                         </Typography>
 
@@ -717,25 +835,18 @@ export const CourseDetailsModal = ({
             <TabPanel activeTab={activeTab} index={2}>
               {!data.syllabus.exists ? (
                 <Alert severity="info">
-                  עדיין לא הועלה סילבוס לקורס הזה. פרטי הקורס והמטלות
-                  נשאבו מהמידע הקיים במערכת.
+                  עדיין לא הועלה סילבוס לקורס הזה. פרטי הקורס והמטלות נשאבו
+                  מהמידע הקיים במערכת.
                 </Alert>
               ) : (
                 <Stack spacing={2}>
                   <ContentSection title="תוצרי למידה">
                     {data.learningOutcomes.length === 0 ? (
-                      <Typography
-                        fontSize={13}
-                        color="text.secondary"
-                      >
+                      <Typography fontSize={13} color="text.secondary">
                         לא נמצאו תוצרי למידה.
                       </Typography>
                     ) : (
-                      <Stack
-                        component="ol"
-                        spacing={1}
-                        sx={{ m: 0, pr: 2.5 }}
-                      >
+                      <Stack component="ol" spacing={1} sx={{ m: 0, pr: 2.5 }}>
                         {data.learningOutcomes.map((outcome) => (
                           <Typography
                             key={outcome}
@@ -753,10 +864,7 @@ export const CourseDetailsModal = ({
 
                   <ContentSection title="נושאי הקורס">
                     {data.topics.length === 0 ? (
-                      <Typography
-                        fontSize={13}
-                        color="text.secondary"
-                      >
+                      <Typography fontSize={13} color="text.secondary">
                         לא נמצאו נושאי קורס.
                       </Typography>
                     ) : (
@@ -802,9 +910,7 @@ export const CourseDetailsModal = ({
                             >
                               {topic.order}
                             </Box>
-                            <Typography fontSize={13}>
-                              {topic.title}
-                            </Typography>
+                            <Typography fontSize={13}>{topic.title}</Typography>
                           </Box>
                         ))}
                       </Box>
@@ -813,10 +919,7 @@ export const CourseDetailsModal = ({
 
                   <ContentSection title="מדיניות הקורס">
                     {data.policies.length === 0 ? (
-                      <Typography
-                        fontSize={13}
-                        color="text.secondary"
-                      >
+                      <Typography fontSize={13} color="text.secondary">
                         לא נמצאה מדיניות קורס.
                       </Typography>
                     ) : (
@@ -847,10 +950,7 @@ export const CourseDetailsModal = ({
 
                   <ContentSection title="ביבליוגרפיה">
                     {data.bibliography.length === 0 ? (
-                      <Typography
-                        fontSize={13}
-                        color="text.secondary"
-                      >
+                      <Typography fontSize={13} color="text.secondary">
                         לא נמצאה ביבליוגרפיה.
                       </Typography>
                     ) : (

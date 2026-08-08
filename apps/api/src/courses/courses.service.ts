@@ -156,6 +156,51 @@ export class CoursesService {
     };
   }
 
+  async updateCourseBasicInfo(
+    userId: string,
+    studentSemesterCourseId: string,
+    payload: { title?: string; credits?: number; semesterNumber?: number }
+  ) {
+    const student = await this.studentModel.findOne({ where: { userId } });
+
+    if (!student) throw new NotFoundException("Student not found");
+
+    const studentSemesterCourse = await this.studentSemesterCourseModel.findOne(
+      {
+        where: { id: studentSemesterCourseId, studentId: student.id },
+        include: [
+          {
+            model: SemesterCourse,
+            required: true,
+            include: [
+              { model: Course, required: true },
+              { model: Semester, required: true },
+            ],
+          },
+        ],
+      }
+    );
+
+    if (!studentSemesterCourse)
+      throw new NotFoundException("Course not found for the current student");
+
+    const { course, semester } = studentSemesterCourse.semesterCourse;
+
+    if (payload.title !== undefined) {
+      await course.update({ title: payload.title.trim() });
+    }
+
+    if (payload.credits !== undefined) {
+      await course.update({ credits: payload.credits });
+    }
+
+    if (payload.semesterNumber !== undefined) {
+      await semester.update({ semesterNumber: payload.semesterNumber });
+    }
+
+    return { ok: true };
+  }
+
   private buildAssessments(
     syllabus: SyllabusData | null,
     assignments: Assignment[],
