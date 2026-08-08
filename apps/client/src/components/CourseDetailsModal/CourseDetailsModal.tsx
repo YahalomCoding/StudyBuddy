@@ -28,6 +28,7 @@ import {
   createHomeAssignment,
   homeDashboardQueryKey,
   updateAssignment,
+  updateExam,
 } from "../../api/home";
 import { CourseAssessmentsTab } from "./CourseAssessmentsTab";
 import { CourseInfoTab } from "./CourseInfoTab";
@@ -53,6 +54,7 @@ type EditingAssessment = {
   dueDate: string;
   status: "not started" | "active" | "done";
   type: "assignment" | "homework" | "project" | "lab" | "report" | "practice";
+  kind: string;
 } | null;
 
 export const CourseDetailsModal = ({
@@ -137,6 +139,23 @@ export const CourseDetailsModal = ({
           "assignment" | "homework" | "practice" | "project" | "report" | "lab";
       };
     }) => updateAssignment(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setEditingAssessment(null);
+    },
+  });
+
+  const updateExamMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: { date?: string; type?: number };
+    }) => updateExam(id, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: courseDetailsQueryKey(studentSemesterCourseId),
@@ -363,6 +382,7 @@ export const CourseDetailsModal = ({
                 editingAssessment={editingAssessment}
                 setEditingAssessment={setEditingAssessment}
                 updateAssignmentMutation={updateAssignmentMutation}
+                updateExamMutation={updateExamMutation}
               />
             </TabPanel>
 

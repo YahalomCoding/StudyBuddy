@@ -139,3 +139,11 @@ export const createCourseSummary = async (payload: {
   const response = await baseApi.post("/home/courses", payload);
   return response.data;
 };
+
+export const updateExam = async (
+  id: string,
+  payload: { date?: string; type?: number }
+) => {
+  const response = await baseApi.patch(`/exams/${id}`, payload);
+  return response.data;
+};

@@ -1,12 +1,12 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
-import { Exam } from "./exam.model";
-import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
-import { Student } from "../students/student.model";
 import { Course } from "../courses/courses.model";
 import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Semester } from "../semesters/semester.model";
+import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
+import { Student } from "../students/student.model";
 import { UpcomingEventsTypesEnum } from "../types";
+import { Exam } from "./exam.model";
 
 @Injectable()
 export class ExamsService {
@@ -71,5 +71,31 @@ export class ExamsService {
     );
 
     return ordredFormattedExamsByStudentId;
+  }
+
+  async updateExam(
+    examId: string,
+    userId: string,
+    payload: { date?: string; type?: number }
+  ) {
+    const exam = await this.examModel.findOne({
+      where: { id: examId },
+      include: [
+        {
+          model: StudentSemesterCourse,
+          required: true,
+          include: [{ model: Student, required: true, where: { userId } }],
+        },
+      ],
+    });
+
+    if (!exam) throw new NotFoundException("Exam not found");
+
+    const updates: Partial<Pick<Exam, "date" | "type">> = {};
+    if (payload.date) updates.date = new Date(payload.date);
+    if (payload.type !== undefined) updates.type = payload.type;
+
+    await exam.update(updates);
+    return { ok: true };
   }
 }

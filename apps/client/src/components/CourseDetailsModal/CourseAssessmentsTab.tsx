@@ -33,6 +33,7 @@ type EditingAssessment = {
   dueDate: string;
   status: "not started" | "active" | "done";
   type: "assignment" | "homework" | "project" | "lab" | "report" | "practice";
+  kind: string;
 } | null;
 
 type Props = {
@@ -58,6 +59,13 @@ type Props = {
       };
     }) => void;
   };
+  updateExamMutation: {
+    isPending: boolean;
+    mutate: (args: {
+      id: string;
+      payload: { date?: string; type?: number };
+    }) => void;
+  };
 };
 
 export const CourseAssessmentsTab = ({
@@ -71,6 +79,7 @@ export const CourseAssessmentsTab = ({
   editingAssessment,
   setEditingAssessment,
   updateAssignmentMutation,
+  updateExamMutation,
 }: Props) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -194,25 +203,24 @@ export const CourseAssessmentsTab = ({
                 />
 
                 <Box display="flex" justifyContent="center">
-                  {assessment.source === "assignment" &&
-                    assessment.databaseId &&
-                    hoveredId === assessment.id && (
-                      <IconButton
-                        size="small"
-                        sx={{ p: 0.4, color: "text.secondary" }}
-                        onClick={() =>
-                          setEditingAssessment({
-                            id: assessment.databaseId!,
-                            title: assessment.title,
-                            dueDate: assessment.dueDate ?? "",
-                            status: assessment.status ?? "not started",
-                            type: "assignment",
-                          })
-                        }
-                      >
-                        <EditOutlinedIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    )}
+                  {assessment.databaseId && hoveredId === assessment.id && (
+                    <IconButton
+                      size="small"
+                      sx={{ p: 0.4, color: "text.secondary" }}
+                      onClick={() =>
+                        setEditingAssessment({
+                          id: assessment.databaseId!,
+                          title: assessment.title,
+                          dueDate: assessment.dueDate ?? "",
+                          status: assessment.status ?? "not started",
+                          type: "assignment",
+                          kind: assessment.kind,
+                        })
+                      }
+                    >
+                      <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  )}
                 </Box>
               </Box>
             ))}
@@ -232,31 +240,33 @@ export const CourseAssessmentsTab = ({
           }}
         >
           <Typography fontWeight={600} fontSize={13} mb={1.5}>
-            עריכת מטלה
+            {editingAssessment.kind === "exam" ? "עריכת מבחן" : "עריכת מטלה"}
           </Typography>
 
           <Box display="flex" flexDirection="column" gap={1.5}>
-            <Box>
-              <Typography fontSize={12} color="text.secondary" mb={0.5}>
-                שם המטלה
-              </Typography>
-              <TextField
-                fullWidth
-                size="small"
-                value={editingAssessment.title}
-                onChange={(e) =>
-                  setEditingAssessment((v) =>
-                    v ? { ...v, title: e.target.value } : v
-                  )
-                }
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-              />
-            </Box>
+            {editingAssessment.kind !== "exam" && (
+              <Box>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  שם המטלה
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={editingAssessment.title}
+                  onChange={(e) =>
+                    setEditingAssessment((v) =>
+                      v ? { ...v, title: e.target.value } : v
+                    )
+                  }
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+                />
+              </Box>
+            )}
 
             <Box display="flex" gap={1.5}>
               <Box flex={1}>
                 <Typography fontSize={12} color="text.secondary" mb={0.5}>
-                  תאריך הגשה
+                  תאריך
                 </Typography>
                 <TextField
                   fullWidth
@@ -272,52 +282,80 @@ export const CourseAssessmentsTab = ({
                 />
               </Box>
 
-              <Box flex={1}>
-                <Typography fontSize={12} color="text.secondary" mb={0.5}>
-                  סטטוס
-                </Typography>
-                <Select
-                  fullWidth
-                  size="small"
-                  value={editingAssessment.status}
-                  onChange={(e) =>
-                    setEditingAssessment((v) =>
-                      v
-                        ? { ...v, status: e.target.value as typeof v.status }
-                        : v
-                    )
-                  }
-                  sx={{ borderRadius: 1.5 }}
-                >
-                  <MenuItem value="not started">לא התחיל</MenuItem>
-                  <MenuItem value="active">בתהליך</MenuItem>
-                  <MenuItem value="done">בוצע</MenuItem>
-                </Select>
-              </Box>
-
-              <Box flex={1}>
-                <Typography fontSize={12} color="text.secondary" mb={0.5}>
-                  סוג
-                </Typography>
-                <Select
-                  fullWidth
-                  size="small"
-                  value={editingAssessment.type}
-                  onChange={(e) =>
-                    setEditingAssessment((v) =>
-                      v ? { ...v, type: e.target.value as typeof v.type } : v
-                    )
-                  }
-                  sx={{ borderRadius: 1.5 }}
-                >
-                  <MenuItem value="assignment">מטלה</MenuItem>
-                  <MenuItem value="homework">שיעורי בית</MenuItem>
-                  <MenuItem value="project">פרויקט</MenuItem>
-                  <MenuItem value="lab">סדנאי</MenuItem>
-                  <MenuItem value="report">דוח</MenuItem>
-                  <MenuItem value="practice">תרגול</MenuItem>
-                </Select>
-              </Box>
+              {editingAssessment.kind === "exam" ? (
+                <Box flex={1}>
+                  <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                    סוג
+                  </Typography>
+                  <Select
+                    fullWidth
+                    size="small"
+                    value={editingAssessment.title}
+                    onChange={(e) =>
+                      setEditingAssessment((v) =>
+                        v ? { ...v, title: e.target.value } : v
+                      )
+                    }
+                    sx={{ borderRadius: 1.5 }}
+                  >
+                    <MenuItem value="מועד א'">מועד א'</MenuItem>
+                    <MenuItem value="מועד ב'">מועד ב'</MenuItem>
+                  </Select>
+                </Box>
+              ) : (
+                <>
+                  <Box flex={1}>
+                    <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                      סטטוס
+                    </Typography>
+                    <Select
+                      fullWidth
+                      size="small"
+                      value={editingAssessment.status}
+                      onChange={(e) =>
+                        setEditingAssessment((v) =>
+                          v
+                            ? {
+                                ...v,
+                                status: e.target.value as typeof v.status,
+                              }
+                            : v
+                        )
+                      }
+                      sx={{ borderRadius: 1.5 }}
+                    >
+                      <MenuItem value="not started">לא התחיל</MenuItem>
+                      <MenuItem value="active">בתהליך</MenuItem>
+                      <MenuItem value="done">בוצע</MenuItem>
+                    </Select>
+                  </Box>
+                  <Box flex={1}>
+                    <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                      סוג
+                    </Typography>
+                    <Select
+                      fullWidth
+                      size="small"
+                      value={editingAssessment.type}
+                      onChange={(e) =>
+                        setEditingAssessment((v) =>
+                          v
+                            ? { ...v, type: e.target.value as typeof v.type }
+                            : v
+                        )
+                      }
+                      sx={{ borderRadius: 1.5 }}
+                    >
+                      <MenuItem value="assignment">מטלה</MenuItem>
+                      <MenuItem value="homework">שיעורי בית</MenuItem>
+                      <MenuItem value="project">פרויקט</MenuItem>
+                      <MenuItem value="lab">סדנאי</MenuItem>
+                      <MenuItem value="report">דוח</MenuItem>
+                      <MenuItem value="practice">תרגול</MenuItem>
+                    </Select>
+                  </Box>
+                </>
+              )}
             </Box>
 
             <Box display="flex" gap={1} justifyContent="flex-end">
@@ -327,20 +365,29 @@ export const CourseAssessmentsTab = ({
               <Button
                 size="small"
                 variant="contained"
-                onClick={() =>
-                  updateAssignmentMutation.mutate({
-                    id: editingAssessment.id,
-                    payload: {
-                      title: editingAssessment.title.trim(),
-                      dueDate: editingAssessment.dueDate || undefined,
-                      status: editingAssessment.status,
-                      type: editingAssessment.type,
-                    },
-                  })
-                }
+                onClick={() => {
+                  if (editingAssessment.kind === "exam") {
+                    updateExamMutation.mutate({
+                      id: editingAssessment.id,
+                      payload: { date: editingAssessment.dueDate || undefined },
+                    });
+                  } else {
+                    updateAssignmentMutation.mutate({
+                      id: editingAssessment.id,
+                      payload: {
+                        title: editingAssessment.title.trim(),
+                        dueDate: editingAssessment.dueDate || undefined,
+                        status: editingAssessment.status,
+                        type: editingAssessment.type,
+                      },
+                    });
+                  }
+                }}
                 disabled={
                   updateAssignmentMutation.isPending ||
-                  !editingAssessment.title.trim()
+                  updateExamMutation.isPending ||
+                  (editingAssessment.kind !== "exam" &&
+                    !editingAssessment.title.trim())
                 }
                 sx={{ bgcolor: "#22c55e", "&:hover": { bgcolor: "#16a34a" } }}
               >
