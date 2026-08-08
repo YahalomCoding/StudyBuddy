@@ -14,11 +14,8 @@ import type {
   GradeAssessmentItem,
   GradesResponseItem,
 } from "../../../api/grades";
-import {
-  CourseGradeRows,
-  type EditingAssessment,
-} from "./CourseGradeRows";
 import { useStyles } from "../style";
+import { CourseGradeRows, type EditingAssessment } from "./CourseGradeRows";
 
 type GradesTableProps = {
   courses: GradesResponseItem[];
@@ -27,7 +24,12 @@ type GradesTableProps = {
   onSaveGrade: (
     courseId: string,
     assessment: GradeAssessmentItem,
-    grade: number | null,
+    grade: number | null
+  ) => Promise<void>;
+  onSaveWeight: (
+    courseId: string,
+    assessmentId: string,
+    weightPercent: number
   ) => Promise<void>;
 };
 
@@ -52,15 +54,18 @@ export const GradesTable = ({
   isLoading,
   isSaving,
   onSaveGrade,
+  onSaveWeight,
 }: GradesTableProps) => {
   const classes = useStyles();
   const [editingAssessment, setEditingAssessment] =
     useState<EditingAssessment>(null);
+  const [editingWeight, setEditingWeight] = useState<{
+    courseId: string;
+    assessmentId: string;
+    value: string;
+  } | null>(null);
 
-  const startEdit = (
-    courseId: string,
-    assessment: GradeAssessmentItem,
-  ) => {
+  const startEdit = (courseId: string, assessment: GradeAssessmentItem) => {
     setEditingAssessment({
       courseId,
       assessment,
@@ -69,22 +74,23 @@ export const GradesTable = ({
   };
 
   const saveGrade = async () => {
-    if (!editingAssessment) {
-      return;
-    }
-
+    if (!editingAssessment) return;
     const grade = parseGrade(editingAssessment.value);
-
-    if (grade === undefined) {
-      return;
-    }
-
+    if (grade === undefined) return;
     await onSaveGrade(
       editingAssessment.courseId,
       editingAssessment.assessment,
-      grade,
+      grade
     );
     setEditingAssessment(null);
+  };
+
+  const saveWeight = async () => {
+    if (!editingWeight) return;
+    const w = parseFloat(editingWeight.value);
+    if (!Number.isFinite(w) || w < 0 || w > 100) return;
+    await onSaveWeight(editingWeight.courseId, editingWeight.assessmentId, w);
+    setEditingWeight(null);
   };
 
   return (
@@ -109,14 +115,28 @@ export const GradesTable = ({
                   key={course.studentSemesterCourseId}
                   course={course}
                   editingAssessment={editingAssessment}
+                  editingWeight={editingWeight}
                   isSaving={isSaving}
                   onStartEdit={startEdit}
+                  onStartWeightEdit={(courseId, assessment) =>
+                    setEditingWeight({
+                      courseId,
+                      assessmentId: assessment.id,
+                      value: assessment.weightPercent?.toString() ?? "",
+                    })
+                  }
                   onEditValueChange={(value) =>
                     setEditingAssessment((current) =>
-                      current ? { ...current, value } : current,
+                      current ? { ...current, value } : current
+                    )
+                  }
+                  onEditWeightChange={(value) =>
+                    setEditingWeight((current) =>
+                      current ? { ...current, value } : current
                     )
                   }
                   onSave={saveGrade}
+                  onSaveWeight={saveWeight}
                 />
               ))}
             </TableBody>

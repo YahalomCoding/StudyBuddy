@@ -17,8 +17,8 @@ import type {
   GradeAssessmentItem,
   GradesResponseItem,
 } from "../../../api/grades";
-import { GradeEditor } from "./GradeEditor"
 import { useStyles } from "../style";
+import { GradeEditor } from "./GradeEditor";
 
 export type EditingAssessment = {
   courseId: string;
@@ -29,20 +29,25 @@ export type EditingAssessment = {
 type CourseGradeRowsProps = {
   course: GradesResponseItem;
   editingAssessment: EditingAssessment;
+  editingWeight: {
+    courseId: string;
+    assessmentId: string;
+    value: string;
+  } | null;
   isSaving: boolean;
-  onStartEdit: (
+  onStartEdit: (courseId: string, assessment: GradeAssessmentItem) => void;
+  onStartWeightEdit: (
     courseId: string,
-    assessment: GradeAssessmentItem,
+    assessment: GradeAssessmentItem
   ) => void;
   onEditValueChange: (value: string) => void;
+  onEditWeightChange: (value: string) => void;
   onSave: () => void;
+  onSaveWeight: () => void;
 };
 
 const formatSemester = (course: GradesResponseItem) => {
-  if (
-    course.semesterYearNumber === null ||
-    course.semesterNumber === null
-  ) {
+  if (course.semesterYearNumber === null || course.semesterNumber === null) {
     return null;
   }
 
@@ -52,10 +57,14 @@ const formatSemester = (course: GradesResponseItem) => {
 export const CourseGradeRows = ({
   course,
   editingAssessment,
+  editingWeight,
   isSaving,
   onStartEdit,
+  onStartWeightEdit,
   onEditValueChange,
+  onEditWeightChange,
   onSave,
+  onSaveWeight,
 }: CourseGradeRowsProps) => {
   const classes = useStyles();
   const semester = formatSemester(course);
@@ -65,9 +74,7 @@ export const CourseGradeRows = ({
       <TableRow hover className={classes.courseSummaryRow}>
         <TableCell>
           <Box className={classes.courseCell}>
-            <Typography fontWeight={600}>
-              {course.courseTitle}
-            </Typography>
+            <Typography fontWeight={600}>{course.courseTitle}</Typography>
 
             <Chip
               label={`${course.credits} נ"ז`}
@@ -112,10 +119,7 @@ export const CourseGradeRows = ({
       </TableRow>
 
       <TableRow className={classes.assessmentDetailRow}>
-        <TableCell
-          colSpan={2}
-          className={classes.assessmentDetailCell}
-        >
+        <TableCell colSpan={2} className={classes.assessmentDetailCell}>
           <Box className={classes.assessmentPanel}>
             <Box className={classes.assessmentPanelHeader}>
               <Typography fontWeight={600} fontSize={13}>
@@ -123,12 +127,7 @@ export const CourseGradeRows = ({
               </Typography>
 
               {course.totalWeightPercent > 0 ? (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  useFlexGap
-                  flexWrap="wrap"
-                >
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                   <Chip
                     size="small"
                     label={`סה״כ ${course.totalWeightPercent}%`}
@@ -148,33 +147,27 @@ export const CourseGradeRows = ({
                 לא נמצאו מטלות או מבחנים עבור הקורס.
               </Typography>
             ) : (
-              <TableContainer
-                className={classes.assessmentTableContainer}
-              >
+              <TableContainer className={classes.assessmentTableContainer}>
                 <Table size="small">
                   <TableHead>
-                    <TableRow
-                      className={classes.assessmentTableHead}
-                    >
-                      <TableCell align="right">
-                        מטלה / מבחן
-                      </TableCell>
+                    <TableRow className={classes.assessmentTableHead}>
+                      <TableCell align="right">מטלה / מבחן</TableCell>
                       <TableCell align="center">סוג</TableCell>
                       <TableCell align="center">אחוז</TableCell>
                       <TableCell align="center">ציון</TableCell>
-                      <TableCell align="center">
-                        תרומה לציון
-                      </TableCell>
+                      <TableCell align="center">תרומה לציון</TableCell>
                     </TableRow>
                   </TableHead>
 
                   <TableBody>
                     {course.assessments.map((assessment) => {
                       const isEditing =
-                        editingAssessment?.courseId ===
-                          course.courseId &&
-                        editingAssessment.assessment.id ===
-                          assessment.id;
+                        editingAssessment?.courseId === course.courseId &&
+                        editingAssessment.assessment.id === assessment.id;
+
+                      const isEditingWeight =
+                        editingWeight?.courseId === course.courseId &&
+                        editingWeight.assessmentId === assessment.id;
 
                       return (
                         <TableRow
@@ -183,10 +176,7 @@ export const CourseGradeRows = ({
                           className={classes.assessmentRow}
                         >
                           <TableCell align="right">
-                            <Typography
-                              fontSize={13}
-                              fontWeight={500}
-                            >
+                            <Typography fontSize={13} fontWeight={500}>
                               {assessment.title}
                             </Typography>
                           </TableCell>
@@ -200,19 +190,45 @@ export const CourseGradeRows = ({
                           </TableCell>
 
                           <TableCell align="center">
-                            {assessment.weightPercent === null ? (
+                            {isEditingWeight ? (
+                              <GradeEditor
+                                value={editingWeight.value}
+                                isSaving={isSaving}
+                                onChange={onEditWeightChange}
+                                onSave={onSaveWeight}
+                              />
+                            ) : assessment.weightPercent === null ? (
                               <Typography
                                 fontSize={12}
                                 color="text.secondary"
+                                sx={{ cursor: "pointer" }}
+                                onClick={() =>
+                                  onStartWeightEdit(course.courseId, assessment)
+                                }
                               >
                                 לא הוגדר
                               </Typography>
                             ) : (
-                              <Chip
-                                size="small"
-                                label={`${assessment.weightPercent}%`}
-                                className={classes.weightChip}
-                              />
+                              <Box className={classes.gradeCell}>
+                                <Chip
+                                  size="small"
+                                  label={`${assessment.weightPercent}%`}
+                                  className={classes.weightChip}
+                                />
+                                <IconButton
+                                  size="small"
+                                  className={classes.editButton}
+                                  onClick={() =>
+                                    onStartWeightEdit(
+                                      course.courseId,
+                                      assessment
+                                    )
+                                  }
+                                  aria-label={`עריכת אחוז עבור ${assessment.title}`}
+                                >
+                                  <EditOutlinedIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
                             )}
                           </TableCell>
 
@@ -233,10 +249,7 @@ export const CourseGradeRows = ({
                                   size="small"
                                   className={classes.editButton}
                                   onClick={() =>
-                                    onStartEdit(
-                                      course.courseId,
-                                      assessment,
-                                    )
+                                    onStartEdit(course.courseId, assessment)
                                   }
                                   aria-label={`עריכת ציון עבור ${assessment.title}`}
                                 >
@@ -247,12 +260,8 @@ export const CourseGradeRows = ({
                           </TableCell>
 
                           <TableCell align="center">
-                            <Typography
-                              fontSize={13}
-                              fontWeight={500}
-                            >
-                              {assessment.weightedContribution ??
-                                "—"}
+                            <Typography fontSize={13} fontWeight={500}>
+                              {assessment.weightedContribution ?? "—"}
                             </Typography>
                           </TableCell>
                         </TableRow>

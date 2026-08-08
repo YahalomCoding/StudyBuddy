@@ -60,11 +60,24 @@ export const getGrades = async () => {
 
 export const updateCourseGrades = async (
   courseId: string,
-  payload: UpdateCourseGradesPayload,
+  payload: UpdateCourseGradesPayload
 ) => {
   const { data } = await baseApi.patch<GradesResponseItem[]>(
     `/grades/${courseId}`,
-    payload,
+    payload
+  );
+
+  return data;
+};
+
+export const updateAssessmentWeight = async (
+  courseId: string,
+  assessmentId: string,
+  weightPercent: number
+) => {
+  const { data } = await baseApi.patch<GradesResponseItem[]>(
+    `/grades/${courseId}/weight`,
+    { assessmentId, weightPercent }
   );
 
   return data;

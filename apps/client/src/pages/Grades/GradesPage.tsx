@@ -1,13 +1,10 @@
 import { Box, Stack, Typography } from "@mui/material";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
   getGrades,
   gradesQueryKey,
+  updateAssessmentWeight,
   updateCourseGrades,
   type GradeAssessmentItem,
   type GradesResponseItem,
@@ -34,36 +31,25 @@ const sortCourses = (courses: GradesResponseItem[]) =>
       currentGrade: roundGrade(course.currentGrade),
     }))
     .sort((left, right) => {
-      const leftYear =
-        left.semesterYearNumber ?? Number.MAX_SAFE_INTEGER;
-      const rightYear =
-        right.semesterYearNumber ?? Number.MAX_SAFE_INTEGER;
+      const leftYear = left.semesterYearNumber ?? Number.MAX_SAFE_INTEGER;
+      const rightYear = right.semesterYearNumber ?? Number.MAX_SAFE_INTEGER;
 
       if (leftYear !== rightYear) {
         return leftYear - rightYear;
       }
 
-      const leftSemester =
-        left.semesterNumber ?? Number.MAX_SAFE_INTEGER;
-      const rightSemester =
-        right.semesterNumber ?? Number.MAX_SAFE_INTEGER;
+      const leftSemester = left.semesterNumber ?? Number.MAX_SAFE_INTEGER;
+      const rightSemester = right.semesterNumber ?? Number.MAX_SAFE_INTEGER;
 
       if (leftSemester !== rightSemester) {
         return leftSemester - rightSemester;
       }
 
-      return left.courseTitle.localeCompare(
-        right.courseTitle,
-        "he",
-      );
+      return left.courseTitle.localeCompare(right.courseTitle, "he");
     });
 
-const calculateOverallAverage = (
-  courses: GradesResponseItem[],
-) => {
-  const gradedCourses = courses.filter(
-    (course) => course.finalGrade !== null,
-  );
+const calculateOverallAverage = (courses: GradesResponseItem[]) => {
+  const gradedCourses = courses.filter((course) => course.finalGrade !== null);
 
   if (gradedCourses.length === 0) {
     return null;
@@ -71,22 +57,19 @@ const calculateOverallAverage = (
 
   const credits = gradedCourses.reduce(
     (sum, course) => sum + course.credits,
-    0,
+    0
   );
 
   if (credits === 0) {
     return roundGrade(
-      gradedCourses.reduce(
-        (sum, course) => sum + (course.finalGrade ?? 0),
-        0,
-      ) / gradedCourses.length,
+      gradedCourses.reduce((sum, course) => sum + (course.finalGrade ?? 0), 0) /
+        gradedCourses.length
     );
   }
 
   const weightedTotal = gradedCourses.reduce(
-    (sum, course) =>
-      sum + (course.finalGrade ?? 0) * course.credits,
-    0,
+    (sum, course) => sum + (course.finalGrade ?? 0) * course.credits,
+    0
   );
 
   return roundGrade(weightedTotal / credits);
@@ -126,23 +109,32 @@ export const GradesPage = () => {
     },
   });
 
-  const courses = useMemo(
-    () => sortCourses(data ?? []),
-    [data],
-  );
-  const totalCredits = courses.reduce(
-    (sum, course) => sum + course.credits,
-    0,
-  );
+  const courses = useMemo(() => sortCourses(data ?? []), [data]);
+  const totalCredits = courses.reduce((sum, course) => sum + course.credits, 0);
   const overallAverage = useMemo(
     () => calculateOverallAverage(courses),
-    [courses],
+    [courses]
   );
+
+  const updateWeightMutation = useMutation({
+    mutationFn: ({
+      courseId,
+      assessmentId,
+      weightPercent,
+    }: {
+      courseId: string;
+      assessmentId: string;
+      weightPercent: number;
+    }) => updateAssessmentWeight(courseId, assessmentId, weightPercent),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: gradesQueryKey });
+    },
+  });
 
   const saveAssessmentGrade = async (
     courseId: string,
     assessment: GradeAssessmentItem,
-    grade: number | null,
+    grade: number | null
   ) => {
     await updateGradeMutation.mutateAsync({
       courseId,
@@ -165,12 +157,22 @@ export const GradesPage = () => {
     });
   };
 
+  const saveAssessmentWeight = async (
+    courseId: string,
+    assessmentId: string,
+    weightPercent: number
+  ) => {
+    await updateWeightMutation.mutateAsync({
+      courseId,
+      assessmentId,
+      weightPercent,
+    });
+  };
+
   return (
     <Box className={classes.page}>
       <Box className={classes.topBar}>
-        <Typography className={classes.topBarTitle}>
-          ציונים
-        </Typography>
+        <Typography className={classes.topBarTitle}>ציונים</Typography>
       </Box>
 
       <Box className={classes.content}>
@@ -178,12 +180,8 @@ export const GradesPage = () => {
           <Typography variant="h4" className={classes.title}>
             הציונים שלי
           </Typography>
-          <Typography
-            variant="body1"
-            className={classes.subtitle}
-          >
-            הציונים, האחוזים והתרומה של כל מטלה ומבחן
-            לציון הקורס
+          <Typography variant="body1" className={classes.subtitle}>
+            הציונים, האחוזים והתרומה של כל מטלה ומבחן לציון הקורס
           </Typography>
         </Stack>
 
@@ -197,6 +195,7 @@ export const GradesPage = () => {
           isLoading={isLoading}
           isSaving={updateGradeMutation.isPending}
           onSaveGrade={saveAssessmentGrade}
+          onSaveWeight={saveAssessmentWeight}
         />
       </Box>
     </Box>
