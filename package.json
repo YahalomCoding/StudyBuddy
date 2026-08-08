@@ -12,6 +12,7 @@
     "postinstall": "node scripts/fix-nest-core.js"
   },
   "devDependencies": {
+    "@rollup/rollup-darwin-arm64": "^4.62.4",
     "@swc/core": "^1.15.47",
     "@types/bcrypt": "^6.0.0",
     "@types/jest": "^30.0.0",

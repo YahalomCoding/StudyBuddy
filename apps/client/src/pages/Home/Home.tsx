@@ -22,6 +22,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
+  createCourseSummary,
   createGeneralTask,
   createHomeAssignment,
   deleteGeneralTask,
@@ -32,8 +33,8 @@ import {
   updateGeneralTask,
 } from "../../api/home";
 import { ChatBotBubble } from "../../components/Chatbot";
-import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
 import { CourseDetailsModal } from "../../components/CourseDetailsModal";
+import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
 import {
   GenericFormModal,
   type FormValues,
@@ -145,6 +146,11 @@ export const Home = () => {
   const [selectedCourseTitle, setSelectedCourseTitle] = useState<string | null>(
     null
   );
+  const [courseModalOpen, setCourseModalOpen] = useState(false);
+  const [courseModalValues, setCourseModalValues] = useState<FormValues>({
+    courseTitle: "",
+    semesterLabel: "",
+  });
   const [courseDetailsOpen, setCourseDetailsOpen] = useState(false);
   const [courseDetailsCourseTitle, setCourseDetailsCourseTitle] = useState<
     string | null
@@ -244,6 +250,15 @@ export const Home = () => {
     mutationFn: createHomeAssignment,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const createCourseMutation = useMutation({
+    mutationFn: createCourseSummary,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setCourseModalOpen(false);
+      setCourseModalValues({ courseTitle: "", semesterLabel: "" });
     },
   });
 
@@ -379,14 +394,24 @@ export const Home = () => {
     setSelectedCourseTitle(courseTitle);
   };
 
+  const openCourseModal = () => {
+    setCourseModalValues({ courseTitle: "", semesterLabel: "" });
+    setCourseModalOpen(true);
+  };
+
+  const handleCourseModalSave = (values: FormValues) => {
+    createCourseMutation.mutate({
+      courseTitle: values.courseTitle?.trim() ?? "",
+      semesterLabel: values.semesterLabel?.trim() ?? "",
+    });
+  };
+
   const handleCourseOpen = (
     courseTitle: string,
     studentSemesterCourseId: string
   ) => {
     setCourseDetailsCourseTitle(courseTitle);
-    setCourseDetailsStudentSemesterCourseId(
-      studentSemesterCourseId
-    );
+    setCourseDetailsStudentSemesterCourseId(studentSemesterCourseId);
     setCourseDetailsOpen(true);
   };
 
@@ -921,6 +946,7 @@ export const Home = () => {
               selectedCourseTitle={selectedCourseTitle}
               onCourseSelect={handleCourseSelect}
               onCourseOpen={handleCourseOpen}
+              onAddCourse={openCourseModal}
             />
           </Box>
         </Box>
@@ -953,11 +979,39 @@ export const Home = () => {
         />
       )}
 
+      <GenericFormModal
+        open={courseModalOpen}
+        onClose={() => {
+          setCourseModalOpen(false);
+          setCourseModalValues({ courseTitle: "", semesterLabel: "" });
+        }}
+        title="הוסף קורס"
+        fields={[
+          {
+            type: "text",
+            name: "courseTitle",
+            label: "שם הקורס",
+            placeholder: "למשל: מתמטיקה",
+          },
+          {
+            type: "text",
+            name: "semesterLabel",
+            label: "סמסטר",
+            placeholder: "למשל: סמסטר א' 2025",
+          },
+        ]}
+        values={courseModalValues}
+        onChange={(name: string, value: string) =>
+          setCourseModalValues((prev) => ({ ...prev, [name]: value }))
+        }
+        onSave={handleCourseModalSave}
+        saveLabel="הוסף"
+        cancelLabel="ביטול"
+      />
+
       <CourseDetailsModal
         open={courseDetailsOpen}
-        studentSemesterCourseId={
-          courseDetailsStudentSemesterCourseId
-        }
+        studentSemesterCourseId={courseDetailsStudentSemesterCourseId}
         courseTitle={courseDetailsCourseTitle}
         onClose={handleCourseDetailsClose}
       />
