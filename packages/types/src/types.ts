@@ -32,9 +32,3 @@ export type RelativeDueDate =
   | { kind: "today" }
   | { kind: "due_in"; days: number }
   | { kind: "overdue"; days: number };
-
-export enum CourseSemesterOption {
-  A = "A",
-  B = "B",
-  Summer = "Summer",
-}
