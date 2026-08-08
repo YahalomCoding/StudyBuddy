@@ -1,3 +1,4 @@
+import AddIcon from "@mui/icons-material/Add";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import BookOutlinedIcon from "@mui/icons-material/BookOutlined";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
@@ -35,7 +36,7 @@ import {
   updateCourseDetails,
   type CourseDetailsAssessment,
 } from "../../api/courses";
-import { homeDashboardQueryKey } from "../../api/home";
+import { createHomeAssignment, homeDashboardQueryKey } from "../../api/home";
 
 type CourseDetailsModalProps = {
   open: boolean;
@@ -182,6 +183,12 @@ export const CourseDetailsModal = ({
 }: CourseDetailsModalProps) => {
   const [activeTab, setActiveTab] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddingAssignment, setIsAddingAssignment] = useState(false);
+  const [newAssignment, setNewAssignment] = useState({
+    title: "",
+    dueDate: "",
+    type: "assignment" as const,
+  });
   const [editValues, setEditValues] = useState<{
     title: string;
     credits: string;
@@ -231,9 +238,34 @@ export const CourseDetailsModal = ({
     });
   };
 
+  const addAssignmentMutation = useMutation({
+    mutationFn: createHomeAssignment,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setIsAddingAssignment(false);
+      setNewAssignment({ title: "", dueDate: "", type: "assignment" });
+    },
+  });
+
+  const handleSaveAssignment = () => {
+    if (!data || !newAssignment.title.trim() || !newAssignment.dueDate) return;
+    addAssignmentMutation.mutate({
+      course: data.title,
+      title: newAssignment.title.trim(),
+      dueDate: newAssignment.dueDate,
+      status: "not started",
+      type: newAssignment.type,
+    });
+  };
+
   const handleClose = () => {
     setActiveTab(0);
     setIsEditing(false);
+    setIsAddingAssignment(false);
+    setNewAssignment({ title: "", dueDate: "", type: "assignment" });
     onClose();
   };
 
@@ -830,6 +862,139 @@ export const CourseDetailsModal = ({
                     ))}
                   </Box>
                 </Paper>
+              )}
+
+              {/* Add assignment button + inline form */}
+              {isAddingAssignment ? (
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography fontWeight={600} fontSize={13} mb={1.5}>
+                    הוספת מטלה
+                  </Typography>
+
+                  <Box display="flex" flexDirection="column" gap={1.5}>
+                    <Box>
+                      <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                        שם המטלה
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        value={newAssignment.title}
+                        onChange={(e) =>
+                          setNewAssignment((v) => ({
+                            ...v,
+                            title: e.target.value,
+                          }))
+                        }
+                        sx={{
+                          "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
+                        }}
+                      />
+                    </Box>
+
+                    <Box display="flex" gap={1.5}>
+                      <Box flex={1}>
+                        <Typography
+                          fontSize={12}
+                          color="text.secondary"
+                          mb={0.5}
+                        >
+                          תאריך הגשה
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="date"
+                          value={newAssignment.dueDate}
+                          onChange={(e) =>
+                            setNewAssignment((v) => ({
+                              ...v,
+                              dueDate: e.target.value,
+                            }))
+                          }
+                          sx={{
+                            "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
+                          }}
+                        />
+                      </Box>
+
+                      <Box flex={1}>
+                        <Typography
+                          fontSize={12}
+                          color="text.secondary"
+                          mb={0.5}
+                        >
+                          סוג
+                        </Typography>
+                        <Select
+                          fullWidth
+                          size="small"
+                          value={newAssignment.type}
+                          onChange={(e) =>
+                            setNewAssignment((v) => ({
+                              ...v,
+                              type: e.target.value as typeof v.type,
+                            }))
+                          }
+                          sx={{ borderRadius: 1.5 }}
+                        >
+                          <MenuItem value="assignment">מטלה</MenuItem>
+                          <MenuItem value="homework">שיעורי בית</MenuItem>
+                          <MenuItem value="project">פרויקט</MenuItem>
+                          <MenuItem value="lab">סדנאי</MenuItem>
+                          <MenuItem value="report">דוח</MenuItem>
+                          <MenuItem value="practice">תרגול</MenuItem>
+                        </Select>
+                      </Box>
+                    </Box>
+
+                    <Box display="flex" gap={1} justifyContent="flex-end">
+                      <Button
+                        size="small"
+                        onClick={() => setIsAddingAssignment(false)}
+                      >
+                        ביטול
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={handleSaveAssignment}
+                        disabled={
+                          addAssignmentMutation.isPending ||
+                          !newAssignment.title.trim() ||
+                          !newAssignment.dueDate
+                        }
+                        sx={{
+                          bgcolor: "#22c55e",
+                          "&:hover": { bgcolor: "#16a34a" },
+                        }}
+                      >
+                        הוסף
+                      </Button>
+                    </Box>
+                  </Box>
+                </Box>
+              ) : (
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={0.5}
+                  mt={1}
+                  sx={{ cursor: "pointer", color: "text.secondary" }}
+                  onClick={() => setIsAddingAssignment(true)}
+                >
+                  <Typography fontSize={13}>הוסף מטלה</Typography>
+                  <AddIcon fontSize="small" />
+                </Box>
               )}
             </TabPanel>
 
