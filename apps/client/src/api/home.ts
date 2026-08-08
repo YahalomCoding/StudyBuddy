@@ -94,6 +94,11 @@ export const deleteCourseSummaryItem = async (id: string) => {
   return response.data;
 };
 
+export const deleteUpcomingEvent = async (id: string) => {
+  const response = await baseApi.delete(`/home/events/${id}`);
+  return response.data;
+};
+
 export const createGeneralTask = async (payload: {
   title: string;
   dueDate: string;

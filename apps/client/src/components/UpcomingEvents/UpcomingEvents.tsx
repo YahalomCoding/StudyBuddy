@@ -2,13 +2,15 @@ import AddIcon from "@mui/icons-material/Add";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import { Box, IconButton, Paper, Typography } from "@mui/material";
+import { Box, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   createUpcomingEvent,
+  deleteUpcomingEvent,
   getHomeDashboard,
   homeDashboardQueryKey,
 } from "../../api/home";
@@ -110,6 +112,13 @@ export const UpcomingEvents = ({
 
   const createEventMutation = useMutation({
     mutationFn: createUpcomingEvent,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: deleteUpcomingEvent,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
     },
@@ -298,15 +307,41 @@ export const UpcomingEvents = ({
                   </Box>
                 </Box>
 
-                {/* Right: date + semester */}
-                <Box textAlign="left" flexShrink={0}>
-                  <Typography fontSize={12} fontWeight={500}>
-                    {formatEventDate(item.eventDate)}
-                  </Typography>
+                {/* Right: date + semester + delete */}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={0.5}
+                  flexShrink={0}
+                >
+                  <Box textAlign="left">
+                    <Typography fontSize={12} fontWeight={500}>
+                      {formatEventDate(item.eventDate)}
+                    </Typography>
 
-                  <Typography fontSize={11} color="text.secondary">
-                    {item.semesterLabel}
-                  </Typography>
+                    <Typography fontSize={11} color="text.secondary">
+                      {item.semesterLabel}
+                    </Typography>
+                  </Box>
+
+                  {hoveredItemId === item.id && (
+                    <Tooltip title="מחק אירוע">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteEventMutation.mutate(item.id);
+                        }}
+                        sx={{
+                          p: 0.45,
+                          color: "text.secondary",
+                          "&:hover": { bgcolor: "action.hover" },
+                        }}
+                      >
+                        <DeleteOutlineIcon sx={{ fontSize: 17 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </Box>
               </Box>
             );

@@ -278,6 +278,25 @@ export class HomeService {
     await record.destroy();
   }
 
+  async deleteUpcomingEvent(examId: string, studentId: string) {
+    const record = await this.examModel.findOne({
+      where: { id: examId },
+      include: [
+        {
+          model: StudentSemesterCourse,
+          required: true,
+          where: { studentId },
+        },
+      ],
+    });
+
+    if (!record) {
+      throw new Error("Event not found");
+    }
+
+    await record.destroy();
+  }
+
   async createCourseSummaryItem(
     payload: CreateCourseSummaryPayload,
     studentId: string

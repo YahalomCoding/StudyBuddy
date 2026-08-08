@@ -95,4 +95,14 @@ export class HomeController {
 
     return this.homeService.deleteCourseSummaryItem(id, studentId);
   }
+
+  @Delete("events/:id")
+  async deleteUpcomingEvent(
+    @Param("id") id: string,
+    @Req() req: AuthenticatedRequest
+  ) {
+    const studentId = this.getStudentIdFromRequest(req);
+
+    return this.homeService.deleteUpcomingEvent(id, studentId);
+  }
 }
