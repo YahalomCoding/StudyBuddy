@@ -52,6 +52,7 @@ export const UpcomingEvents = ({
   const currentYear = new Date().getFullYear();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalValues, setModalValues] = useState<FormValues>({});
 
@@ -250,10 +251,15 @@ export const UpcomingEvents = ({
                   py: 1,
                   borderBottom: "1px solid",
                   borderColor: "divider",
-                  "&:last-of-type": {
-                    borderBottom: "none",
-                  },
+                  cursor: "pointer",
+                  transition: "background-color 0.18s ease",
+                  ...(hoveredItemId === item.id && { bgcolor: "action.hover" }),
+                  "&:last-of-type": { borderBottom: "none" },
                 }}
+                onMouseEnter={() => setHoveredItemId(item.id)}
+                onMouseLeave={() =>
+                  setHoveredItemId((prev) => (prev === item.id ? null : prev))
+                }
               >
                 {/* Left: icon + text */}
                 <Box display="flex" alignItems="center" gap={1.5}>
