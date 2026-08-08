@@ -26,6 +26,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { formatSemesterLabel } from "@studybuddy/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
@@ -570,7 +571,7 @@ export const CourseDetailsModal = ({
                       />
                       <InfoField
                         label="שנה וסמסטר"
-                        value={`${data.academicYearLabel} · סמסטר ${data.semesterLabel}`}
+                        value={`${data.academicYearLabel} · סמסטר ${formatSemesterLabel(data.semesterNumber) ?? data.semesterLabel}`}
                       />
                     </Box>
                   )}
