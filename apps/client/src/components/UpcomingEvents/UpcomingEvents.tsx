@@ -5,7 +5,6 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
-import { CourseSemesterOption } from "@studybuddy/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
@@ -97,9 +96,9 @@ export const UpcomingEvents = ({
         name: "semesterLabel",
         label: "סמסטר",
         options: [
-          { label: "א", value: CourseSemesterOption.A },
-          { label: "ב", value: CourseSemesterOption.B },
-          { label: "קיץ", value: CourseSemesterOption.Summer },
+          { label: "א", value: "1" },
+          { label: "ב", value: "2" },
+          { label: "קיץ", value: "3" },
         ],
       },
       ...EVENT_FIELDS,
@@ -147,7 +146,7 @@ export const UpcomingEvents = ({
     }
 
     setModalValues({
-      semesterLabel: CourseSemesterOption.A,
+      semesterLabel: "1",
     });
     setModalOpen(true);
   };
@@ -163,9 +162,7 @@ export const UpcomingEvents = ({
       description: values.description ?? "",
       eventDate: values.eventDate ?? "",
       kind: "exam",
-      semesterLabel:
-        (values.semesterLabel as CourseSemesterOption | undefined) ??
-        CourseSemesterOption.A,
+      semesterNumber: parseInt(values.semesterLabel ?? "1", 10),
     });
     handleCloseModal();
   };

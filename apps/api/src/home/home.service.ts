@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
-import type { CourseSemesterOption } from "@studybuddy/types";
 import type { Transaction } from "sequelize";
 import { Assignment } from "../assignments/assignment.model";
 import { AssignmentsService } from "../assignments/assignments.service";
@@ -32,12 +31,6 @@ const ASSIGNMENT_TYPES = [
   "lab",
 ] as const;
 type AssignmentType = (typeof ASSIGNMENT_TYPES)[number];
-
-const SEMESTER_TYPE_TO_NUMBER: Record<CourseSemesterOption, number> = {
-  A: 1,
-  B: 2,
-  Summer: 3,
-};
 
 type DashboardResponse = {
   todos: {
@@ -92,12 +85,12 @@ export type CreateUpcomingEventPayload = {
   courseTitle: string;
   description: string;
   eventDate: string;
-  semesterLabel?: CourseSemesterOption;
+  semesterNumber?: number;
 };
 
 export type CreateCourseSummaryPayload = {
   courseTitle: string;
-  semesterLabel?: CourseSemesterOption;
+  semesterNumber?: number;
 };
 
 @Injectable()
@@ -233,7 +226,7 @@ export class HomeService {
         await this.findOrCreateStudentSemesterCourseForCourseTitle(
           student.id,
           payload.courseTitle,
-          payload.semesterLabel,
+          payload.semesterNumber,
           transaction
         );
 
@@ -284,7 +277,7 @@ export class HomeService {
         await this.findOrCreateStudentSemesterCourseForCourseTitle(
           student.id,
           payload.courseTitle,
-          payload.semesterLabel,
+          payload.semesterNumber,
           transaction
         );
 
@@ -343,25 +336,20 @@ export class HomeService {
     return "homework";
   }
 
-  private parseSemesterLabel(value: CourseSemesterOption | undefined): {
+  private parseSemesterNumber(value: number | undefined): {
     yearNumber: number;
     semesterNumber: number;
   } {
     const currentYear = new Date().getFullYear();
-
-    if (!value) {
-      return { yearNumber: currentYear, semesterNumber: 1 };
-    }
-
-    const semesterNumber = SEMESTER_TYPE_TO_NUMBER[value] ?? 1;
-
+    const semesterNumber =
+      value === 1 || value === 2 || value === 3 ? value : 1;
     return { yearNumber: currentYear, semesterNumber };
   }
 
   private async findOrCreateStudentSemesterCourseForCourseTitle(
     studentId: string,
     courseTitle: string,
-    semesterLabel: CourseSemesterOption | undefined,
+    semesterNumber: number | undefined,
     transaction: Transaction
   ): Promise<StudentSemesterCourse> {
     const normalizedCourseTitle = (courseTitle || "קורס חדש").trim();
@@ -389,12 +377,12 @@ export class HomeService {
       return existingStudentSemesterCourse;
     }
 
-    const { yearNumber, semesterNumber } =
-      this.parseSemesterLabel(semesterLabel);
+    const { yearNumber, semesterNumber: resolvedSemesterNumber } =
+      this.parseSemesterNumber(semesterNumber);
 
     const semester = await this.findOrCreateSemester(
       yearNumber,
-      semesterNumber,
+      resolvedSemesterNumber,
       transaction
     );
 

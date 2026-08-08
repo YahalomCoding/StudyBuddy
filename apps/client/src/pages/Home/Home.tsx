@@ -14,7 +14,6 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  CourseSemesterOption,
   type AssignmentItem,
   type AssignmentType,
   type ItemStatus,
@@ -150,7 +149,7 @@ export const Home = () => {
   const [courseModalOpen, setCourseModalOpen] = useState(false);
   const [courseModalValues, setCourseModalValues] = useState<FormValues>({
     courseTitle: "",
-    semesterLabel: CourseSemesterOption.A,
+    semesterLabel: "1",
   });
   const [courseDetailsOpen, setCourseDetailsOpen] = useState(false);
   const [courseDetailsCourseTitle, setCourseDetailsCourseTitle] = useState<
@@ -261,7 +260,7 @@ export const Home = () => {
       setCourseModalOpen(false);
       setCourseModalValues({
         courseTitle: "",
-        semesterLabel: CourseSemesterOption.A,
+        semesterLabel: "1",
       });
     },
   });
@@ -401,19 +400,15 @@ export const Home = () => {
   const openCourseModal = () => {
     setCourseModalValues({
       courseTitle: "",
-      semesterLabel: CourseSemesterOption.A,
+      semesterLabel: "1",
     });
     setCourseModalOpen(true);
   };
 
   const handleCourseModalSave = (values: FormValues) => {
-    const selectedSemester = values.semesterLabel?.trim();
-
     createCourseMutation.mutate({
       courseTitle: values.courseTitle?.trim() ?? "",
-      semesterLabel: selectedSemester
-        ? (selectedSemester as CourseSemesterOption)
-        : undefined,
+      semesterNumber: parseInt(values.semesterLabel ?? "1", 10),
     });
   };
 
@@ -996,7 +991,7 @@ export const Home = () => {
           setCourseModalOpen(false);
           setCourseModalValues({
             courseTitle: "",
-            semesterLabel: CourseSemesterOption.A,
+            semesterLabel: "1",
           });
         }}
         title="הוסף קורס"
@@ -1012,9 +1007,9 @@ export const Home = () => {
             name: "semesterLabel",
             label: "סמסטר",
             options: [
-              { label: "א", value: CourseSemesterOption.A },
-              { label: "ב", value: CourseSemesterOption.B },
-              { label: "קיץ", value: CourseSemesterOption.Summer },
+              { label: "א", value: "1" },
+              { label: "ב", value: "2" },
+              { label: "קיץ", value: "3" },
             ],
           },
         ]}

@@ -1,4 +1,3 @@
-import type { CourseSemesterOption } from "@studybuddy/types";
 import baseApi from "./baseApi";
 
 export type HomeDashboardTodo = {
@@ -116,7 +115,7 @@ export const createUpcomingEvent = async (payload: {
   courseTitle: string;
   description: string;
   eventDate: string;
-  semesterLabel?: CourseSemesterOption;
+  semesterNumber?: number;
 }) => {
   const response = await baseApi.post("/home/events", payload);
   return response.data;
@@ -124,7 +123,7 @@ export const createUpcomingEvent = async (payload: {
 
 export const createCourseSummary = async (payload: {
   courseTitle: string;
-  semesterLabel?: CourseSemesterOption;
+  semesterNumber?: number;
 }) => {
   const response = await baseApi.post("/home/courses", payload);
   return response.data;
