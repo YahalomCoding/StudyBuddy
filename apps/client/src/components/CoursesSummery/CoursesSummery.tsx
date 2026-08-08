@@ -238,11 +238,11 @@ export const CoursesSummary = ({
                       }}
                       sx={{
                         p: 0.45,
-                        color: "error.main",
+                        color: "text.secondary",
                         opacity: isHovered ? 1 : 0,
                         transition:
                           "opacity 0.16s ease, background-color 0.16s ease",
-                        "&:hover": { bgcolor: "rgba(239,68,68,0.08)" },
+                        "&:hover": { bgcolor: "action.hover" },
                       }}
                     >
                       <DeleteOutlineIcon sx={{ fontSize: 17 }} />
