@@ -166,7 +166,7 @@ export const confirmSyllabusRequestSchema = z.object({
 });
 
 export class ConfirmSyllabusDto extends createZodDto(
-  confirmSyllabusRequestSchema,
+  confirmSyllabusRequestSchema
 ) {}
 
 export type AiSyllabusData = z.infer<typeof aiSyllabusDataSchema>;

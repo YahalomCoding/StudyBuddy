@@ -41,10 +41,5 @@ export class Assignment extends Model<Partial<Assignment>> {
 
   @Column({ type: DataType.STRING, allowNull: false, defaultValue: "homework" })
   declare type:
-    | "assignment"
-    | "homework"
-    | "practice"
-    | "project"
-    | "report"
-    | "lab";
+    "assignment" | "homework" | "practice" | "project" | "report" | "lab";
 }

@@ -13,11 +13,7 @@ const envSchema = z.object({
     .min(1)
     .default("nvidia/nemotron-3-nano-30b-a3b:free"),
 
-  SYLLABUS_AI_TIMEOUT_MS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(180_000),
+  SYLLABUS_AI_TIMEOUT_MS: z.coerce.number().int().positive().default(180_000),
 
   DB_HOST: z.string(),
   DB_PORT: z.coerce.number().int().positive().default(5432),

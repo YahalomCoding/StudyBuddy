@@ -49,7 +49,10 @@ export class AuthController {
   }
 
   @Post("register")
-  register(@Body() body: RegisterDto, @Res({ passthrough: true }) res: Response) {
+  register(
+    @Body() body: RegisterDto,
+    @Res({ passthrough: true }) res: Response
+  ) {
     return this.setAuthCookieAndReturnUser(
       res,
       this.authService.register(body.username, body.email, body.password)

@@ -66,18 +66,18 @@ export class SyllabusAiService {
 
   async parse(
     text: string,
-    context: SyllabusParseContext = {},
+    context: SyllabusParseContext = {}
   ): Promise<SyllabusParseResult> {
     this.logger.log(
-      `Sending ${text.length} extracted characters to ${env.OPENROUTER_MODEL}`,
+      `Sending ${text.length} extracted characters to ${env.OPENROUTER_MODEL}`
     );
     this.logger.debug(
-      `AI input sample:\n${text.slice(0, MAX_INPUT_SAMPLE_CHARACTERS)}`,
+      `AI input sample:\n${text.slice(0, MAX_INPUT_SAMPLE_CHARACTERS)}`
     );
 
     const managedPrompt = await getSystemPromptWithFallback(
       LANGFUSE_PROMPT_NAMES.syllabusExtraction,
-      this.systemPrompt(),
+      this.systemPrompt()
     );
 
     const langfuseTrace = startLangfuseTrace({
@@ -107,14 +107,14 @@ export class SyllabusAiService {
           attempt,
           previousFailure,
           managedPrompt,
-          langfuseTrace,
+          langfuseTrace
         );
 
         this.logger.debug(
           `AI content, attempt ${attempt}:\n${content.slice(
             0,
-            MAX_LOGGED_CHARACTERS,
-          )}`,
+            MAX_LOGGED_CHARACTERS
+          )}`
         );
 
         const parsedJson = this.parseJson(content);
@@ -125,7 +125,7 @@ export class SyllabusAiService {
           const details = JSON.stringify(
             validated.error.format(),
             null,
-            2,
+            2
           ).slice(0, 5_000);
           throw new Error(`AI JSON failed validation: ${details}`);
         }
@@ -135,13 +135,13 @@ export class SyllabusAiService {
         this.logger.debug(
           `AI cleaned syllabus:\n${JSON.stringify(cleaned, null, 2).slice(
             0,
-            MAX_LOGGED_CHARACTERS,
-          )}`,
+            MAX_LOGGED_CHARACTERS
+          )}`
         );
 
         if (!this.hasMeaningfulData(cleaned)) {
           throw new Error(
-            "AI returned JSON but extracted no meaningful syllabus information",
+            "AI returned JSON but extracted no meaningful syllabus information"
           );
         }
 
@@ -162,7 +162,7 @@ export class SyllabusAiService {
             topics: cleaned.topics.length,
             warnings,
           },
-          { promptSource: managedPrompt.source },
+          { promptSource: managedPrompt.source }
         );
 
         return {
@@ -172,15 +172,17 @@ export class SyllabusAiService {
         };
       } catch (error) {
         previousFailure =
-          error instanceof Error ? error.message : "Unknown AI extraction error";
+          error instanceof Error
+            ? error.message
+            : "Unknown AI extraction error";
         this.logger.warn(
-          `Syllabus AI attempt ${attempt}/${MAX_ATTEMPTS} failed: ${previousFailure}`,
+          `Syllabus AI attempt ${attempt}/${MAX_ATTEMPTS} failed: ${previousFailure}`
         );
       }
     }
 
     this.logger.warn(
-      `Falling back to heuristic parser after ${MAX_ATTEMPTS} failed AI attempts`,
+      `Falling back to heuristic parser after ${MAX_ATTEMPTS} failed AI attempts`
     );
 
     const fallbackData = this.heuristicParse(text);
@@ -197,7 +199,7 @@ export class SyllabusAiService {
         warnings,
       },
       previousFailure || "AI extraction failed; heuristic fallback used",
-      { promptSource: managedPrompt.source },
+      { promptSource: managedPrompt.source }
     );
 
     return {
@@ -217,13 +219,13 @@ export class SyllabusAiService {
       version?: number;
       source: "langfuse" | "local";
     },
-    langfuseTrace: ReturnType<typeof startLangfuseTrace>,
+    langfuseTrace: ReturnType<typeof startLangfuseTrace>
   ): Promise<string> {
     const controller = new AbortController();
     const startedAt = Date.now();
     const timeout = setTimeout(
       () => controller.abort(),
-      env.SYLLABUS_AI_TIMEOUT_MS,
+      env.SYLLABUS_AI_TIMEOUT_MS
     );
 
     let generation: ReturnType<
@@ -239,7 +241,7 @@ export class SyllabusAiService {
               "This is a retry.",
               `The previous response was rejected because: ${previousFailure.slice(
                 0,
-                1_000,
+                1_000
               )}`,
               "Return one complete JSON object with the exact root keys.",
               'Do not use JSON Pointer keys such as "/assessments".',
@@ -279,8 +281,7 @@ export class SyllabusAiService {
         input: {
           system: managedPrompt.prompt,
           user: userPrompt.slice(0, MAX_LANGFUSE_INPUT_CHARACTERS),
-          inputTruncated:
-            userPrompt.length > MAX_LANGFUSE_INPUT_CHARACTERS,
+          inputTruncated: userPrompt.length > MAX_LANGFUSE_INPUT_CHARACTERS,
         },
         metadata: {
           attempt,
@@ -326,13 +327,14 @@ export class SyllabusAiService {
         payload = JSON.parse(rawResponseBody) as OpenRouterResponse;
       } catch {
         throw new Error(
-          `OpenRouter returned invalid response JSON: ${rawResponseBody.slice(0, 500)}`,
+          `OpenRouter returned invalid response JSON: ${rawResponseBody.slice(0, 500)}`
         );
       }
 
       if (!response.ok) {
         throw new Error(
-          payload.error?.message ?? `OpenRouter returned HTTP ${response.status}`,
+          payload.error?.message ??
+            `OpenRouter returned HTTP ${response.status}`
         );
       }
 
@@ -348,7 +350,7 @@ export class SyllabusAiService {
           `completionTokens=${payload.usage?.completion_tokens ?? 0}, ` +
           `reasoningTokens=${
             payload.usage?.completion_tokens_details?.reasoning_tokens ?? 0
-          }, cost=${payload.usage?.cost ?? 0}`,
+          }, cost=${payload.usage?.cost ?? 0}`
       );
 
       if (!content?.trim()) {
@@ -361,7 +363,7 @@ export class SyllabusAiService {
 
       if (choice?.finish_reason === "error") {
         throw new Error(
-          `The provider stopped with an error (${choice.native_finish_reason ?? "unknown"})`,
+          `The provider stopped with an error (${choice.native_finish_reason ?? "unknown"})`
         );
       }
 
@@ -377,8 +379,7 @@ export class SyllabusAiService {
         },
         metadata: {
           nativeFinishReason: choice?.native_finish_reason,
-          outputTruncated:
-            content.length > MAX_LANGFUSE_OUTPUT_CHARACTERS,
+          outputTruncated: content.length > MAX_LANGFUSE_OUTPUT_CHARACTERS,
         },
       });
 
@@ -396,8 +397,8 @@ export class SyllabusAiService {
       ) {
         throw new Error(
           `OpenRouter did not respond within ${Math.round(
-            env.SYLLABUS_AI_TIMEOUT_MS / 1_000,
-          )} seconds`,
+            env.SYLLABUS_AI_TIMEOUT_MS / 1_000
+          )} seconds`
         );
       }
       throw error;
@@ -497,7 +498,7 @@ Topic item shape:
 
       if (repairedCandidate !== jsonCandidate) {
         this.logger.warn(
-          "The AI returned unescaped quotes inside Hebrew abbreviations; StudyBuddy repaired them locally.",
+          "The AI returned unescaped quotes inside Hebrew abbreviations; StudyBuddy repaired them locally."
         );
       }
 
@@ -509,11 +510,11 @@ Topic item shape:
 
         this.logger.warn(
           `JSON parsing failed. Initial error: ${initialMessage}. ` +
-            `After local repair: ${repairedMessage}`,
+            `After local repair: ${repairedMessage}`
         );
 
         throw new Error(
-          `The AI response contained malformed JSON: ${repairedMessage}`,
+          `The AI response contained malformed JSON: ${repairedMessage}`
         );
       }
     }
@@ -543,10 +544,7 @@ Topic item shape:
      * נ"ז   -> נ״ז
      * ש"ס   -> ש״ס
      */
-    return content.replace(
-      /([\u0590-\u05FF])"(?=[\u0590-\u05FF])/g,
-      "$1״",
-    );
+    return content.replace(/([\u0590-\u05FF])"(?=[\u0590-\u05FF])/g, "$1״");
   }
 
   private errorMessage(error: unknown): string {
@@ -563,13 +561,13 @@ Topic item shape:
 
     if (keys.some((key) => key.startsWith("/"))) {
       throw new Error(
-        `The AI returned JSON Pointer keys instead of fields: ${keys.join(", ")}`,
+        `The AI returned JSON Pointer keys instead of fields: ${keys.join(", ")}`
       );
     }
 
     if (!("course" in object)) {
       throw new Error(
-        `The AI returned an unexpected root structure: ${keys.join(", ") || "no keys"}`,
+        `The AI returned an unexpected root structure: ${keys.join(", ") || "no keys"}`
       );
     }
   }
@@ -582,7 +580,7 @@ Topic item shape:
       ...data,
       course: { ...EMPTY_COURSE, ...data.course },
       lecturers: data.lecturers.filter((lecturer) =>
-        Object.values(lecturer).some(Boolean),
+        Object.values(lecturer).some(Boolean)
       ),
       prerequisites: cleanList(data.prerequisites),
       learningOutcomes: cleanList(data.learningOutcomes),
@@ -622,7 +620,7 @@ Topic item shape:
 
     return (
       textFields.some(
-        (value) => typeof value === "string" && value.trim().length > 0,
+        (value) => typeof value === "string" && value.trim().length > 0
       ) ||
       data.course.credits !== null ||
       data.course.weeklyHours !== null ||
@@ -647,33 +645,30 @@ Topic item shape:
   private heuristicParse(text: string): AiSyllabusData {
     const title = this.firstMatch(
       text,
-      /שם הקורס(?!\s+באנגלית)\s*:?\s*([^\n]+)/i,
+      /שם הקורס(?!\s+באנגלית)\s*:?\s*([^\n]+)/i
     );
     const englishTitle = this.firstMatch(
       text,
-      /שם הקורס באנגלית\s*:?\s*([^\n]+)/i,
+      /שם הקורס באנגלית\s*:?\s*([^\n]+)/i
     );
     const code = this.firstMatch(text, /קוד הקורס\s*:?\s*([^\n]+)/i);
-    const credits = this.numberMatch(
-      text,
-      /מספר נ["״']?ז\s*:?\s*([\d.]+)/i,
-    );
+    const credits = this.numberMatch(text, /מספר נ["״']?ז\s*:?\s*([\d.]+)/i);
     const weeklyHours = this.numberMatch(
       text,
-      /מספר ש["״']?ס\s*:?\s*([\d.]+)/i,
+      /מספר ש["״']?ס\s*:?\s*([\d.]+)/i
     );
     const semesterLabel = this.firstMatch(text, /סמסטר\s*:?\s*([^\n]+)/i);
     const academicYearLabel = this.firstMatch(
       text,
-      /שנה["״']?ל\s*:?\s*([^\s\n]+)/i,
+      /שנה["״']?ל\s*:?\s*([^\s\n]+)/i
     );
     const faculty = this.firstMatch(
       text,
-      /פקולטה\s*\/\s*בית ספר\s*:?\s*([^\n]+)/i,
+      /פקולטה\s*\/\s*בית ספר\s*:?\s*([^\n]+)/i
     );
     const lecturerName = this.firstMatch(
       text,
-      /מרצה\s*\/\s*ים\s*:?\s*([^\n]+)/i,
+      /מרצה\s*\/\s*ים\s*:?\s*([^\n]+)/i
     );
     const email =
       text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ?? null;
@@ -681,22 +676,22 @@ Topic item shape:
     const description = this.extractSection(
       text,
       ["תיאור הקורס ומטרותיו", "תיאור הקורס"],
-      ["שיטת ההוראה"],
+      ["שיטת ההוראה"]
     );
     const teachingMethod = this.extractSection(
       text,
       ["שיטת ההוראה"],
-      ["תוצרי למידה"],
+      ["תוצרי למידה"]
     );
     const learningOutcomes = this.sectionLines(
       text,
       ["תוצרי למידה"],
-      ["מדיניות המרצה", "תנאים לעמידה"],
+      ["מדיניות המרצה", "תנאים לעמידה"]
     );
     const topics = this.sectionLines(
       text,
       ["תכנית הקורס"],
-      ["הצהרת מדיניות", "רשימה ביבליוגרפית"],
+      ["הצהרת מדיניות", "רשימה ביבליוגרפית"]
     ).map((topic, index) => ({ order: index + 1, title: topic }));
     const bibliography = this.sectionLines(text, ["רשימה ביבליוגרפית"], []);
 
@@ -736,18 +731,18 @@ Topic item shape:
         policies: this.sectionLines(
           text,
           ["מדיניות המרצה"],
-          ["תנאים לעמידה", "תכנית הקורס"],
+          ["תנאים לעמידה", "תכנית הקורס"]
         ),
         assessments: [],
         topics,
         aiPolicy: this.extractSection(
           text,
           ["הצהרת מדיניות השימוש בבינה מלאכותית בקורס"],
-          ["רשימה ביבליוגרפית"],
+          ["רשימה ביבליוגרפית"]
         ),
         bibliography,
         notes: [],
-      }),
+      })
     );
   }
 
@@ -773,7 +768,7 @@ Topic item shape:
   private extractSection(
     text: string,
     startHeadings: string[],
-    endHeadings: string[],
+    endHeadings: string[]
   ): string | null {
     const lines = this.sectionLines(text, startHeadings, endHeadings);
     return lines.length > 0 ? lines.join("\n") : null;
@@ -782,11 +777,11 @@ Topic item shape:
   private sectionLines(
     text: string,
     startHeadings: string[],
-    endHeadings: string[],
+    endHeadings: string[]
   ): string[] {
     const lines = text.split("\n").map((line) => line.trim());
     const startIndex = lines.findIndex((line) =>
-      startHeadings.some((heading) => line.includes(heading)),
+      startHeadings.some((heading) => line.includes(heading))
     );
     if (startIndex === -1) return [];
 
@@ -795,7 +790,7 @@ Topic item shape:
       const relativeEndIndex = lines
         .slice(startIndex + 1)
         .findIndex((line) =>
-          endHeadings.some((heading) => line.includes(heading)),
+          endHeadings.some((heading) => line.includes(heading))
         );
       if (relativeEndIndex >= 0) {
         endIndex = startIndex + 1 + relativeEndIndex;

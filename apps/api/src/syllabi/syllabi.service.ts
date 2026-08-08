@@ -93,19 +93,19 @@ export class SyllabiService {
     private readonly assignmentModel: typeof Assignment,
     @InjectModel(Exam) private readonly examModel: typeof Exam,
     @InjectModel(CourseSyllabus)
-    private readonly courseSyllabusModel: typeof CourseSyllabus,
+    private readonly courseSyllabusModel: typeof CourseSyllabus
   ) {}
 
   async preview(
     userId: string,
-    file: UploadedPdfFile,
+    file: UploadedPdfFile
   ): Promise<PreviewResponse> {
     this.validateUploadedFile(file);
 
     const student = await this.studentModel.findOne({ where: { userId } });
     if (!student) {
       throw new BadRequestException(
-        "Complete onboarding before importing a syllabus",
+        "Complete onboarding before importing a syllabus"
       );
     }
 
@@ -121,7 +121,7 @@ export class SyllabiService {
     const warnings = [...parsed.warnings];
     if (extractedPdf.wasTruncated) {
       warnings.push(
-        "The PDF was very long, so only the first 120,000 characters were analyzed.",
+        "The PDF was very long, so only the first 120,000 characters were analyzed."
       );
     }
 
@@ -155,12 +155,12 @@ export class SyllabiService {
 
   async confirm(
     userId: string,
-    payload: ConfirmSyllabusRequest,
+    payload: ConfirmSyllabusRequest
   ): Promise<ConfirmResponse> {
     const student = await this.studentModel.findOne({ where: { userId } });
     if (!student) {
       throw new BadRequestException(
-        "Complete onboarding before importing a syllabus",
+        "Complete onboarding before importing a syllabus"
       );
     }
 
@@ -169,35 +169,35 @@ export class SyllabiService {
         student.id,
         payload.destination.degreeId,
         payload.destination.degreeTitle,
-        transaction,
+        transaction
       );
       const course = await this.findOrCreateCourse(
         payload.syllabus.course.title,
         degree.id,
         payload.syllabus.course.credits,
-        transaction,
+        transaction
       );
       const semester = await this.findOrCreateSemester(
         payload.destination.yearNumber,
         payload.destination.semesterNumber,
-        transaction,
+        transaction
       );
       const semesterCourse = await this.findOrCreateSemesterCourse(
         semester.id,
         course.id,
-        transaction,
+        transaction
       );
       const studentSemesterCourse =
         await this.findOrCreateStudentSemesterCourse(
           student.id,
           semesterCourse.id,
-          transaction,
+          transaction
         );
 
       const syllabusRecord = await this.saveSyllabus(
         studentSemesterCourse.id,
         payload,
-        transaction,
+        transaction
       );
 
       let createdAssignments = 0;
@@ -218,7 +218,7 @@ export class SyllabiService {
          */
         if (!assessment.dueDate) {
           throw new BadRequestException(
-            `A date is required for "${normalizedTitle}"`,
+            `A date is required for "${normalizedTitle}"`
           );
         }
 
@@ -226,7 +226,7 @@ export class SyllabiService {
 
         if (!date) {
           throw new BadRequestException(
-            `The date entered for "${normalizedTitle}" is invalid`,
+            `The date entered for "${normalizedTitle}" is invalid`
           );
         }
 
@@ -275,7 +275,7 @@ export class SyllabiService {
               deadline: date,
               type: assignmentType,
             },
-            { transaction },
+            { transaction }
           );
         } else {
           await this.assignmentModel.create(
@@ -287,7 +287,7 @@ export class SyllabiService {
               status: "not started",
               type: assignmentType,
             },
-            { transaction },
+            { transaction }
           );
           createdAssignments += 1;
         }
@@ -304,12 +304,11 @@ export class SyllabiService {
     });
   }
 
-
   async updateAssessmentDate(
     userId: string,
     studentSemesterCourseId: string,
     assessmentId: string,
-    payload: UpdateAssessmentDatePayload,
+    payload: UpdateAssessmentDatePayload
   ): Promise<UpdateAssessmentDateResponse> {
     const student = await this.studentModel.findOne({
       where: { userId },
@@ -317,7 +316,7 @@ export class SyllabiService {
 
     if (!student) {
       throw new BadRequestException(
-        "Complete onboarding before updating an assessment",
+        "Complete onboarding before updating an assessment"
       );
     }
 
@@ -325,7 +324,7 @@ export class SyllabiService {
 
     if (!parsedDate) {
       throw new BadRequestException(
-        "The assessment date must use the YYYY-MM-DD format",
+        "The assessment date must use the YYYY-MM-DD format"
       );
     }
 
@@ -341,7 +340,7 @@ export class SyllabiService {
 
       if (!studentSemesterCourse) {
         throw new NotFoundException(
-          "Course was not found for the current student",
+          "Course was not found for the current student"
         );
       }
 
@@ -351,23 +350,19 @@ export class SyllabiService {
       });
 
       if (!syllabusRecord) {
-        throw new NotFoundException(
-          "No syllabus was found for this course",
-        );
+        throw new NotFoundException("No syllabus was found for this course");
       }
 
       const parsedData = JSON.parse(
-        JSON.stringify(syllabusRecord.parsedData),
+        JSON.stringify(syllabusRecord.parsedData)
       ) as SyllabusData;
 
       const assessment = parsedData.assessments.find(
-        (item) => item.id === assessmentId,
+        (item) => item.id === assessmentId
       );
 
       if (!assessment) {
-        throw new NotFoundException(
-          "Assessment was not found in the syllabus",
-        );
+        throw new NotFoundException("Assessment was not found in the syllabus");
       }
 
       const previousDueDate = assessment.dueDate;
@@ -408,7 +403,7 @@ export class SyllabiService {
               date: parsedDate,
               type: 1,
             },
-            { transaction },
+            { transaction }
           );
         } else {
           const result = await this.examModel.findOrCreate({
@@ -462,7 +457,7 @@ export class SyllabiService {
               deadline: parsedDate,
               type: assignmentType,
             },
-            { transaction },
+            { transaction }
           );
         } else {
           assignment = await this.assignmentModel.create(
@@ -474,7 +469,7 @@ export class SyllabiService {
               status: "not started",
               type: assignmentType,
             },
-            { transaction },
+            { transaction }
           );
           created = true;
         }
@@ -489,7 +484,7 @@ export class SyllabiService {
         {
           parsedData,
         },
-        { transaction },
+        { transaction }
       );
 
       return {
@@ -535,7 +530,7 @@ export class SyllabiService {
       assessments: data.assessments
         .filter(
           (assessment): assessment is typeof assessment & { title: string } =>
-            Boolean(assessment.title?.trim()),
+            Boolean(assessment.title?.trim())
         )
         .map((assessment, index) => ({
           id: `assessment-${index + 1}`,
@@ -551,7 +546,7 @@ export class SyllabiService {
         })),
       topics: data.topics
         .filter((topic): topic is typeof topic & { title: string } =>
-          Boolean(topic.title?.trim()),
+          Boolean(topic.title?.trim())
         )
         .map((topic, index) => ({
           id: `topic-${index + 1}`,
@@ -566,7 +561,7 @@ export class SyllabiService {
 
   private getMissingFields(
     syllabus: SyllabusData,
-    availableDegrees: DegreeOption[],
+    availableDegrees: DegreeOption[]
   ): string[] {
     const missing: string[] = [];
 
@@ -578,11 +573,11 @@ export class SyllabiService {
     if (!syllabus.course.credits) missing.push("Credits (optional)");
 
     const undatedAssessments = syllabus.assessments.filter(
-      (assessment) => !assessment.dueDate,
+      (assessment) => !assessment.dueDate
     ).length;
     if (undatedAssessments > 0) {
       missing.push(
-        `${undatedAssessments} required assessment date${undatedAssessments === 1 ? "" : "s"}`,
+        `${undatedAssessments} required assessment date${undatedAssessments === 1 ? "" : "s"}`
       );
     }
 
@@ -590,7 +585,7 @@ export class SyllabiService {
   }
 
   private async getAvailableDegrees(
-    studentId: string,
+    studentId: string
   ): Promise<DegreeOption[]> {
     const byId = new Map<string, DegreeOption>();
 
@@ -634,7 +629,7 @@ export class SyllabiService {
     }
 
     return [...byId.values()].sort((a, b) =>
-      a.title.localeCompare(b.title, "he"),
+      a.title.localeCompare(b.title, "he")
     );
   }
 
@@ -642,13 +637,13 @@ export class SyllabiService {
     studentId: string,
     degreeId: string | null,
     degreeTitle: string | null,
-    transaction: Transaction,
+    transaction: Transaction
   ): Promise<Degree> {
     if (degreeId) {
       const allowedDegrees = await this.getAvailableDegrees(studentId);
       if (!allowedDegrees.some((degree) => degree.id === degreeId)) {
         throw new BadRequestException(
-          "The selected degree does not belong to this student",
+          "The selected degree does not belong to this student"
         );
       }
 
@@ -681,7 +676,7 @@ export class SyllabiService {
     title: string,
     degreeId: string,
     credits: number | null,
-    transaction: Transaction,
+    transaction: Transaction
   ): Promise<{ id: string }> {
     const normalizedTitle = title.trim();
     const normalizedCredits =
@@ -700,7 +695,7 @@ export class SyllabiService {
       credits: number;
       update: (
         values: { credits: number },
-        options: { transaction: Transaction },
+        options: { transaction: Transaction }
       ) => Promise<unknown>;
     };
 
@@ -743,10 +738,7 @@ export class SyllabiService {
       normalizedCredits !== null &&
       Number(course.credits) !== normalizedCredits
     ) {
-      await course.update(
-        { credits: normalizedCredits },
-        { transaction },
-      );
+      await course.update({ credits: normalizedCredits }, { transaction });
     }
 
     return course;
@@ -755,7 +747,7 @@ export class SyllabiService {
   private async findOrCreateSemester(
     yearNumber: number,
     semesterNumber: number,
-    transaction: Transaction,
+    transaction: Transaction
   ): Promise<Semester> {
     const [semester] = await this.semesterModel.findOrCreate({
       where: { yearNumber, semesterNumber },
@@ -768,7 +760,7 @@ export class SyllabiService {
   private async findOrCreateSemesterCourse(
     semesterId: string,
     courseId: string,
-    transaction: Transaction,
+    transaction: Transaction
   ): Promise<SemesterCourse> {
     const [semesterCourse] = await this.semesterCourseModel.findOrCreate({
       where: { semesterId, courseId },
@@ -781,7 +773,7 @@ export class SyllabiService {
   private async findOrCreateStudentSemesterCourse(
     studentId: string,
     semesterCourseId: string,
-    transaction: Transaction,
+    transaction: Transaction
   ): Promise<StudentSemesterCourse> {
     const [studentSemesterCourse] =
       await this.studentSemesterCourseModel.findOrCreate({
@@ -795,7 +787,7 @@ export class SyllabiService {
   private async saveSyllabus(
     studentSemesterCourseId: string,
     payload: ConfirmSyllabusRequest,
-    transaction: Transaction,
+    transaction: Transaction
   ): Promise<CourseSyllabus> {
     const existing = await this.courseSyllabusModel.findOne({
       where: { studentSemesterCourseId },
@@ -810,7 +802,7 @@ export class SyllabiService {
           parsedData: payload.syllabus,
           confirmedAt: new Date(),
         },
-        { transaction },
+        { transaction }
       );
       return existing;
     }
@@ -823,7 +815,7 @@ export class SyllabiService {
         parsedData: payload.syllabus,
         confirmedAt: new Date(),
       },
-      { transaction },
+      { transaction }
     );
   }
 
@@ -834,7 +826,7 @@ export class SyllabiService {
   }
 
   private mapAssessmentKind(
-    kind: AssessmentKind,
+    kind: AssessmentKind
   ): "assignment" | "homework" | "practice" | "project" | "report" | "lab" {
     switch (kind) {
       case "project":

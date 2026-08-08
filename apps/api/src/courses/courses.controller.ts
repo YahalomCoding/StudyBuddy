@@ -19,11 +19,11 @@ export class CoursesController {
   getCourseDetails(
     @Req() request: AuthRequest,
     @Param("studentSemesterCourseId", ParseUUIDPipe)
-    studentSemesterCourseId: string,
+    studentSemesterCourseId: string
   ) {
     return this.coursesService.getCourseDetails(
       request.user.id,
-      studentSemesterCourseId,
+      studentSemesterCourseId
     );
   }
 }

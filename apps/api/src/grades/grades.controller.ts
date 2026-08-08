@@ -42,7 +42,7 @@ export class GradesController {
   async updateCourseGrades(
     @Req() req: { user?: { studentId?: string } },
     @Param("courseId") courseId: string,
-    @Body() body: UpdateCourseGradesPayload,
+    @Body() body: UpdateCourseGradesPayload
   ) {
     const studentId = req.user?.studentId;
 
@@ -53,7 +53,7 @@ export class GradesController {
     return this.gradesService.updateStudentCourseGrades(
       studentId,
       courseId,
-      body,
+      body
     );
   }
 }

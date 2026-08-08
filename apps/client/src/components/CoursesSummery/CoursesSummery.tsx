@@ -131,7 +131,7 @@ export const CoursesSummary = ({
           </Box>
 
           <Typography fontWeight={600} fontSize={15}>
-            My Courses
+            הקורסים שלי
           </Typography>
         </Box>
 

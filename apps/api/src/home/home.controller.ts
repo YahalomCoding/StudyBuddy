@@ -83,9 +83,4 @@ export class HomeController {
 
     return this.homeService.createCourseSummaryItem(body, studentId);
   }
-
-  @Post("seed-demo")
-  async seedDemoData() {
-    return this.homeService.seedDemoData();
-  }
 }

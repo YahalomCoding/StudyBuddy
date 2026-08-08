@@ -4,17 +4,15 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --filter=@studybuddy/api --filter=@studybuddy/client",
+    "dev:local": "npm run db:setup && npm run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "seed:demo": "npm run seed:demo --workspace=@studybuddy/api",
+    "db:setup": "node scripts/setup-local-db.js",
     "postinstall": "node scripts/fix-nest-core.js"
   },
   "devDependencies": {
-    "@esbuild/darwin-arm64": "^0.28.1",
-    "@rollup/rollup-darwin-arm64": "^4.62.3",
     "@swc/core": "^1.15.47",
-    "@swc/core-darwin-arm64": "^1.15.47",
     "@types/bcrypt": "^6.0.0",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.1.0",
@@ -43,5 +41,10 @@
     "multer": "^2.1.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1"
+  },
+  "optionalDependencies": {
+    "@esbuild/darwin-arm64": "^0.28.1",
+    "@rollup/rollup-darwin-arm64": "^4.62.3",
+    "@swc/core-darwin-arm64": "^1.15.47"
   }
 }

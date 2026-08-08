@@ -22,9 +22,12 @@ export class GeneralTasksService {
 
   async updateTask(
     id: string,
-    payload: UpdateGeneralTaskPayload
+    payload: UpdateGeneralTaskPayload,
+    studentId: string
   ): Promise<GeneralTask> {
-    const task = await this.generalTaskModel.findByPk(id);
+    const task = await this.generalTaskModel.findOne({
+      where: { id, studentId },
+    });
 
     if (!task) {
       throw new NotFoundException("General task not found");
@@ -65,8 +68,10 @@ export class GeneralTasksService {
     return task;
   }
 
-  async deleteTask(id: string): Promise<{ success: true }> {
-    const task = await this.generalTaskModel.findByPk(id);
+  async deleteTask(id: string, studentId: string): Promise<{ success: true }> {
+    const task = await this.generalTaskModel.findOne({
+      where: { id, studentId },
+    });
 
     if (!task) {
       throw new NotFoundException("General task not found");
