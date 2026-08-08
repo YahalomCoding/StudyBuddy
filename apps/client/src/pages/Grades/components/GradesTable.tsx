@@ -26,11 +26,6 @@ type GradesTableProps = {
     assessment: GradeAssessmentItem,
     grade: number | null
   ) => Promise<void>;
-  onSaveWeight: (
-    courseId: string,
-    assessmentId: string,
-    weightPercent: number
-  ) => Promise<void>;
 };
 
 const parseGrade = (value: string) => {
@@ -54,16 +49,10 @@ export const GradesTable = ({
   isLoading,
   isSaving,
   onSaveGrade,
-  onSaveWeight,
 }: GradesTableProps) => {
   const classes = useStyles();
   const [editingAssessment, setEditingAssessment] =
     useState<EditingAssessment>(null);
-  const [editingWeight, setEditingWeight] = useState<{
-    courseId: string;
-    assessmentId: string;
-    value: string;
-  } | null>(null);
 
   const startEdit = (courseId: string, assessment: GradeAssessmentItem) => {
     setEditingAssessment({
@@ -83,14 +72,6 @@ export const GradesTable = ({
       grade
     );
     setEditingAssessment(null);
-  };
-
-  const saveWeight = async () => {
-    if (!editingWeight) return;
-    const w = parseFloat(editingWeight.value);
-    if (!Number.isFinite(w) || w < 0 || w > 100) return;
-    await onSaveWeight(editingWeight.courseId, editingWeight.assessmentId, w);
-    setEditingWeight(null);
   };
 
   return (
@@ -115,28 +96,14 @@ export const GradesTable = ({
                   key={course.studentSemesterCourseId}
                   course={course}
                   editingAssessment={editingAssessment}
-                  editingWeight={editingWeight}
                   isSaving={isSaving}
                   onStartEdit={startEdit}
-                  onStartWeightEdit={(courseId, assessment) =>
-                    setEditingWeight({
-                      courseId,
-                      assessmentId: assessment.id,
-                      value: assessment.weightPercent?.toString() ?? "",
-                    })
-                  }
                   onEditValueChange={(value) =>
                     setEditingAssessment((current) =>
                       current ? { ...current, value } : current
                     )
                   }
-                  onEditWeightChange={(value) =>
-                    setEditingWeight((current) =>
-                      current ? { ...current, value } : current
-                    )
-                  }
                   onSave={saveGrade}
-                  onSaveWeight={saveWeight}
                 />
               ))}
             </TableBody>

@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import {
   getGrades,
   gradesQueryKey,
-  updateAssessmentWeight,
   updateCourseGrades,
   type GradeAssessmentItem,
   type GradesResponseItem,
@@ -116,21 +115,6 @@ export const GradesPage = () => {
     [courses]
   );
 
-  const updateWeightMutation = useMutation({
-    mutationFn: ({
-      courseId,
-      assessmentId,
-      weightPercent,
-    }: {
-      courseId: string;
-      assessmentId: string;
-      weightPercent: number;
-    }) => updateAssessmentWeight(courseId, assessmentId, weightPercent),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: gradesQueryKey });
-    },
-  });
-
   const saveAssessmentGrade = async (
     courseId: string,
     assessment: GradeAssessmentItem,
@@ -154,18 +138,6 @@ export const GradesPage = () => {
               assessmentDueDate: assessment.dueDate,
               assessmentKind: assessment.kind,
             },
-    });
-  };
-
-  const saveAssessmentWeight = async (
-    courseId: string,
-    assessmentId: string,
-    weightPercent: number
-  ) => {
-    await updateWeightMutation.mutateAsync({
-      courseId,
-      assessmentId,
-      weightPercent,
     });
   };
 
@@ -195,7 +167,6 @@ export const GradesPage = () => {
           isLoading={isLoading}
           isSaving={updateGradeMutation.isPending}
           onSaveGrade={saveAssessmentGrade}
-          onSaveWeight={saveAssessmentWeight}
         />
       </Box>
     </Box>
