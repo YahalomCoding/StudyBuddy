@@ -1,3 +1,4 @@
+import type { NonAttribute } from "sequelize";
 import {
   BelongsTo,
   Column,
@@ -7,7 +8,6 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
-import type { NonAttribute } from "sequelize";
 import { StudentSemesterCourse } from "../student-semester-courses/student-semester-course.model";
 
 @Table

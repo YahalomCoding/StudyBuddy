@@ -673,6 +673,29 @@ export class GradesService {
 
     if (!studentSemesterCourse) throw new NotFoundException("Course not found");
 
+    const sequelize = this.studentSemesterCourseModel.sequelize;
+    if (!sequelize) throw new Error("Sequelize not available");
+
+    // Try to find a matching assignment or exam by databaseId prefix
+    if (assessmentId.startsWith("assignment-")) {
+      const dbId = assessmentId.replace("assignment-", "");
+      await sequelize.query(
+        'UPDATE "Assignments" SET "weightPercent" = :weightPercent WHERE id = :id',
+        { replacements: { weightPercent, id: dbId } }
+      );
+      return this.getStudentGrades(studentId);
+    }
+
+    if (assessmentId.startsWith("exam-")) {
+      const dbId = assessmentId.replace("exam-", "");
+      await sequelize.query(
+        'UPDATE "Exams" SET "weightPercent" = :weightPercent WHERE id = :id',
+        { replacements: { weightPercent, id: dbId } }
+      );
+      return this.getStudentGrades(studentId);
+    }
+
+    // Syllabus-sourced assessment: update in parsedData
     const syllabusRecord = await this.courseSyllabusModel.findOne({
       where: { studentSemesterCourseId: studentSemesterCourse.id },
     });
