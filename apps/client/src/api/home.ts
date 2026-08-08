@@ -124,6 +124,7 @@ export const createUpcomingEvent = async (payload: {
 export const createCourseSummary = async (payload: {
   courseTitle: string;
   semesterNumber?: number;
+  credits?: number;
 }) => {
   const response = await baseApi.post("/home/courses", payload);
   return response.data;

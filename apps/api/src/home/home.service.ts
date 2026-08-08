@@ -91,6 +91,7 @@ export type CreateUpcomingEventPayload = {
 export type CreateCourseSummaryPayload = {
   courseTitle: string;
   semesterNumber?: number;
+  credits?: number;
 };
 
 @Injectable()
@@ -190,6 +191,7 @@ export class HomeService {
           student.id,
           payload.course,
           undefined,
+          undefined,
           transaction
         );
 
@@ -227,6 +229,7 @@ export class HomeService {
           student.id,
           payload.courseTitle,
           payload.semesterNumber,
+          undefined,
           transaction
         );
 
@@ -278,6 +281,7 @@ export class HomeService {
           student.id,
           payload.courseTitle,
           payload.semesterNumber,
+          payload.credits,
           transaction
         );
 
@@ -350,6 +354,7 @@ export class HomeService {
     studentId: string,
     courseTitle: string,
     semesterNumber: number | undefined,
+    credits: number | undefined,
     transaction: Transaction
   ): Promise<StudentSemesterCourse> {
     const normalizedCourseTitle = (courseTitle || "קורס חדש").trim();
@@ -395,7 +400,7 @@ export class HomeService {
     const course = await this.findOrCreateCourse(
       normalizedCourseTitle,
       degree.id,
-      3,
+      typeof credits === "number" && credits > 0 ? credits : 3,
       transaction
     );
 

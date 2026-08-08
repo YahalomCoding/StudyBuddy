@@ -406,9 +406,11 @@ export const Home = () => {
   };
 
   const handleCourseModalSave = (values: FormValues) => {
+    const credits = parseFloat(values.credits ?? "");
     createCourseMutation.mutate({
       courseTitle: values.courseTitle?.trim() ?? "",
       semesterNumber: parseInt(values.semesterLabel ?? "1", 10),
+      credits: isNaN(credits) ? undefined : credits,
     });
   };
 
@@ -1001,6 +1003,12 @@ export const Home = () => {
             name: "courseTitle",
             label: "שם הקורס",
             placeholder: "למשל: מתמטיקה",
+          },
+          {
+            type: "number",
+            name: "credits",
+            label: "נקודות זכות",
+            placeholder: "למשל: 3",
           },
           {
             type: "select",
