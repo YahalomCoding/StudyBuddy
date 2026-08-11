@@ -1,3 +1,4 @@
+import { formatSemesterLabel } from "../../utils/labels";
 import {
   assignments,
   courses,
@@ -7,7 +8,6 @@ import {
   studentSemesterCourses,
 } from "../UpcomingEvents/mockData";
 import type { CourseSummaryViewItem, UpcomingEventViewItem } from "./types";
-
 
 const getCourseContextByStudentSemesterCourseId = (
   studentSemesterCourseId: string
@@ -29,16 +29,20 @@ const getCourseContextByStudentSemesterCourseId = (
   }
 
   const course = courses.find((item) => item.id === semesterCourse.courseId);
-  const semester = semesters.find((item) => item.id === semesterCourse.semesterId);
+  const semester = semesters.find(
+    (item) => item.id === semesterCourse.semesterId
+  );
 
   if (!course || !semester) {
     return null;
   }
 
+  const semesterLabel = formatSemesterLabel(semester.semesterNumber);
+
   return {
     courseId: course.id,
     courseTitle: course.title,
-    semesterLabel: `סמסטר ${semester.semesterNumber} / ${semester.yearNumber}`,
+    semesterLabel: semesterLabel ? `סמסטר ${semesterLabel}` : null,
   };
 };
 

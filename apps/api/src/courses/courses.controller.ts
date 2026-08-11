@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Req,
   UseGuards,
 } from "@nestjs/common";
@@ -24,6 +26,20 @@ export class CoursesController {
     return this.coursesService.getCourseDetails(
       request.user.id,
       studentSemesterCourseId
+    );
+  }
+
+  @Patch(":studentSemesterCourseId/details")
+  updateCourseDetails(
+    @Req() request: AuthRequest,
+    @Param("studentSemesterCourseId", ParseUUIDPipe)
+    studentSemesterCourseId: string,
+    @Body() body: { title?: string; credits?: number; semesterNumber?: number }
+  ) {
+    return this.coursesService.updateCourseBasicInfo(
+      request.user.id,
+      studentSemesterCourseId,
+      body
     );
   }
 }

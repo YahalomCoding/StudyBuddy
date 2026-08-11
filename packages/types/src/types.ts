@@ -8,12 +8,7 @@ export interface DurationValue {
 export type ItemStatus = "not started" | "active" | "done";
 
 export type AssignmentType =
-  | "assignment"
-  | "homework"
-  | "practice"
-  | "project"
-  | "report"
-  | "lab";
+  "assignment" | "homework" | "practice" | "project" | "report" | "lab";
 
 export interface TodoItem {
   id: string;

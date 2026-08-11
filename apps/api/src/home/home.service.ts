@@ -85,12 +85,13 @@ export type CreateUpcomingEventPayload = {
   courseTitle: string;
   description: string;
   eventDate: string;
-  semesterLabel?: string;
+  semesterNumber?: number;
 };
 
 export type CreateCourseSummaryPayload = {
   courseTitle: string;
-  semesterLabel?: string;
+  semesterNumber?: number;
+  credits?: number;
 };
 
 @Injectable()
@@ -190,6 +191,7 @@ export class HomeService {
           student.id,
           payload.course,
           undefined,
+          undefined,
           transaction
         );
 
@@ -226,7 +228,8 @@ export class HomeService {
         await this.findOrCreateStudentSemesterCourseForCourseTitle(
           student.id,
           payload.courseTitle,
-          payload.semesterLabel,
+          payload.semesterNumber,
+          undefined,
           transaction
         );
 
@@ -260,6 +263,40 @@ export class HomeService {
     });
   }
 
+  async deleteCourseSummaryItem(
+    studentSemesterCourseId: string,
+    studentId: string
+  ) {
+    const record = await this.studentSemesterCourseModel.findOne({
+      where: { id: studentSemesterCourseId, studentId },
+    });
+
+    if (!record) {
+      throw new Error("Course not found");
+    }
+
+    await record.destroy();
+  }
+
+  async deleteUpcomingEvent(examId: string, studentId: string) {
+    const record = await this.examModel.findOne({
+      where: { id: examId },
+      include: [
+        {
+          model: StudentSemesterCourse,
+          required: true,
+          where: { studentId },
+        },
+      ],
+    });
+
+    if (!record) {
+      throw new Error("Event not found");
+    }
+
+    await record.destroy();
+  }
+
   async createCourseSummaryItem(
     payload: CreateCourseSummaryPayload,
     studentId: string
@@ -277,7 +314,8 @@ export class HomeService {
         await this.findOrCreateStudentSemesterCourseForCourseTitle(
           student.id,
           payload.courseTitle,
-          payload.semesterLabel,
+          payload.semesterNumber,
+          payload.credits,
           transaction
         );
 
@@ -336,45 +374,21 @@ export class HomeService {
     return "homework";
   }
 
-  private parseSemesterLabel(value: string | undefined): {
+  private parseSemesterNumber(value: number | undefined): {
     yearNumber: number;
     semesterNumber: number;
   } {
     const currentYear = new Date().getFullYear();
-
-    if (!value) {
-      return { yearNumber: currentYear, semesterNumber: 1 };
-    }
-
-    const normalized = value.toLowerCase();
-    const yearMatch = normalized.match(/\b(20\d{2})\b/);
-
-    const yearNumber = yearMatch ? Number(yearMatch[1]) : currentYear;
-
-    // Strip year before semester parsing to avoid reading the leading 2 in 20xx as semester 2.
-    const withoutYear = normalized.replace(/\b20\d{2}\b/g, " ");
-
-    let semesterNumber = 1;
-
-    if (/\b(3|summer|sum|spring)\b|סמסטר\s*[גג׳']|קיץ/u.test(withoutYear)) {
-      semesterNumber = 3;
-    } else if (
-      /\b(2|b|second)\b|סמסטר\s*[בב׳']|\bסמסטר\s*2\b/u.test(withoutYear)
-    ) {
-      semesterNumber = 2;
-    } else if (
-      /\b(1|a|first)\b|סמסטר\s*[אא׳']|\bסמסטר\s*1\b/u.test(withoutYear)
-    ) {
-      semesterNumber = 1;
-    }
-
-    return { yearNumber, semesterNumber };
+    const semesterNumber =
+      value === 1 || value === 2 || value === 3 ? value : 1;
+    return { yearNumber: currentYear, semesterNumber };
   }
 
   private async findOrCreateStudentSemesterCourseForCourseTitle(
     studentId: string,
     courseTitle: string,
-    semesterLabel: string | undefined,
+    semesterNumber: number | undefined,
+    credits: number | undefined,
     transaction: Transaction
   ): Promise<StudentSemesterCourse> {
     const normalizedCourseTitle = (courseTitle || "קורס חדש").trim();
@@ -402,12 +416,12 @@ export class HomeService {
       return existingStudentSemesterCourse;
     }
 
-    const { yearNumber, semesterNumber } =
-      this.parseSemesterLabel(semesterLabel);
+    const { yearNumber, semesterNumber: resolvedSemesterNumber } =
+      this.parseSemesterNumber(semesterNumber);
 
     const semester = await this.findOrCreateSemester(
       yearNumber,
-      semesterNumber,
+      resolvedSemesterNumber,
       transaction
     );
 
@@ -420,7 +434,7 @@ export class HomeService {
     const course = await this.findOrCreateCourse(
       normalizedCourseTitle,
       degree.id,
-      3,
+      typeof credits === "number" && credits > 0 ? credits : 3,
       transaction
     );
 

@@ -29,11 +29,7 @@ export class GradesController {
   @UseGuards(JwtAuthGuard)
   async getGrades(@Req() req: { user?: { studentId?: string } }) {
     const studentId = req.user?.studentId;
-
-    if (!studentId) {
-      return [];
-    }
-
+    if (!studentId) return [];
     return this.gradesService.getStudentGrades(studentId);
   }
 
@@ -45,15 +41,28 @@ export class GradesController {
     @Body() body: UpdateCourseGradesPayload
   ) {
     const studentId = req.user?.studentId;
-
-    if (!studentId) {
-      return [];
-    }
-
+    if (!studentId) return [];
     return this.gradesService.updateStudentCourseGrades(
       studentId,
       courseId,
       body
+    );
+  }
+
+  @Patch(":courseId/weight")
+  @UseGuards(JwtAuthGuard)
+  async updateAssessmentWeight(
+    @Req() req: { user?: { studentId?: string } },
+    @Param("courseId") courseId: string,
+    @Body() body: { assessmentId: string; weightPercent: number }
+  ) {
+    const studentId = req.user?.studentId;
+    if (!studentId) return [];
+    return this.gradesService.updateAssessmentWeight(
+      studentId,
+      courseId,
+      body.assessmentId,
+      body.weightPercent
     );
   }
 }

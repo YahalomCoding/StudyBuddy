@@ -1,9 +1,7 @@
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import BookOutlinedIcon from "@mui/icons-material/BookOutlined";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import {
   Alert,
@@ -14,21 +12,28 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  Divider,
   IconButton,
-  Paper,
-  Stack,
   Tab,
   Tabs,
   Typography,
 } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   courseDetailsQueryKey,
   getCourseDetails,
-  type CourseDetailsAssessment,
+  updateCourseDetails,
 } from "../../api/courses";
+import {
+  createHomeAssignment,
+  homeDashboardQueryKey,
+  updateAssignment,
+  updateExam,
+} from "../../api/home";
+import { CourseAssessmentsTab } from "./CourseAssessmentsTab";
+import { CourseInfoTab } from "./CourseInfoTab";
+import { CourseSyllabusTab } from "./CourseSyllabusTab";
+import { TabPanel } from "./courseDetailsUtils";
 
 type CourseDetailsModalProps = {
   open: boolean;
@@ -37,143 +42,20 @@ type CourseDetailsModalProps = {
   courseTitle?: string | null;
 };
 
-type TabPanelProps = {
-  activeTab: number;
-  index: number;
-  children: React.ReactNode;
-};
-
-const TabPanel = ({ activeTab, index, children }: TabPanelProps) => {
-  if (activeTab !== index) {
-    return null;
-  }
-
-  return <Box sx={{ pt: 2.5 }}>{children}</Box>;
-};
-
-const InfoField = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) => (
-  <Box>
-    <Typography fontSize={12} color="text.secondary" sx={{ mb: 0.35 }}>
-      {label}
-    </Typography>
-    <Typography fontSize={14} fontWeight={500}>
-      {value}
-    </Typography>
-  </Box>
-);
-
-const ContentSection = ({
-  title,
-  icon,
-  children,
-}: {
+type NewAssignment = {
   title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) => (
-  <Paper
-    elevation={0}
-    sx={{
-      borderRadius: 3,
-      border: "1px solid",
-      borderColor: "divider",
-      p: 2,
-      bgcolor: "background.paper",
-    }}
-  >
-    <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-      {icon}
-      <Typography fontSize={15} fontWeight={600}>
-        {title}
-      </Typography>
-    </Box>
-    {children}
-  </Paper>
-);
-
-const valueOrDash = (
-  value: string | number | null | undefined,
-): string | number => {
-  if (value === null || value === undefined || value === "") {
-    return "לא צוין";
-  }
-
-  return value;
+  dueDate: string;
+  type: "assignment" | "homework" | "project" | "lab" | "report" | "practice";
 };
 
-const formatDate = (value: string | null): string => {
-  if (!value) {
-    return "לא צוין";
-  }
-
-  const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString("he-IL");
-};
-
-const statusLabel = (
-  status: CourseDetailsAssessment["status"],
-): string => {
-  switch (status) {
-    case "done":
-      return "בוצע";
-    case "active":
-      return "בתהליך";
-    case "not started":
-      return "לא התחיל";
-    default:
-      return "לא צוין";
-  }
-};
-
-const submissionModeLabel = (
-  assessment: CourseDetailsAssessment,
-): string => {
-  if (assessment.submissionMode === "individual") {
-    return "אישי";
-  }
-
-  if (assessment.submissionMode === "group") {
-    return assessment.groupSize
-      ? `${assessment.groupSize} סטודנטים`
-      : "קבוצתי";
-  }
-
-  return "לא צוין";
-};
-
-const statusChipSx = (
-  status: CourseDetailsAssessment["status"],
-) => {
-  if (status === "done") {
-    return {
-      bgcolor: "var(--sb-chip-status-done-bg)",
-      color: "var(--sb-chip-status-done-text)",
-    };
-  }
-
-  if (status === "active") {
-    return {
-      bgcolor: "var(--sb-chip-status-active-bg)",
-      color: "var(--sb-chip-status-active-text)",
-    };
-  }
-
-  return {
-    bgcolor: "var(--sb-chip-status-default-bg)",
-    color: "var(--sb-chip-status-default-text)",
-  };
-};
+type EditingAssessment = {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: "not started" | "active" | "done";
+  type: "assignment" | "homework" | "project" | "lab" | "report" | "practice";
+  kind: string;
+} | null;
 
 export const CourseDetailsModal = ({
   open,
@@ -182,21 +64,133 @@ export const CourseDetailsModal = ({
   courseTitle,
 }: CourseDetailsModalProps) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAddingAssignment, setIsAddingAssignment] = useState(false);
+  const [editingAssessment, setEditingAssessment] =
+    useState<EditingAssessment>(null);
+  const [newAssignment, setNewAssignment] = useState<NewAssignment>({
+    title: "",
+    dueDate: "",
+    type: "assignment",
+  });
+  const [editValues, setEditValues] = useState({
+    title: "",
+    credits: "",
+    semesterNumber: "1",
+  });
 
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: courseDetailsQueryKey(studentSemesterCourseId),
     queryFn: () => getCourseDetails(studentSemesterCourseId!),
     enabled: open && Boolean(studentSemesterCourseId),
     staleTime: 5 * 60 * 1000,
   });
 
+  useEffect(() => {
+    if (data && !isEditing) {
+      setEditValues({
+        title: data.title,
+        credits: data.credits != null ? String(data.credits) : "",
+        semesterNumber: String(data.semesterNumber),
+      });
+    }
+  }, [data, isEditing]);
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: {
+      title?: string;
+      credits?: number;
+      semesterNumber?: number;
+    }) => updateCourseDetails(studentSemesterCourseId!, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setIsEditing(false);
+    },
+  });
+
+  const addAssignmentMutation = useMutation({
+    mutationFn: createHomeAssignment,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setIsAddingAssignment(false);
+      setNewAssignment({ title: "", dueDate: "", type: "assignment" });
+    },
+  });
+
+  const updateAssignmentMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        title?: string;
+        dueDate?: string;
+        status?: "not started" | "active" | "done";
+        type?:
+          "assignment" | "homework" | "practice" | "project" | "report" | "lab";
+      };
+    }) => updateAssignment(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setEditingAssessment(null);
+    },
+  });
+
+  const updateExamMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: { date?: string; type?: number };
+    }) => updateExam(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseDetailsQueryKey(studentSemesterCourseId),
+      });
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setEditingAssessment(null);
+    },
+  });
+
+  const handleSaveEdit = () => {
+    const credits = parseFloat(editValues.credits);
+    updateMutation.mutate({
+      title: editValues.title.trim() || undefined,
+      credits: isNaN(credits) ? undefined : credits,
+      semesterNumber: parseInt(editValues.semesterNumber, 10),
+    });
+  };
+
+  const handleSaveAssignment = () => {
+    if (!data || !newAssignment.title.trim() || !newAssignment.dueDate) return;
+    addAssignmentMutation.mutate({
+      course: data.title,
+      title: newAssignment.title.trim(),
+      dueDate: newAssignment.dueDate,
+      status: "not started",
+      type: newAssignment.type,
+    });
+  };
+
   const handleClose = () => {
     setActiveTab(0);
+    setIsEditing(false);
+    setIsAddingAssignment(false);
+    setEditingAssessment(null);
+    setNewAssignment({ title: "", dueDate: "", type: "assignment" });
     onClose();
   };
 
@@ -222,11 +216,7 @@ export const CourseDetailsModal = ({
     >
       <DialogTitle
         component="div"
-        sx={{
-          p: 0,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-        }}
+        sx={{ p: 0, borderBottom: "1px solid", borderColor: "divider" }}
       >
         <Box
           sx={{
@@ -260,15 +250,10 @@ export const CourseDetailsModal = ({
                 <Typography fontWeight={600} fontSize={17} noWrap>
                   {displayedTitle}
                 </Typography>
-
                 {data ? (
                   <Chip
                     size="small"
-                    label={
-                      data.syllabus.exists
-                        ? "מידע מסילבוס"
-                        : "ללא סילבוס"
-                    }
+                    label={data.syllabus.exists ? "מידע מסילבוס" : "ללא סילבוס"}
                     sx={{
                       height: 21,
                       fontSize: 10,
@@ -283,42 +268,33 @@ export const CourseDetailsModal = ({
                   />
                 ) : null}
               </Box>
-
               <Typography color="text.secondary" fontSize={13} noWrap>
-                {data?.englishTitle ||
-                  data?.degreeTitle ||
-                  "טוען פרטי קורס..."}
+                {data?.englishTitle || data?.degreeTitle || "טוען פרטי קורס..."}
               </Typography>
             </Box>
           </Box>
 
-          <IconButton
-            size="small"
-            aria-label="סגור"
-            onClick={handleClose}
-            sx={{ mt: -0.5 }}
-          >
-            <CloseRoundedIcon fontSize="small" />
-          </IconButton>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <IconButton
+              size="small"
+              aria-label="סגור"
+              onClick={handleClose}
+              sx={{ mt: -0.5 }}
+            >
+              <CloseRoundedIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </Box>
 
         <Tabs
           value={activeTab}
-          onChange={(_event, value: number) => setActiveTab(value)}
+          onChange={(_e, v: number) => setActiveTab(v)}
           variant="fullWidth"
           sx={{
             minHeight: 44,
-            "& .MuiTab-root": {
-              minHeight: 44,
-              fontSize: 13,
-              fontWeight: 500,
-            },
-            "& .MuiTabs-indicator": {
-              bgcolor: "#22c55e",
-            },
-            "& .Mui-selected": {
-              color: "#16a34a !important",
-            },
+            "& .MuiTab-root": { minHeight: 44, fontSize: 13, fontWeight: 500 },
+            "& .MuiTabs-indicator": { bgcolor: "#22c55e" },
+            "& .Mui-selected": { color: "#16a34a !important" },
           }}
         >
           <Tab
@@ -348,8 +324,7 @@ export const CourseDetailsModal = ({
       >
         {!studentSemesterCourseId ? (
           <Alert severity="error">
-            לא נמצא מזהה הקורס של הסטודנט. יש לפתוח את החלון מתוך רשימת
-            הקורסים.
+            לא נמצא מזהה הקורס של הסטודנט. יש לפתוח את החלון מתוך רשימת הקורסים.
           </Alert>
         ) : isLoading ? (
           <Box
@@ -384,491 +359,35 @@ export const CourseDetailsModal = ({
         ) : (
           <>
             <TabPanel activeTab={activeTab} index={0}>
-              <Stack spacing={2}>
-                <ContentSection
-                  title="מידע כללי"
-                  icon={
-                    <InfoOutlinedIcon
-                      sx={{ fontSize: 19, color: "#22c55e" }}
-                    />
-                  }
-                >
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: {
-                        xs: "1fr 1fr",
-                        md: "repeat(4, minmax(0, 1fr))",
-                      },
-                      gap: 2,
-                    }}
-                  >
-                    <InfoField
-                      label="קוד קורס"
-                      value={valueOrDash(data.code)}
-                    />
-                    <InfoField
-                      label="נקודות זכות"
-                      value={
-                        data.credits === null
-                          ? "לא צוין"
-                          : `${data.credits} נ״ז`
-                      }
-                    />
-                    <InfoField
-                      label="שעות שבועיות"
-                      value={
-                        data.weeklyHours === null
-                          ? "לא צוין"
-                          : `${data.weeklyHours} ש״ס`
-                      }
-                    />
-                    <InfoField
-                      label="שנה וסמסטר"
-                      value={`${data.academicYearLabel} · סמסטר ${data.semesterLabel}`}
-                    />
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                      gap: 2,
-                    }}
-                  >
-                    <InfoField
-                      label="מוסד"
-                      value={valueOrDash(data.institution)}
-                    />
-                    <InfoField
-                      label="פקולטה / מסלול"
-                      value={
-                        data.faculty ||
-                        data.degreeTitle ||
-                        "לא צוין"
-                      }
-                    />
-                  </Box>
-                </ContentSection>
-
-                <ContentSection
-                  title="מרצים"
-                  icon={
-                    <PersonOutlineRoundedIcon
-                      sx={{ fontSize: 19, color: "#22c55e" }}
-                    />
-                  }
-                >
-                  {data.lecturers.length === 0 ? (
-                    <Typography color="text.secondary" fontSize={13}>
-                      לא נמצאו פרטי מרצה בסילבוס.
-                    </Typography>
-                  ) : (
-                    <Stack spacing={1.25}>
-                      {data.lecturers.map((lecturer, index) => (
-                        <Box
-                          key={`${lecturer.email ?? "lecturer"}-${index}`}
-                          sx={{
-                            display: "flex",
-                            alignItems: { xs: "flex-start", sm: "center" },
-                            flexDirection: { xs: "column", sm: "row" },
-                            justifyContent: "space-between",
-                            gap: 1.5,
-                            pb:
-                              index === data.lecturers.length - 1
-                                ? 0
-                                : 1.25,
-                            borderBottom:
-                              index === data.lecturers.length - 1
-                                ? "none"
-                                : "1px solid",
-                            borderColor: "divider",
-                          }}
-                        >
-                          <Box>
-                            <Typography fontWeight={500} fontSize={14}>
-                              {lecturer.name || "שם המרצה לא צוין"}
-                            </Typography>
-
-                            {lecturer.email ? (
-                              <Box
-                                display="flex"
-                                alignItems="center"
-                                gap={0.6}
-                                mt={0.5}
-                              >
-                                <EmailOutlinedIcon
-                                  sx={{
-                                    fontSize: 16,
-                                    color: "text.secondary",
-                                  }}
-                                />
-                                <Typography
-                                  color="text.secondary"
-                                  fontSize={13}
-                                >
-                                  {lecturer.email}
-                                </Typography>
-                              </Box>
-                            ) : null}
-                          </Box>
-
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            flexWrap="wrap"
-                          >
-                            {lecturer.officeHours ? (
-                              <Chip
-                                size="small"
-                                label={lecturer.officeHours}
-                                variant="outlined"
-                              />
-                            ) : null}
-                            {lecturer.location ? (
-                              <Chip
-                                size="small"
-                                label={lecturer.location}
-                                variant="outlined"
-                              />
-                            ) : null}
-                          </Stack>
-                        </Box>
-                      ))}
-                    </Stack>
-                  )}
-                </ContentSection>
-
-                <ContentSection title="תיאור הקורס">
-                  <Typography
-                    fontSize={14}
-                    lineHeight={1.8}
-                    color="text.secondary"
-                  >
-                    {data.description || "לא נמצא תיאור קורס בסילבוס."}
-                  </Typography>
-                </ContentSection>
-
-                <ContentSection title="שיטת הוראה ודרישות קדם">
-                  <Stack spacing={1.25}>
-                    <InfoField
-                      label="שיטת הוראה"
-                      value={valueOrDash(data.teachingMethod)}
-                    />
-                    <InfoField
-                      label="דרישות קדם"
-                      value={
-                        data.prerequisites.length > 0
-                          ? data.prerequisites.join(" · ")
-                          : "לא צוינו"
-                      }
-                    />
-                  </Stack>
-                </ContentSection>
-              </Stack>
+              <CourseInfoTab
+                data={data}
+                isEditing={isEditing}
+                setIsEditing={setIsEditing}
+                editValues={editValues}
+                setEditValues={setEditValues}
+                updateMutation={updateMutation}
+                handleSaveEdit={handleSaveEdit}
+              />
             </TabPanel>
 
             <TabPanel activeTab={activeTab} index={1}>
-              {data.assessments.length === 0 ? (
-                <Alert severity="info">
-                  לא נמצאו מטלות או מבחנים עבור הקורס.
-                </Alert>
-              ) : (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    overflow: "hidden",
-                    bgcolor: "background.paper",
-                  }}
-                >
-                  <Box sx={{ overflowX: "auto" }}>
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "minmax(190px, 1fr) 90px 70px 105px 105px 110px",
-                        gap: 1,
-                        px: 2,
-                        py: 1.2,
-                        bgcolor: "action.hover",
-                        borderBottom: "1px solid",
-                        borderColor: "divider",
-                        minWidth: 730,
-                      }}
-                    >
-                      {[
-                        "שם",
-                        "סוג",
-                        "משקל",
-                        "תאריך",
-                        "הגשה",
-                        "סטטוס",
-                      ].map((label) => (
-                        <Typography
-                          key={label}
-                          fontSize={12}
-                          color="text.secondary"
-                          fontWeight={500}
-                        >
-                          {label}
-                        </Typography>
-                      ))}
-                    </Box>
-
-                    {data.assessments.map((assessment) => (
-                      <Box
-                        key={assessment.id}
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "minmax(190px, 1fr) 90px 70px 105px 105px 110px",
-                          gap: 1,
-                          alignItems: "center",
-                          px: 2,
-                          py: 1.35,
-                          minWidth: 730,
-                          borderBottom: "1px solid",
-                          borderColor: "divider",
-                          "&:last-of-type": {
-                            borderBottom: "none",
-                          },
-                          "&:hover": {
-                            bgcolor: "action.hover",
-                          },
-                        }}
-                      >
-                        <Box minWidth={0}>
-                          <Typography
-                            fontSize={13}
-                            fontWeight={500}
-                            noWrap
-                          >
-                            {assessment.title}
-                          </Typography>
-                          {assessment.notes ? (
-                            <Typography
-                              fontSize={11}
-                              color="text.secondary"
-                              noWrap
-                            >
-                              {assessment.notes}
-                            </Typography>
-                          ) : null}
-                        </Box>
-
-                        <Chip
-                          size="small"
-                          label={assessment.typeLabel}
-                          sx={{
-                            width: "fit-content",
-                            bgcolor:
-                              "var(--sb-chip-type-default-bg)",
-                            color:
-                              "var(--sb-chip-type-default-text)",
-                            fontWeight: 500,
-                            fontSize: 11,
-                            height: 22,
-                          }}
-                        />
-
-                        <Typography fontSize={13}>
-                          {assessment.weightPercent === null
-                            ? "—"
-                            : `${assessment.weightPercent}%`}
-                        </Typography>
-
-                        <Typography
-                          fontSize={12}
-                          color="text.secondary"
-                        >
-                          {formatDate(assessment.dueDate)}
-                        </Typography>
-
-                        <Typography
-                          fontSize={12}
-                          color="text.secondary"
-                        >
-                          {submissionModeLabel(assessment)}
-                        </Typography>
-
-                        <Chip
-                          size="small"
-                          label={statusLabel(assessment.status)}
-                          sx={{
-                            width: "fit-content",
-                            ...statusChipSx(assessment.status),
-                            fontWeight: 500,
-                            fontSize: 11,
-                            height: 22,
-                          }}
-                        />
-                      </Box>
-                    ))}
-                  </Box>
-                </Paper>
-              )}
+              <CourseAssessmentsTab
+                assessments={data.assessments}
+                isAddingAssignment={isAddingAssignment}
+                setIsAddingAssignment={setIsAddingAssignment}
+                newAssignment={newAssignment}
+                setNewAssignment={setNewAssignment}
+                addAssignmentMutation={addAssignmentMutation}
+                handleSaveAssignment={handleSaveAssignment}
+                editingAssessment={editingAssessment}
+                setEditingAssessment={setEditingAssessment}
+                updateAssignmentMutation={updateAssignmentMutation}
+                updateExamMutation={updateExamMutation}
+              />
             </TabPanel>
 
             <TabPanel activeTab={activeTab} index={2}>
-              {!data.syllabus.exists ? (
-                <Alert severity="info">
-                  עדיין לא הועלה סילבוס לקורס הזה. פרטי הקורס והמטלות
-                  נשאבו מהמידע הקיים במערכת.
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  <ContentSection title="תוצרי למידה">
-                    {data.learningOutcomes.length === 0 ? (
-                      <Typography
-                        fontSize={13}
-                        color="text.secondary"
-                      >
-                        לא נמצאו תוצרי למידה.
-                      </Typography>
-                    ) : (
-                      <Stack
-                        component="ol"
-                        spacing={1}
-                        sx={{ m: 0, pr: 2.5 }}
-                      >
-                        {data.learningOutcomes.map((outcome) => (
-                          <Typography
-                            key={outcome}
-                            component="li"
-                            fontSize={14}
-                            color="text.secondary"
-                            lineHeight={1.7}
-                          >
-                            {outcome}
-                          </Typography>
-                        ))}
-                      </Stack>
-                    )}
-                  </ContentSection>
-
-                  <ContentSection title="נושאי הקורס">
-                    {data.topics.length === 0 ? (
-                      <Typography
-                        fontSize={13}
-                        color="text.secondary"
-                      >
-                        לא נמצאו נושאי קורס.
-                      </Typography>
-                    ) : (
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: {
-                            xs: "1fr",
-                            md: "1fr 1fr",
-                          },
-                          gap: 1,
-                        }}
-                      >
-                        {data.topics.map((topic) => (
-                          <Box
-                            key={topic.id}
-                            display="flex"
-                            alignItems="center"
-                            gap={1}
-                            sx={{
-                              py: 0.75,
-                              px: 1,
-                              borderRadius: 2,
-                              "&:hover": {
-                                bgcolor: "action.hover",
-                              },
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: "50%",
-                                bgcolor: "action.hover",
-                                color: "text.secondary",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: 11,
-                                fontWeight: 600,
-                                flexShrink: 0,
-                              }}
-                            >
-                              {topic.order}
-                            </Box>
-                            <Typography fontSize={13}>
-                              {topic.title}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
-                  </ContentSection>
-
-                  <ContentSection title="מדיניות הקורס">
-                    {data.policies.length === 0 ? (
-                      <Typography
-                        fontSize={13}
-                        color="text.secondary"
-                      >
-                        לא נמצאה מדיניות קורס.
-                      </Typography>
-                    ) : (
-                      <Stack spacing={1}>
-                        {data.policies.map((policy) => (
-                          <Typography
-                            key={policy}
-                            fontSize={14}
-                            color="text.secondary"
-                            lineHeight={1.7}
-                          >
-                            • {policy}
-                          </Typography>
-                        ))}
-                      </Stack>
-                    )}
-                  </ContentSection>
-
-                  <ContentSection title="מדיניות שימוש בבינה מלאכותית">
-                    <Typography
-                      fontSize={14}
-                      color="text.secondary"
-                      lineHeight={1.7}
-                    >
-                      {data.aiPolicy || "לא צוינה מדיניות שימוש ב־AI."}
-                    </Typography>
-                  </ContentSection>
-
-                  <ContentSection title="ביבליוגרפיה">
-                    {data.bibliography.length === 0 ? (
-                      <Typography
-                        fontSize={13}
-                        color="text.secondary"
-                      >
-                        לא נמצאה ביבליוגרפיה.
-                      </Typography>
-                    ) : (
-                      <Stack spacing={0.8}>
-                        {data.bibliography.map((item) => (
-                          <Typography
-                            key={item}
-                            fontSize={13}
-                            color="text.secondary"
-                          >
-                            • {item}
-                          </Typography>
-                        ))}
-                      </Stack>
-                    )}
-                  </ContentSection>
-                </Stack>
-              )}
+              <CourseSyllabusTab data={data} />
             </TabPanel>
           </>
         )}

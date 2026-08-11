@@ -13,13 +13,13 @@ import { StudentSemesterCourse } from "../student-semester-courses/student-semes
 import { Student } from "../students/student.model";
 import { CourseSyllabus } from "../syllabi/course-syllabus.model";
 import type { AssessmentKind, SyllabusData } from "../syllabi/syllabus.schemas";
-
-type SyllabusAssessment = SyllabusData["assessments"][number];
-import { Course } from "./courses.model";
 import type {
   CourseDetailsAssessment,
   CourseDetailsResponse,
 } from "./course-details.types";
+import { Course } from "./courses.model";
+
+type SyllabusAssessment = SyllabusData["assessments"][number];
 
 @Injectable()
 export class CoursesService {
@@ -112,7 +112,7 @@ export class CoursesService {
       title: syllabus?.course.title?.trim() || course.title,
       englishTitle: syllabus?.course.englishTitle ?? null,
       code: syllabus?.course.code ?? null,
-      credits: syllabus?.course.credits ?? null,
+      credits: syllabus?.course.credits ?? course.credits ?? null,
       weeklyHours: syllabus?.course.weeklyHours ?? null,
 
       academicYearLabel:
@@ -154,6 +154,51 @@ export class CoursesService {
         confirmedAt: syllabusRecord?.confirmedAt?.toISOString() ?? null,
       },
     };
+  }
+
+  async updateCourseBasicInfo(
+    userId: string,
+    studentSemesterCourseId: string,
+    payload: { title?: string; credits?: number; semesterNumber?: number }
+  ) {
+    const student = await this.studentModel.findOne({ where: { userId } });
+
+    if (!student) throw new NotFoundException("Student not found");
+
+    const studentSemesterCourse = await this.studentSemesterCourseModel.findOne(
+      {
+        where: { id: studentSemesterCourseId, studentId: student.id },
+        include: [
+          {
+            model: SemesterCourse,
+            required: true,
+            include: [
+              { model: Course, required: true },
+              { model: Semester, required: true },
+            ],
+          },
+        ],
+      }
+    );
+
+    if (!studentSemesterCourse)
+      throw new NotFoundException("Course not found for the current student");
+
+    const { course, semester } = studentSemesterCourse.semesterCourse;
+
+    if (payload.title !== undefined) {
+      await course.update({ title: payload.title.trim() });
+    }
+
+    if (payload.credits !== undefined) {
+      await course.update({ credits: payload.credits });
+    }
+
+    if (payload.semesterNumber !== undefined) {
+      await semester.update({ semesterNumber: payload.semesterNumber });
+    }
+
+    return { ok: true };
   }
 
   private buildAssessments(

@@ -14,11 +14,8 @@ import type {
   GradeAssessmentItem,
   GradesResponseItem,
 } from "../../../api/grades";
-import {
-  CourseGradeRows,
-  type EditingAssessment,
-} from "./CourseGradeRows";
 import { useStyles } from "../style";
+import { CourseGradeRows, type EditingAssessment } from "./CourseGradeRows";
 
 type GradesTableProps = {
   courses: GradesResponseItem[];
@@ -27,7 +24,7 @@ type GradesTableProps = {
   onSaveGrade: (
     courseId: string,
     assessment: GradeAssessmentItem,
-    grade: number | null,
+    grade: number | null
   ) => Promise<void>;
 };
 
@@ -57,10 +54,7 @@ export const GradesTable = ({
   const [editingAssessment, setEditingAssessment] =
     useState<EditingAssessment>(null);
 
-  const startEdit = (
-    courseId: string,
-    assessment: GradeAssessmentItem,
-  ) => {
+  const startEdit = (courseId: string, assessment: GradeAssessmentItem) => {
     setEditingAssessment({
       courseId,
       assessment,
@@ -69,20 +63,13 @@ export const GradesTable = ({
   };
 
   const saveGrade = async () => {
-    if (!editingAssessment) {
-      return;
-    }
-
+    if (!editingAssessment) return;
     const grade = parseGrade(editingAssessment.value);
-
-    if (grade === undefined) {
-      return;
-    }
-
+    if (grade === undefined) return;
     await onSaveGrade(
       editingAssessment.courseId,
       editingAssessment.assessment,
-      grade,
+      grade
     );
     setEditingAssessment(null);
   };
@@ -113,7 +100,7 @@ export const GradesTable = ({
                   onStartEdit={startEdit}
                   onEditValueChange={(value) =>
                     setEditingAssessment((current) =>
-                      current ? { ...current, value } : current,
+                      current ? { ...current, value } : current
                     )
                   }
                   onSave={saveGrade}

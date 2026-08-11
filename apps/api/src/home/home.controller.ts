@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   Req,
   UnauthorizedException,
@@ -82,5 +84,25 @@ export class HomeController {
     const studentId = this.getStudentIdFromRequest(req);
 
     return this.homeService.createCourseSummaryItem(body, studentId);
+  }
+
+  @Delete("courses/:id")
+  async deleteCourseSummaryItem(
+    @Param("id") id: string,
+    @Req() req: AuthenticatedRequest
+  ) {
+    const studentId = this.getStudentIdFromRequest(req);
+
+    return this.homeService.deleteCourseSummaryItem(id, studentId);
+  }
+
+  @Delete("events/:id")
+  async deleteUpcomingEvent(
+    @Param("id") id: string,
+    @Req() req: AuthenticatedRequest
+  ) {
+    const studentId = this.getStudentIdFromRequest(req);
+
+    return this.homeService.deleteUpcomingEvent(id, studentId);
   }
 }

@@ -82,16 +82,26 @@ export type CourseDetailsResponse = {
   };
 };
 
-export const courseDetailsQueryKey = (
-  studentSemesterCourseId: string | null,
-) =>
+export const courseDetailsQueryKey = (studentSemesterCourseId: string | null) =>
   ["course-details", studentSemesterCourseId] as const;
 
 export const getCourseDetails = async (
-  studentSemesterCourseId: string,
+  studentSemesterCourseId: string
 ): Promise<CourseDetailsResponse> => {
   const response = await baseApi.get<CourseDetailsResponse>(
+    `/courses/${studentSemesterCourseId}/details`
+  );
+
+  return response.data;
+};
+
+export const updateCourseDetails = async (
+  studentSemesterCourseId: string,
+  payload: { title?: string; credits?: number; semesterNumber?: number }
+) => {
+  const response = await baseApi.patch(
     `/courses/${studentSemesterCourseId}/details`,
+    payload
   );
 
   return response.data;

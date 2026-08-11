@@ -1,12 +1,27 @@
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
   alpha,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Divider,
+  IconButton,
+  MenuItem,
+  Select,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -104,6 +119,16 @@ export const AssignmentsPage = () => {
   const [draggedAssignmentId, setDraggedAssignmentId] = useState<string | null>(
     null
   );
+  const [selectedAssignment, setSelectedAssignment] =
+    useState<HomeDashboardAssignment | null>(null);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [editingAssignment, setEditingAssignment] =
+    useState<HomeDashboardAssignment | null>(null);
+  const [editValues, setEditValues] = useState<{
+    title: string;
+    dueDate: string;
+    type: HomeDashboardAssignment["type"];
+  } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: homeDashboardQueryKey,
@@ -155,10 +180,33 @@ export const AssignmentsPage = () => {
     },
   });
 
+  const editAssignmentMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Parameters<typeof updateAssignment>[1];
+    }) => updateAssignment(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setEditingAssignment(null);
+      setEditValues(null);
+    },
+  });
+
   const assignments = useMemo(
     () => data?.assignments ?? [],
     [data?.assignments]
   );
+
+  const todos = useMemo(() => data?.todos ?? [], [data?.todos]);
+
+  const relatedTodos = useMemo(() => {
+    if (!selectedAssignment) return [];
+    const keyword = selectedAssignment.title.toLowerCase();
+    return todos.filter((t) => t.title.toLowerCase().includes(keyword));
+  }, [selectedAssignment, todos]);
 
   const groupedAssignments = useMemo(() => {
     return COLUMN_CONFIG.reduce(
@@ -193,133 +241,385 @@ export const AssignmentsPage = () => {
   };
 
   return (
-    <Box className={classes.page}>
-      <Box className={classes.topBar}>
-        <Typography className={classes.topBarTitle}>מטלות</Typography>
-      </Box>
-
-      <Stack spacing={3} className={classes.pageContent}>
-        <Box className={classes.header}>
-          <Typography variant="h4" className={classes.title}>
-            לוח מטלות
-          </Typography>
-          <Typography variant="body1" className={classes.subtitle}>
-            גרור כרטיסים בין העמודות כדי לעדכן את הסטטוס באופן מיידי.
-          </Typography>
+    <>
+      <Box className={classes.page}>
+        <Box className={classes.topBar}>
+          <Typography className={classes.topBarTitle}>מטלות</Typography>
         </Box>
 
-        {isLoading ? (
-          <Box className={classes.loaderBox}>
-            <CircularProgress />
+        <Stack spacing={3} className={classes.pageContent}>
+          <Box className={classes.header}>
+            <Typography variant="h4" className={classes.title}>
+              לוח מטלות
+            </Typography>
+            <Typography variant="body1" className={classes.subtitle}>
+              גרור כרטיסים בין העמודות כדי לעדכן את הסטטוס באופן מיידי.
+            </Typography>
           </Box>
-        ) : (
-          <Box className={classes.boardGrid}>
-            {COLUMN_CONFIG.map((column) => (
-              <Box
-                key={column.id}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={() => handleDrop(column.id)}
-                className={classes.column}
-                style={{
-                  backgroundColor: alpha(column.color, 0.08),
-                  borderColor: alpha(column.color, 0.28),
-                }}
-              >
-                <Stack spacing={1.5}>
-                  <Box className={classes.columnHeader}>
-                    <Typography variant="h6" className={classes.columnTitle}>
-                      {column.title}
-                    </Typography>
-                  </Box>
-                  <Divider />
-                  <Stack spacing={1.5} className={classes.columnBody}>
-                    {groupedAssignments[column.id].length === 0 ? (
-                      <Box className={classes.emptyState}>אין מטלות עדיין.</Box>
-                    ) : (
-                      groupedAssignments[column.id].map((assignment) => (
-                        <Card
-                          key={assignment.id}
-                          draggable
-                          onDragStart={() =>
-                            setDraggedAssignmentId(assignment.id)
-                          }
-                          onDragEnd={() => setDraggedAssignmentId(null)}
-                          className={classes.assignmentCard}
-                        >
-                          <CardContent className={classes.cardContent}>
-                            <Stack spacing={1.2} className={classes.cardInner}>
-                              <Typography
-                                variant="subtitle1"
-                                className={classes.assignmentTitle}
+
+          {isLoading ? (
+            <Box className={classes.loaderBox}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box className={classes.boardGrid}>
+              {COLUMN_CONFIG.map((column) => (
+                <Box
+                  key={column.id}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => handleDrop(column.id)}
+                  className={classes.column}
+                  style={{
+                    backgroundColor: alpha(column.color, 0.08),
+                    borderColor: alpha(column.color, 0.28),
+                  }}
+                >
+                  <Stack spacing={1.5}>
+                    <Box className={classes.columnHeader}>
+                      <Typography variant="h6" className={classes.columnTitle}>
+                        {column.title}
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <Stack spacing={1.5} className={classes.columnBody}>
+                      {groupedAssignments[column.id].length === 0 ? (
+                        <Box className={classes.emptyState}>
+                          אין מטלות עדיין.
+                        </Box>
+                      ) : (
+                        groupedAssignments[column.id].map((assignment) => (
+                          <Card
+                            key={assignment.id}
+                            draggable
+                            onDragStart={() =>
+                              setDraggedAssignmentId(assignment.id)
+                            }
+                            onDragEnd={() => setDraggedAssignmentId(null)}
+                            onClick={() => setSelectedAssignment(assignment)}
+                            onMouseEnter={() => setHoveredCardId(assignment.id)}
+                            onMouseLeave={() =>
+                              setHoveredCardId((p) =>
+                                p === assignment.id ? null : p
+                              )
+                            }
+                            className={classes.assignmentCard}
+                            sx={{ cursor: "pointer", position: "relative" }}
+                          >
+                            {hoveredCardId === assignment.id && (
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: "absolute",
+                                  top: 6,
+                                  left: 6,
+                                  zIndex: 1,
+                                  bgcolor: "background.paper",
+                                  boxShadow: 1,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingAssignment(assignment);
+                                  setEditValues({
+                                    title: assignment.title,
+                                    dueDate: assignment.dueDate.slice(0, 10),
+                                    type: assignment.type,
+                                  });
+                                }}
                               >
-                                {assignment.title}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                className={classes.assignmentCourse}
+                                <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            )}
+                            <CardContent className={classes.cardContent}>
+                              <Stack
+                                spacing={1.2}
+                                className={classes.cardInner}
                               >
-                                {assignment.course}
-                              </Typography>
-                              <Stack className={classes.chipRow}>
-                                <Chip
-                                  className={classes.typeChip}
-                                  label={typeToDisplayName(assignment.type)}
-                                  size="small"
-                                  variant="filled"
-                                />
-                                <Chip
-                                  className={classes.statusChip}
-                                  label={statusToDisplayName(assignment.status)}
-                                  size="small"
-                                  color={
-                                    assignment.status === "done"
-                                      ? "success"
-                                      : assignment.status === "active"
-                                        ? "primary"
-                                        : "default"
-                                  }
-                                />
-                              </Stack>
-                              <Stack className={classes.metaRow}>
                                 <Typography
-                                  variant="caption"
-                                  className={classes.dueDateText}
+                                  variant="subtitle1"
+                                  className={classes.assignmentTitle}
                                 >
-                                  תאריך יעד: {formatDueDate(assignment.dueDate)}
+                                  {assignment.title}
                                 </Typography>
                                 <Typography
-                                  variant="caption"
-                                  className={classes.daysLabel}
-                                  color={
-                                    assignment.status === "done"
-                                      ? "success.main"
-                                      : getDaysLeftLabel(
-                                            assignment.dueDate,
-                                            assignment.status
-                                          ).includes("באיחור")
-                                        ? "error.main"
-                                        : "primary.main"
-                                  }
-                                  fontWeight={700}
+                                  variant="body2"
+                                  className={classes.assignmentCourse}
                                 >
-                                  {getDaysLeftLabel(
-                                    assignment.dueDate,
-                                    assignment.status
-                                  )}
+                                  {assignment.course}
                                 </Typography>
+                                <Stack className={classes.chipRow}>
+                                  <Chip
+                                    className={classes.typeChip}
+                                    label={typeToDisplayName(assignment.type)}
+                                    size="small"
+                                    variant="filled"
+                                  />
+                                  <Chip
+                                    className={classes.statusChip}
+                                    label={statusToDisplayName(
+                                      assignment.status
+                                    )}
+                                    size="small"
+                                    color={
+                                      assignment.status === "done"
+                                        ? "success"
+                                        : assignment.status === "active"
+                                          ? "primary"
+                                          : "default"
+                                    }
+                                  />
+                                </Stack>
+                                <Stack className={classes.metaRow}>
+                                  <Typography
+                                    variant="caption"
+                                    className={classes.dueDateText}
+                                  >
+                                    תאריך יעד:{" "}
+                                    {formatDueDate(assignment.dueDate)}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    className={classes.daysLabel}
+                                    color={
+                                      assignment.status === "done"
+                                        ? "success.main"
+                                        : getDaysLeftLabel(
+                                              assignment.dueDate,
+                                              assignment.status
+                                            ).includes("באיחור")
+                                          ? "error.main"
+                                          : "primary.main"
+                                    }
+                                    fontWeight={700}
+                                  >
+                                    {getDaysLeftLabel(
+                                      assignment.dueDate,
+                                      assignment.status
+                                    )}
+                                  </Typography>
+                                </Stack>
                               </Stack>
-                            </Stack>
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </Stack>
                   </Stack>
-                </Stack>
-              </Box>
-            ))}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Stack>
+      </Box>
+
+      <Dialog
+        open={Boolean(selectedAssignment)}
+        onClose={() => setSelectedAssignment(null)}
+        fullWidth
+        maxWidth="sm"
+        dir="rtl"
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle
+          component="div"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            pb: 1,
+          }}
+        >
+          <Box>
+            <Typography fontWeight={600} fontSize={16}>
+              {selectedAssignment?.title}
+            </Typography>
+            <Typography fontSize={13} color="text.secondary">
+              {selectedAssignment?.course}
+            </Typography>
           </Box>
-        )}
-      </Stack>
-    </Box>
+          <IconButton size="small" onClick={() => setSelectedAssignment(null)}>
+            <CloseRoundedIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 0 }}>
+          {relatedTodos.length === 0 ? (
+            <Typography
+              color="text.secondary"
+              fontSize={13}
+              py={2}
+              textAlign="center"
+            >
+              לא נמצאו משימות הקשורות למטלה זו.
+            </Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>שם המשימה</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>תאריך יעד</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>זמן משוער</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>בוצע</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {relatedTodos.map((todo) => (
+                  <TableRow key={todo.id} hover>
+                    <TableCell
+                      sx={{
+                        textDecoration: todo.done ? "line-through" : "none",
+                        color: todo.done ? "text.secondary" : "text.primary",
+                      }}
+                    >
+                      {todo.title}
+                    </TableCell>
+                    <TableCell>
+                      {formatDueDate(new Date(todo.dueDate))}
+                    </TableCell>
+                    <TableCell>
+                      {todo.estimatedTime.value}{" "}
+                      {todo.estimatedTime.unit === "minutes"
+                        ? "דק'"
+                        : todo.estimatedTime.unit === "hours"
+                          ? "שע'"
+                          : "ימים"}
+                    </TableCell>
+                    <TableCell>{todo.done ? "✓" : "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(editingAssignment)}
+        onClose={() => {
+          setEditingAssignment(null);
+          setEditValues(null);
+        }}
+        fullWidth
+        maxWidth="xs"
+        dir="rtl"
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle
+          component="div"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            pb: 1,
+          }}
+        >
+          <Typography fontWeight={600} fontSize={16}>
+            עריכת מטלה
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={() => {
+              setEditingAssignment(null);
+              setEditValues(null);
+            }}
+          >
+            <CloseRoundedIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 0 }}>
+          {editValues && (
+            <Stack spacing={2} mt={1}>
+              <Box>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  שם המטלה
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={editValues.title}
+                  onChange={(e) =>
+                    setEditValues((v) =>
+                      v ? { ...v, title: e.target.value } : v
+                    )
+                  }
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+                />
+              </Box>
+              <Box>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  תאריך יעד
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="date"
+                  value={editValues.dueDate}
+                  onChange={(e) =>
+                    setEditValues((v) =>
+                      v ? { ...v, dueDate: e.target.value } : v
+                    )
+                  }
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+                />
+              </Box>
+              <Box>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  סוג
+                </Typography>
+                <Select
+                  fullWidth
+                  size="small"
+                  value={editValues.type}
+                  onChange={(e) =>
+                    setEditValues((v) =>
+                      v ? { ...v, type: e.target.value as typeof v.type } : v
+                    )
+                  }
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <MenuItem value="assignment">מטלה</MenuItem>
+                  <MenuItem value="homework">שיעורי בית</MenuItem>
+                  <MenuItem value="project">פרויקט</MenuItem>
+                  <MenuItem value="lab">סדנאי</MenuItem>
+                  <MenuItem value="report">דוח</MenuItem>
+                  <MenuItem value="practice">תרגול</MenuItem>
+                </Select>
+              </Box>
+              <Box display="flex" gap={1} justifyContent="flex-end">
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setEditingAssignment(null);
+                    setEditValues(null);
+                  }}
+                >
+                  ביטול
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disabled={
+                    editAssignmentMutation.isPending || !editValues.title.trim()
+                  }
+                  onClick={() =>
+                    editAssignmentMutation.mutate({
+                      id: editingAssignment!.id,
+                      payload: {
+                        title: editValues.title.trim(),
+                        dueDate: editValues.dueDate,
+                        type: editValues.type,
+                      },
+                    })
+                  }
+                  sx={{ bgcolor: "#22c55e", "&:hover": { bgcolor: "#16a34a" } }}
+                >
+                  שמור
+                </Button>
+              </Box>
+            </Stack>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

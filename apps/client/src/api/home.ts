@@ -72,12 +72,7 @@ export const updateAssignment = async (
     dueDate?: string;
     status?: "not started" | "active" | "done";
     type?:
-      | "assignment"
-      | "homework"
-      | "practice"
-      | "project"
-      | "report"
-      | "lab";
+      "assignment" | "homework" | "practice" | "project" | "report" | "lab";
   }
 ) => {
   const response = await baseApi.patch(`/assignments/${id}`, payload);
@@ -91,6 +86,16 @@ export const deleteGeneralTask = async (id: string) => {
 
 export const deleteHomeAssignment = async (id: string) => {
   const response = await baseApi.delete(`/assignments/${id}`);
+  return response.data;
+};
+
+export const deleteCourseSummaryItem = async (id: string) => {
+  const response = await baseApi.delete(`/home/courses/${id}`);
+  return response.data;
+};
+
+export const deleteUpcomingEvent = async (id: string) => {
+  const response = await baseApi.delete(`/home/events/${id}`);
   return response.data;
 };
 
@@ -120,7 +125,7 @@ export const createUpcomingEvent = async (payload: {
   courseTitle: string;
   description: string;
   eventDate: string;
-  semesterLabel: string;
+  semesterNumber?: number;
 }) => {
   const response = await baseApi.post("/home/events", payload);
   return response.data;
@@ -128,8 +133,17 @@ export const createUpcomingEvent = async (payload: {
 
 export const createCourseSummary = async (payload: {
   courseTitle: string;
-  semesterLabel: string;
+  semesterNumber?: number;
+  credits?: number;
 }) => {
   const response = await baseApi.post("/home/courses", payload);
+  return response.data;
+};
+
+export const updateExam = async (
+  id: string,
+  payload: { date?: string; type?: number }
+) => {
+  const response = await baseApi.patch(`/exams/${id}`, payload);
   return response.data;
 };

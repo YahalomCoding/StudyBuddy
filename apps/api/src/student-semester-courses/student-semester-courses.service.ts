@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
-import { StudentSemesterCourse } from "./student-semester-course.model";
-import { SemesterCourse } from "../semester-courses/semester-course.model";
+import { formatSemesterLabel } from "@studybuddy/utils";
 import { Course } from "../courses/courses.model";
+import { SemesterCourse } from "../semester-courses/semester-course.model";
 import { Semester } from "../semesters/semester.model";
+import { StudentSemesterCourse } from "./student-semester-course.model";
 
 @Injectable()
 export class StudentSemesterCoursesService {
@@ -43,13 +44,13 @@ export class StudentSemesterCoursesService {
         id: studentSemesterCourseId,
         semesterCourse: {
           course: { id: courseId, title: courseTitle },
-          semester: { yearNumber, semesterNumber },
+          semester: { semesterNumber },
         },
       }) => ({
         id: studentSemesterCourseId,
         studentSemesterCourseId,
         courseTitle,
-        semesterLabel: `סמסטר ${semesterNumber} / ${yearNumber}`,
+        semesterLabel: `סמסטר ${formatSemesterLabel(semesterNumber) ?? semesterNumber}`,
         courseId,
       })
     );

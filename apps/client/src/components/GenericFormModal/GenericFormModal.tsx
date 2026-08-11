@@ -1,5 +1,7 @@
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
+  Button,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -8,11 +10,9 @@ import {
   Select,
   TextField,
   Typography,
-  Button,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 // ─── Field definitions ────────────────────────────────────────────────────────
 
@@ -20,6 +20,7 @@ export type FieldOption = { label: string; value: string };
 
 export type FormField =
   | { type: "text"; name: string; label: string; placeholder?: string }
+  | { type: "number"; name: string; label: string; placeholder?: string }
   | { type: "date"; name: string; label: string }
   | { type: "select"; name: string; label: string; options: FieldOption[] };
 
@@ -151,6 +152,21 @@ export const GenericFormModal = ({
                         borderRadius: 1.5,
                       },
                     }}
+                  />
+                )}
+
+                {field.type === "number" && (
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    placeholder={field.placeholder}
+                    value={values[field.name] ?? ""}
+                    onChange={(e) => onChange(field.name, e.target.value)}
+                    error={hasError}
+                    helperText={hasError ? "This field is required" : ""}
+                    inputProps={{ min: 0, step: 0.5 }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
                   />
                 )}
 

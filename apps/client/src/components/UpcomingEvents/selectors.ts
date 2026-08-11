@@ -1,3 +1,4 @@
+import { formatSemesterLabel } from "../../utils/labels";
 import {
   assignments,
   courses,
@@ -28,15 +29,19 @@ const getCourseContextByStudentSemesterCourseId = (
   }
 
   const course = courses.find((item) => item.id === semesterCourse.courseId);
-  const semester = semesters.find((item) => item.id === semesterCourse.semesterId);
+  const semester = semesters.find(
+    (item) => item.id === semesterCourse.semesterId
+  );
 
   if (!course || !semester) {
     return null;
   }
 
+  const semesterLabel = formatSemesterLabel(semester.semesterNumber);
+
   return {
     courseTitle: course.title,
-    semesterLabel: `סמסטר ${semester.semesterNumber} / ${semester.yearNumber}`,
+    semesterLabel: semesterLabel ? `סמסטר ${semesterLabel}` : null,
   };
 };
 

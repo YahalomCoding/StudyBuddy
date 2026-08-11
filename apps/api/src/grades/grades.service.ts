@@ -644,4 +644,76 @@ export class GradesService {
         return "מבחן";
     }
   }
+
+  async updateAssessmentWeight(
+    studentId: string,
+    courseId: string,
+    assessmentId: string,
+    weightPercent: number
+  ) {
+    const studentSemesterCourse = await this.studentSemesterCourseModel.findOne(
+      {
+        where: { studentId },
+        include: [
+          {
+            model: this.semesterCourseModel,
+            required: true,
+            include: [
+              {
+                model: this.courseModel,
+                required: true,
+                where: { id: courseId },
+                attributes: ["id"],
+              },
+            ],
+          },
+        ],
+      }
+    );
+
+    if (!studentSemesterCourse) throw new NotFoundException("Course not found");
+
+    const sequelize = this.studentSemesterCourseModel.sequelize;
+    if (!sequelize) throw new Error("Sequelize not available");
+
+    // Try to find a matching assignment or exam by databaseId prefix
+    if (assessmentId.startsWith("assignment-")) {
+      const dbId = assessmentId.replace("assignment-", "");
+      await sequelize.query(
+        'UPDATE "Assignments" SET "weightPercent" = :weightPercent WHERE id = :id',
+        { replacements: { weightPercent, id: dbId } }
+      );
+      return this.getStudentGrades(studentId);
+    }
+
+    if (assessmentId.startsWith("exam-")) {
+      const dbId = assessmentId.replace("exam-", "");
+      await sequelize.query(
+        'UPDATE "Exams" SET "weightPercent" = :weightPercent WHERE id = :id',
+        { replacements: { weightPercent, id: dbId } }
+      );
+      return this.getStudentGrades(studentId);
+    }
+
+    // Syllabus-sourced assessment: update in parsedData
+    const syllabusRecord = await this.courseSyllabusModel.findOne({
+      where: { studentSemesterCourseId: studentSemesterCourse.id },
+    });
+
+    if (!syllabusRecord)
+      throw new NotFoundException("Syllabus not found for this course");
+
+    const updatedAssessments = syllabusRecord.parsedData.assessments.map((a) =>
+      a.id === assessmentId ? { ...a, weightPercent } : a
+    );
+
+    await syllabusRecord.update({
+      parsedData: {
+        ...syllabusRecord.parsedData,
+        assessments: updatedAssessments,
+      },
+    });
+
+    return this.getStudentGrades(studentId);
+  }
 }

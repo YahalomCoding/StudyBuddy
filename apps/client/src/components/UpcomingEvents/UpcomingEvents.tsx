@@ -2,15 +2,29 @@ import AddIcon from "@mui/icons-material/Add";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import { Box, IconButton, Paper, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   createUpcomingEvent,
+  deleteUpcomingEvent,
   getHomeDashboard,
   homeDashboardQueryKey,
+  updateExam,
 } from "../../api/home";
 import {
   GenericFormModal,
@@ -52,6 +66,12 @@ export const UpcomingEvents = ({
   const currentYear = new Date().getFullYear();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  const [editingEvent, setEditingEvent] = useState<{
+    id: string;
+    date: string;
+    typeLabel: string;
+  } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalValues, setModalValues] = useState<FormValues>({});
 
@@ -93,26 +113,13 @@ export const UpcomingEvents = ({
       },
       {
         type: "select",
-        name: "semesterNumber",
+        name: "semesterLabel",
         label: "סמסטר",
         options: [
-          { label: "סמסטר א׳", value: "1" },
-          { label: "סמסטר ב׳", value: "2" },
-          { label: "סמסטר קיץ", value: "3" },
+          { label: "א", value: "1" },
+          { label: "ב", value: "2" },
+          { label: "קיץ", value: "3" },
         ],
-      },
-      {
-        type: "select",
-        name: "yearNumber",
-        label: "שנת לימודים",
-        options: Array.from({ length: 8 }, (_, index) => {
-          const year = String(currentYear - 1 + index);
-
-          return {
-            label: year,
-            value: year,
-          };
-        }),
       },
       ...EVENT_FIELDS,
     ],
@@ -124,6 +131,27 @@ export const UpcomingEvents = ({
     mutationFn: createUpcomingEvent,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: deleteUpcomingEvent,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+    },
+  });
+
+  const updateExamMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: { date?: string; type?: number };
+    }) => updateExam(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: homeDashboardQueryKey });
+      setEditingEvent(null);
     },
   });
 
@@ -159,8 +187,7 @@ export const UpcomingEvents = ({
     }
 
     setModalValues({
-      semesterNumber: "1",
-      yearNumber: String(currentYear),
+      semesterLabel: "1",
     });
     setModalOpen(true);
   };
@@ -171,15 +198,12 @@ export const UpcomingEvents = ({
   };
 
   const handleSaveEvent = (values: FormValues) => {
-    const semesterNumber = values.semesterNumber ?? "1";
-    const yearNumber = values.yearNumber ?? String(currentYear);
-
     createEventMutation.mutate({
       courseTitle: values.courseTitle ?? "",
       description: values.description ?? "",
       eventDate: values.eventDate ?? "",
       kind: "exam",
-      semesterLabel: `סמסטר ${semesterNumber} ${yearNumber}`,
+      semesterNumber: parseInt(values.semesterLabel ?? "1", 10),
     });
     handleCloseModal();
   };
@@ -267,10 +291,15 @@ export const UpcomingEvents = ({
                   py: 1,
                   borderBottom: "1px solid",
                   borderColor: "divider",
-                  "&:last-of-type": {
-                    borderBottom: "none",
-                  },
+                  cursor: "pointer",
+                  transition: "background-color 0.18s ease",
+                  ...(hoveredItemId === item.id && { bgcolor: "action.hover" }),
+                  "&:last-of-type": { borderBottom: "none" },
                 }}
+                onMouseEnter={() => setHoveredItemId(item.id)}
+                onMouseLeave={() =>
+                  setHoveredItemId((prev) => (prev === item.id ? null : prev))
+                }
               >
                 {/* Left: icon + text */}
                 <Box display="flex" alignItems="center" gap={1.5}>
@@ -309,20 +338,148 @@ export const UpcomingEvents = ({
                   </Box>
                 </Box>
 
-                {/* Right: date + semester */}
-                <Box textAlign="left" flexShrink={0}>
-                  <Typography fontSize={12} fontWeight={500}>
-                    {formatEventDate(item.eventDate)}
-                  </Typography>
+                {/* Right: date + semester + delete */}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={0.5}
+                  flexShrink={0}
+                >
+                  <Box textAlign="left">
+                    <Typography fontSize={12} fontWeight={500}>
+                      {formatEventDate(item.eventDate)}
+                    </Typography>
 
-                  <Typography fontSize={11} color="text.secondary">
-                    {item.semesterLabel}
-                  </Typography>
+                    <Typography fontSize={11} color="text.secondary">
+                      {item.semesterLabel}
+                    </Typography>
+                  </Box>
+
+                  {hoveredItemId === item.id && (
+                    <>
+                      <Tooltip title="ערוך אירוע">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingEvent({
+                              id: item.id,
+                              date: item.eventDate.slice(0, 10),
+                              typeLabel: item.description,
+                            });
+                          }}
+                          sx={{
+                            p: 0.45,
+                            color: "text.secondary",
+                            "&:hover": { bgcolor: "action.hover" },
+                          }}
+                        >
+                          <EditOutlinedIcon sx={{ fontSize: 17 }} />
+                        </IconButton>
+                      </Tooltip>
+
+                      <Tooltip title="מחק אירוע">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEventMutation.mutate(item.id);
+                          }}
+                          sx={{
+                            p: 0.45,
+                            color: "text.secondary",
+                            "&:hover": { bgcolor: "action.hover" },
+                          }}
+                        >
+                          <DeleteOutlineIcon sx={{ fontSize: 17 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  )}
                 </Box>
               </Box>
             );
           })}
         </Box>
+        {editingEvent && (
+          <Box
+            sx={{
+              mt: 2,
+              p: 2,
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "primary.main",
+              bgcolor: "background.paper",
+            }}
+          >
+            <Typography fontWeight={600} fontSize={13} mb={1.5}>
+              עריכת אירוע
+            </Typography>
+
+            <Box display="flex" gap={1.5} mb={1.5}>
+              <Box flex={1}>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  תאריך
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="date"
+                  value={editingEvent.date}
+                  onChange={(e) =>
+                    setEditingEvent((v) =>
+                      v ? { ...v, date: e.target.value } : v
+                    )
+                  }
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+                />
+              </Box>
+              <Box flex={1}>
+                <Typography fontSize={12} color="text.secondary" mb={0.5}>
+                  סוג
+                </Typography>
+                <Select
+                  fullWidth
+                  size="small"
+                  value={editingEvent.typeLabel}
+                  onChange={(e) =>
+                    setEditingEvent((v) =>
+                      v ? { ...v, typeLabel: e.target.value } : v
+                    )
+                  }
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <MenuItem value="מועד א׳">מועד א׳</MenuItem>
+                  <MenuItem value="מועד ב׳">מועד ב׳</MenuItem>
+                </Select>
+              </Box>
+            </Box>
+
+            <Box display="flex" gap={1} justifyContent="flex-end">
+              <Button size="small" onClick={() => setEditingEvent(null)}>
+                ביטול
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                disabled={updateExamMutation.isPending}
+                onClick={() =>
+                  updateExamMutation.mutate({
+                    id: editingEvent.id,
+                    payload: {
+                      date: editingEvent.date || undefined,
+                      type: editingEvent.typeLabel === "מועד ב׳" ? 2 : 1,
+                    },
+                  })
+                }
+                sx={{ bgcolor: "#22c55e", "&:hover": { bgcolor: "#16a34a" } }}
+              >
+                שמור
+              </Button>
+            </Box>
+          </Box>
+        )}
+
         <Box
           display="flex"
           alignItems="center"
