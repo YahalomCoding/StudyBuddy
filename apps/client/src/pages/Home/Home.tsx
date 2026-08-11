@@ -2,7 +2,6 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { Box, Chip, IconButton, Paper, Typography } from "@mui/material";
-import { ChatBotBubble } from "../../components/Chatbot";
 import { CoursesSummary } from "../../components/CoursesSummery/CoursesSummery";
 import { HomeAiFeatures } from "../../components/HomeAiFeatures/HomeAiFeatures";
 import { UpcomingEvents } from "../../components/UpcomingEvents";
@@ -109,10 +108,6 @@ export const Home = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", p: 0 }}>
-      <ChatBotBubble
-        exampleQuestions={["What should I do for the upcoming exams?"]}
-      />
-
       <Box
         sx={{
           px: 3,

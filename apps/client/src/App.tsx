@@ -25,6 +25,7 @@ import { CalendarPage } from "./pages/Calendar/Calendar";
 import { GradesPage } from "./pages/Grades";
 import { Home } from "./pages/Home";
 import { OnBoarding } from "./pages/OnBoarding";
+import { ChatBotBubble } from "./components/Chatbot";
 
 const AppLayout = () => {
   const theme = useTheme();
@@ -33,7 +34,9 @@ const AppLayout = () => {
 
   if (isMobile) {
     return (
-      <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <Box
+        sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+      >
         <Box
           sx={{
             height: 56,
@@ -70,6 +73,9 @@ const AppLayout = () => {
         </Drawer>
 
         <Box sx={{ flex: 1, overflow: "auto", minWidth: 0 }}>
+          <ChatBotBubble
+            exampleQuestions={["What should I do for the upcoming exams?"]}
+          />
           <Outlet />
         </Box>
       </Box>
@@ -80,6 +86,9 @@ const AppLayout = () => {
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar />
       <Box sx={{ flex: 1, overflow: "auto", minWidth: 0 }}>
+        <ChatBotBubble
+          exampleQuestions={["What should I do for the upcoming exams?"]}
+        />
         <Outlet />
       </Box>
     </Box>
